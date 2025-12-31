@@ -18,154 +18,67 @@ import {
   PlayCircleOutlined,
   FileTextOutlined,
   VideoCameraOutlined,
-  BulbOutlined,
 } from "@ant-design/icons";
-
+import { FaAtom, FaFlask, FaBookOpen, FaHourglassHalf } from "react-icons/fa";
 import { TbMathSymbols } from "react-icons/tb";
+import { GiDna1 } from "react-icons/gi";
+import { MdTranslate } from "react-icons/md";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 const { Title, Paragraph, Text } = Typography;
 const Home = () => {
+  const navigate = useNavigate();
   const [selectedGrade, setSelectedGrade] = useState(null);
   const grades = [
     { id: 10, name: "Khối 10", color: "#1890ff" },
     { id: 11, name: "Khối 11", color: "#FFC107" },
-    { id: 12, name: "Khối 12", color: "#1890ff" },
+    { id: 12, name: "Khối 12", color: "#00F15A" },
   ];
 
-  const subjects = {
-    10: [
-      {
-        id: 1,
-        name: "Toán học",
-        icon: <TbMathSymbols />,
-        lessons: 45,
-        color: "#1890ff",
-      },
-      {
-        id: 2,
-        name: "Vật lý",
-        icon: <BulbOutlined />,
-        lessons: 38,
-        color: "#FFC107",
-      },
-      {
-        id: 3,
-        name: "Hóa học",
-        icon: <FileTextOutlined />,
-        lessons: 42,
-        color: "#FF6B35",
-      },
-      {
-        id: 4,
-        name: "Sinh học",
-        icon: <BookOutlined />,
-        lessons: 35,
-        color: "#4ECDC4",
-      },
-      {
-        id: 5,
-        name: "Ngữ văn",
-        icon: <FileTextOutlined />,
-        lessons: 40,
-        color: "#9B59B6",
-      },
-      {
-        id: 6,
-        name: "Lịch sử",
-        icon: <BookOutlined />,
-        lessons: 30,
-        color: "#E74C3C",
-      },
-    ],
-    11: [
-      {
-        id: 1,
-        name: "Toán học",
-        icon: <TbMathSymbols />,
-        lessons: 50,
-        color: "#1890ff",
-      },
-      {
-        id: 2,
-        name: "Vật lý",
-        icon: <BulbOutlined />,
-        lessons: 45,
-        color: "#FFC107",
-      },
-      {
-        id: 3,
-        name: "Hóa học",
-        icon: <FileTextOutlined />,
-        lessons: 48,
-        color: "#FF6B35",
-      },
-      {
-        id: 4,
-        name: "Sinh học",
-        icon: <BookOutlined />,
-        lessons: 40,
-        color: "#4ECDC4",
-      },
-      {
-        id: 5,
-        name: "Ngữ văn",
-        icon: <FileTextOutlined />,
-        lessons: 45,
-        color: "#9B59B6",
-      },
-      {
-        id: 6,
-        name: "Địa lý",
-        icon: <BookOutlined />,
-        lessons: 35,
-        color: "#2ECC71",
-      },
-    ],
-    12: [
-      {
-        id: 1,
-        name: "Toán học",
-        icon: <TbMathSymbols />,
-        lessons: 60,
-        color: "#1890ff",
-      },
-      {
-        id: 2,
-        name: "Vật lý",
-        icon: <BulbOutlined />,
-        lessons: 55,
-        color: "#FFC107",
-      },
-      {
-        id: 3,
-        name: "Hóa học",
-        icon: <FileTextOutlined />,
-        lessons: 58,
-        color: "#FF6B35",
-      },
-      {
-        id: 4,
-        name: "Sinh học",
-        icon: <BookOutlined />,
-        lessons: 50,
-        color: "#4ECDC4",
-      },
-      {
-        id: 5,
-        name: "Ngữ văn",
-        icon: <FileTextOutlined />,
-        lessons: 52,
-        color: "#9B59B6",
-      },
-      {
-        id: 6,
-        name: "Tiếng Anh",
-        icon: <BookOutlined />,
-        lessons: 48,
-        color: "#F39C12",
-      },
-    ],
-  };
+  const subjects = [
+    {
+      id: 1,
+      name: "Toán học",
+      icon: <TbMathSymbols />,
+      lessons: { 10: 45, 11: 50, 12: 60 },
+      color: "#1890ff",
+    },
+    {
+      id: 2,
+      name: "Vật lý",
+      icon: <FaAtom />,
+      lessons: { 10: 38, 11: 45, 12: 55 },
+      color: "#FFC107",
+    },
+    {
+      id: 3,
+      name: "Hóa học",
+      icon: <FaFlask />,
+      lessons: { 10: 42, 11: 48, 12: 58 },
+      color: "#FF6B35",
+    },
+    {
+      id: 4,
+      name: "Sinh học",
+      icon: <GiDna1 />,
+      lessons: { 10: 35, 11: 40, 12: 50 },
+      color: "#4ECDC4",
+    },
+    {
+      id: 5,
+      name: "Ngữ văn",
+      icon: <FaBookOpen />,
+      lessons: { 10: 40, 11: 45, 12: 52 },
+      color: "#9B59B6",
+    },
+    {
+      id: 6,
+      name: "Tiếng Anh",
+      icon: <MdTranslate />,
+      lessons: { 10: 45, 11: 48, 12: 55 },
+      color: "#F39C12",
+    },
+  ];
 
   const stats = [
     {
@@ -193,6 +106,17 @@ const Home = () => {
       color: "#FFC107",
     },
   ];
+
+  const handleStartLearning = (subjectId) => {
+    // Kiểm tra xem người dùng đã đăng nhập chưa (dựa vào token trong localStorage)
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate(`/learning/${subjectId}`);
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <>
       {/* Hero Section */}
@@ -308,7 +232,7 @@ const Home = () => {
           </div>
 
           <Row gutter={[24, 24]}>
-            {subjects[selectedGrade]?.map((subject) => (
+            {subjects.map((subject) => (
               <Col xs={24} sm={12} md={8} lg={6} key={subject.id}>
                 <Card
                   hoverable
@@ -321,6 +245,7 @@ const Home = () => {
                       type="primary"
                       icon={<PlayCircleOutlined />}
                       style={{ width: "100%", border: "none" }}
+                      onClick={() => handleStartLearning(subject.id)}
                     >
                       Bắt đầu học
                     </Button>,
@@ -340,7 +265,7 @@ const Home = () => {
                     </Title>
                     <Space>
                       <Tag icon={<FileTextOutlined />} color={subject.color}>
-                        {subject.lessons} bài học
+                        {subject.lessons[selectedGrade]} bài học
                       </Tag>
                     </Space>
                   </div>

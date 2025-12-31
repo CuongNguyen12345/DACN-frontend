@@ -28,6 +28,7 @@ function Login() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [googleHover, setGoogleHover] = useState(false);
+  const [loginHover, setLoginHover] = useState(false);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -35,6 +36,7 @@ function Login() {
       console.log("Login values:", values);
       // TODO: Implement login logic
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      localStorage.setItem("token", "mock-token-123"); // Lưu token để xác nhận đã đăng nhập
       alert("Đăng nhập thành công!");
       navigate("/");
     } catch (error) {
@@ -155,14 +157,18 @@ function Login() {
                   htmlType="submit"
                   block
                   loading={loading}
+                  onMouseEnter={() => setLoginHover(true)}
+                  onMouseLeave={() => setLoginHover(false)}
                   style={{
                     height: "48px",
                     borderRadius: "8px",
-                    background:
-                      "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
+                    background: loginHover
+                      ? "linear-gradient(135deg, #FFC107 0%, #1890ff 100%)"
+                      : "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
                     border: "none",
                     fontSize: "16px",
                     fontWeight: "bold",
+                    transition: "all 0.7s",
                   }}
                 >
                   Đăng nhập

@@ -17,6 +17,7 @@ function Register() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [registerHover, setRegisterHover] = useState(false);
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -151,7 +152,11 @@ function Register() {
                     label="Mật khẩu"
                     rules={[
                       { required: true, message: "Vui lòng nhập mật khẩu!" },
-                      { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" }
+                      { min: 9, message: "Mật khẩu phải có trên 8 ký tự!" },
+                      {
+                        pattern: /(?=.*\d)(?=.*[^a-zA-Z0-9])/,
+                        message: "Mật khẩu phải có ít nhất 1 số và 1 ký tự đặc biệt!",
+                      },
                     ]}
                     hasFeedback
                   >
@@ -217,13 +222,18 @@ function Register() {
                   htmlType="submit" 
                   block
                   loading={loading}
+                  onMouseEnter={() => setRegisterHover(true)}
+                  onMouseLeave={() => setRegisterHover(false)}
                   style={{
                     height: '48px',
                     borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
+                    background: registerHover 
+                      ? 'linear-gradient(135deg, #FFC107 0%, #1890ff 100%)' 
+                      : 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
                     border: 'none',
                     fontSize: '16px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
+                    transition: 'all 0.3s'
                   }}
                 >
                   Đăng ký
@@ -256,4 +266,3 @@ function Register() {
 }
 
 export default Register;
-
