@@ -54,7 +54,7 @@ const StudentLayout = () => {
         style={{ textAlign: "center", background: "#1890ff", color: "#fff" }}
       >
         <Paragraph style={{ color: "#fff", margin: 0 }}>
-          Hệ thống Học tập Edu4All ©2025 - Phát triển bởi DACN
+          Hệ thống Học tập Edu4All ©{new Date().getFullYear()} - Phát triển bởi DACN
         </Paragraph>
       </Footer>
     </Layout>

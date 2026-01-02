@@ -4,7 +4,7 @@ import Home from "../pages/student/Home";
 import Login from "../pages/student/Login";
 import Register from "../pages/student/Register";
 import ForgotPassword from "../pages/student/ForgotPassword";
-
+import Learning from "../pages/student/Learning";
 
 function AppRoutes() {
   return (
@@ -14,6 +14,7 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/" element={<StudentLayout />}>
         <Route index element={<Home />} />
+        <Route path="/learning/:subjectId" element={<Learning />} />
       </Route>
     </Routes>
   );

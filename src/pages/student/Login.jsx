@@ -1,4 +1,5 @@
 import { useState } from "react";
+import axios from "axios";
 import {
   Card,
   Form,
@@ -19,6 +20,8 @@ import {
   GoogleOutlined,
   FacebookOutlined,
 } from "@ant-design/icons";
+
+import api from "../../services/api";
 import { useNavigate, Link } from "react-router-dom";
 
 const { Title, Paragraph, Text } = Typography;
@@ -33,14 +36,24 @@ function Login() {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      console.log("Login values:", values);
-      // TODO: Implement login logic
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      localStorage.setItem("token", "mock-token-123"); // Lưu token để xác nhận đã đăng nhập
+      // Gọi API đăng nhập
+      // TODO: Cập nhật URL API chính xác khi backend sẵn sàng
+      const response = await api.post("/login", {
+        username: values.username,
+        password: values.password,
+      });
+
+      console.log("Response:", response);
+
+      // Giả sử API trả về token trong response.data.token
+      // const token = response.data.token;
+
+      // localStorage.setItem("token", token);
       alert("Đăng nhập thành công!");
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+      alert("Đăng nhập thất bại: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
