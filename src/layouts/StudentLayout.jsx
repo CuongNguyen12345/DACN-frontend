@@ -1,13 +1,25 @@
+import { useState } from "react";
 import { Layout, Typography, Button, Space, Avatar } from "antd";
-
 import { BookOutlined, UserOutlined } from "@ant-design/icons";
-
-import { Outlet, Link } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import AuthModal from "../components/AuthModal";
 
 const { Header, Footer, Content } = Layout;
 const { Title, Paragraph } = Typography;
 
 const StudentLayout = () => {
+  const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("login");
+
+  const openAuthModal = (mode) => {
+    setAuthModalMode(mode);
+    setIsAuthModalVisible(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalVisible(false);
+  };
+
   return (
     <Layout style={{ minHeight: "100vh", background: "#f0f2f5" }}>
       {/* Header */}
@@ -34,14 +46,19 @@ const StudentLayout = () => {
           </div>
         </Space>
         <Space>
-          <Link to="/login">
-            <Button type="text" icon={<UserOutlined />}>
-              Đăng nhập
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button type="primary">Đăng ký</Button>
-          </Link>
+          <Button 
+            type="text" 
+            icon={<UserOutlined />}
+            onClick={() => openAuthModal("login")}
+          >
+            Đăng nhập
+          </Button>
+          <Button 
+            type="primary"
+            onClick={() => openAuthModal("register")}
+          >
+            Đăng ký
+          </Button>
         </Space>
       </Header>
 
@@ -57,6 +74,12 @@ const StudentLayout = () => {
           Hệ thống Học tập Edu4All ©{new Date().getFullYear()} - Phát triển bởi DACN
         </Paragraph>
       </Footer>
+
+      <AuthModal 
+        isVisible={isAuthModalVisible} 
+        onClose={closeAuthModal} 
+        initialMode={authModalMode} 
+      />
     </Layout>
   );
 };

@@ -169,7 +169,7 @@ function ForgotPassword() {
               </Row>
 
               <div style={{ textAlign: 'center' }}>
-                <Link to="/login" style={{ color: '#666', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Link to="/" style={{ color: '#666', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <ArrowLeftOutlined /> Quay lại đăng nhập
                 </Link>
               </div>
