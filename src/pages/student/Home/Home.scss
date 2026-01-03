@@ -1,0 +1,186 @@
+/* =========================
+   HOME PAGE
+========================= */
+.home {
+    background: #fff;
+
+    /* =========================
+     HERO SECTION
+  ========================= */
+    &-hero {
+        background: linear-gradient(135deg, #1890ff 0%, #ffc107 100%);
+        padding: 80px 50px;
+        text-align: center;
+        color: #fff;
+
+        &__title {
+            color: #fff !important;
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        &__desc {
+            color: #fff;
+            font-size: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+    }
+
+    /* =========================
+     STATISTICS SECTION
+  ========================= */
+    &-stats {
+        padding: 40px 50px;
+        background: #fff;
+
+        .ant-card {
+            text-align: center;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            }
+        }
+    }
+
+    /* =========================
+     GRADE SELECTOR
+  ========================= */
+    &-grade {
+        padding: 50px;
+        background: #f0f2f5;
+
+        &__header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        &__card {
+            text-align: center;
+            cursor: pointer;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+
+            &--active {
+                transform: scale(1.05);
+            }
+
+            &:hover {
+                transform: scale(1.03);
+            }
+
+            .ant-avatar {
+                margin-bottom: 16px;
+            }
+        }
+    }
+
+    /* =========================
+     SUBJECT GRID
+  ========================= */
+    &-subjects {
+        padding: 50px;
+        background: #fff;
+
+        &__header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .subject-card {
+            height: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            }
+
+            &__icon {
+                text-align: center;
+                margin-bottom: 16px;
+            }
+
+            &__title {
+                margin: 12px 0 8px;
+                text-align: center;
+            }
+
+            &__tag {
+                display: flex;
+                justify-content: center;
+            }
+
+            .ant-btn {
+                border-radius: 0;
+                font-weight: 600;
+            }
+        }
+    }
+
+    /* =========================
+     FEATURES SECTION
+  ========================= */
+    &-features {
+        padding: 50px;
+        background: #fff;
+
+        &__header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            text-align: center;
+            height: 100%;
+            border-radius: 14px;
+            transition: all 0.3s ease;
+
+            &:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+            }
+
+            &__icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+            }
+
+            &__title {
+                font-weight: 600;
+            }
+        }
+    }
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 768px) {
+    .home {
+        &-hero {
+            padding: 60px 24px;
+
+            &__title {
+                font-size: 36px;
+            }
+
+            &__desc {
+                font-size: 16px;
+            }
+        }
+
+        &-stats,
+        &-grade,
+        &-subjects,
+        &-features {
+            padding: 40px 24px;
+        }
+    }
+}
