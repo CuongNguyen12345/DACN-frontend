@@ -9,7 +9,6 @@ import {
   PhoneOutlined
 } from "@ant-design/icons";
 import { useNavigate, Link } from "react-router-dom";
-import api from "../services/api";
 import "./AuthModal.css";
 
 const { Title, Text, Paragraph } = Typography;
@@ -20,7 +19,6 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
   const [registerForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [googleHover, setGoogleHover] = useState(false);
   const [loginHover, setLoginHover] = useState(false);
   const [registerHover, setRegisterHover] = useState(false);
 
@@ -37,8 +35,8 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
       // Mock API call or use real one
       // const response = await api.post("/login", values);
       console.log("Login values:", values);
-      
-       await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
 
       // Simulate success
       alert("Đăng nhập thành công!");
@@ -77,99 +75,99 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
       size="large"
       autoComplete="off"
     >
-        <Form.Item
+      <Form.Item
         name="username"
         rules={[
-            {
+          {
             required: true,
             message: "Vui lòng nhập tên đăng nhập hoặc email!",
-            },
-            { min: 3, message: "Tên đăng nhập phải có ít nhất 3 ký tự!" },
+          },
+          { min: 3, message: "Tên đăng nhập phải có ít nhất 3 ký tự!" },
         ]}
-        >
+      >
         <Input
-            prefix={<UserOutlined style={{ color: "#1890ff" }} />}
-            placeholder="Tên đăng nhập hoặc Email"
-            style={{ borderRadius: "8px" }}
+          prefix={<UserOutlined style={{ color: "#1890ff" }} />}
+          placeholder="Tên đăng nhập hoặc Email"
+          style={{ borderRadius: "8px" }}
         />
-        </Form.Item>
+      </Form.Item>
 
-        <Form.Item
+      <Form.Item
         name="password"
         rules={[
-            { required: true, message: "Vui lòng nhập mật khẩu!" },
-            { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
+          { required: true, message: "Vui lòng nhập mật khẩu!" },
+          { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
         ]}
-        >
+      >
         <Input.Password
-            prefix={<LockOutlined style={{ color: "#1890ff" }} />}
-            placeholder="Mật khẩu"
-            style={{ borderRadius: "8px" }}
+          prefix={<LockOutlined style={{ color: "#1890ff" }} />}
+          placeholder="Mật khẩu"
+          style={{ borderRadius: "8px" }}
         />
-        </Form.Item>
+      </Form.Item>
 
-        <Form.Item>
+      <Form.Item>
         <div
-            style={{
+          style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: "16px",
-            }}
+          }}
         >
-            <Form.Item name="remember" valuePropName="checked" noStyle>
+          <Form.Item name="remember" valuePropName="checked" noStyle>
             <Checkbox>Ghi nhớ đăng nhập</Checkbox>
-            </Form.Item>
-            <Link
+          </Form.Item>
+          <Link
             to="/forgot-password"
             onClick={onClose}
             style={{ color: "#1890ff", fontSize: "14px" }}
-            >
+          >
             Quên mật khẩu?
-            </Link>
+          </Link>
         </div>
-        </Form.Item>
+      </Form.Item>
 
-        <Form.Item>
+      <Form.Item>
         <Button
-            type="primary"
-            htmlType="submit"
-            block
-            loading={loading}
-            onMouseEnter={() => setLoginHover(true)}
-            onMouseLeave={() => setLoginHover(false)}
-            style={{
+          type="primary"
+          htmlType="submit"
+          block
+          loading={loading}
+          onMouseEnter={() => setLoginHover(true)}
+          onMouseLeave={() => setLoginHover(false)}
+          style={{
             height: "48px",
             borderRadius: "8px",
             background: loginHover
-                ? "linear-gradient(135deg, #FFC107 0%, #1890ff 100%)"
-                : "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
+              ? "linear-gradient(135deg, #FFC107 0%, #1890ff 100%)"
+              : "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
             border: "none",
             fontSize: "16px",
             fontWeight: "bold",
             transition: "all 0.7s",
-            }}
+          }}
         >
-            Đăng nhập
+          Đăng nhập
         </Button>
-        </Form.Item>
+      </Form.Item>
 
-        <Divider>
-            <Text type="secondary" style={{ fontSize: "14px" }}>
-            Hoặc
-            </Text>
-        </Divider>
+      <Divider>
+        <Text type="secondary" style={{ fontSize: "14px" }}>
+          Hoặc
+        </Text>
+      </Divider>
 
-        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <Button
-              icon={<GoogleOutlined />}
-              block
-              size="large"
-              className="google-login-btn"
-            >
-            Đăng nhập với Google
-            </Button>
-        </Space>
+      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+        <Button
+          icon={<GoogleOutlined />}
+          block
+          size="large"
+          className="google-login-btn"
+        >
+          Đăng nhập với Google
+        </Button>
+      </Space>
     </Form>
   );
 
@@ -320,9 +318,9 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
       </Form.Item>
 
       <Form.Item>
-        <Button 
-          type="primary" 
-          htmlType="submit" 
+        <Button
+          type="primary"
+          htmlType="submit"
           block
           loading={loading}
           onMouseEnter={() => setRegisterHover(true)}
@@ -330,8 +328,8 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
           style={{
             height: '48px',
             borderRadius: '8px',
-            background: registerHover 
-              ? 'linear-gradient(135deg, #FFC107 0%, #1890ff 100%)' 
+            background: registerHover
+              ? 'linear-gradient(135deg, #FFC107 0%, #1890ff 100%)'
               : 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
             border: 'none',
             fontSize: '16px',
@@ -356,24 +354,24 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
     >
       <div style={{ padding: '20px' }}>
         <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <Avatar
+          <Avatar
             size={64}
             style={{
-                background: "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
-                marginBottom: "16px",
+              background: "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
+              marginBottom: "16px",
             }}
             icon={<BookOutlined style={{ fontSize: "32px", color: "#fff" }} />}
-            />
-            <Title level={3} style={{ margin: "0 0 8px 0", color: "#1890ff" }}>
-                Edu4All
-            </Title>
-            <Paragraph type="secondary">
-                Hệ thống học tập trực tuyến
-            </Paragraph>
+          />
+          <Title level={3} style={{ margin: "0 0 8px 0", color: "#1890ff" }}>
+            Edu4All
+          </Title>
+          <Paragraph type="secondary">
+            Hệ thống học tập trực tuyến
+          </Paragraph>
         </div>
 
-        <Tabs 
-          activeKey={activeTab} 
+        <Tabs
+          activeKey={activeTab}
           onChange={setActiveTab}
           centered
           items={[

@@ -1,186 +1,109 @@
 /* =========================
-   HOME PAGE
+   HOME DASHBOARD
 ========================= */
-.home {
-    background: #fff;
+.home-dashboard {
+    padding: 24px 50px;
+    background: #f0f2f5;
+    min-height: 100vh;
 
-    /* =========================
-     HERO SECTION
-  ========================= */
-    &-hero {
-        background: linear-gradient(135deg, #1890ff 0%, #ffc107 100%);
-        padding: 80px 50px;
-        text-align: center;
-        color: #fff;
+    .dashboard-content {
+        margin-top: 24px;
+    }
+}
 
-        &__title {
-            color: #fff !important;
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
+/* =========================
+   BANNER
+========================= */
+.dashboard-banner {
+    background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+    padding: 30px;
+    border-radius: 16px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
 
-        &__desc {
-            color: #fff;
-            font-size: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-            line-height: 1.6;
+    .banner-welcome {
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
         }
     }
 
-    /* =========================
-     STATISTICS SECTION
-  ========================= */
-    &-stats {
-        padding: 40px 50px;
-        background: #fff;
-
-        .ant-card {
-            text-align: center;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-
-            &:hover {
-                transform: translateY(-6px);
-                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-            }
-        }
-    }
-
-    /* =========================
-     GRADE SELECTOR
-  ========================= */
-    &-grade {
-        padding: 50px;
-        background: #f0f2f5;
-
-        &__header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        &__card {
-            text-align: center;
-            cursor: pointer;
-            border-radius: 14px;
-            transition: all 0.3s ease;
-
-            &--active {
-                transform: scale(1.05);
-            }
-
-            &:hover {
-                transform: scale(1.03);
-            }
-
-            .ant-avatar {
-                margin-bottom: 16px;
-            }
-        }
-    }
-
-    /* =========================
-     SUBJECT GRID
-  ========================= */
-    &-subjects {
-        padding: 50px;
-        background: #fff;
-
-        &__header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .subject-card {
-            height: 100%;
-            border-radius: 14px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-
-            &:hover {
-                transform: translateY(-6px);
-                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-            }
-
-            &__icon {
-                text-align: center;
-                margin-bottom: 16px;
-            }
-
-            &__title {
-                margin: 12px 0 8px;
-                text-align: center;
-            }
-
-            &__tag {
-                display: flex;
-                justify-content: center;
-            }
-
-            .ant-btn {
-                border-radius: 0;
-                font-weight: 600;
-            }
-        }
-    }
-
-    /* =========================
-     FEATURES SECTION
-  ========================= */
-    &-features {
-        padding: 50px;
-        background: #fff;
-
-        &__header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .feature-card {
-            text-align: center;
-            height: 100%;
-            border-radius: 14px;
-            transition: all 0.3s ease;
-
-            &:hover {
-                transform: translateY(-6px);
-                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-            }
-
-            &__icon {
-                font-size: 48px;
-                margin-bottom: 16px;
-            }
-
-            &__title {
-                font-weight: 600;
-            }
+    .banner-countdown {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        
+        strong {
+            font-family: 'Roboto Mono', monospace;
         }
     }
 }
 
 /* =========================
-   RESPONSIVE
+   RECENT ACTIVITY
 ========================= */
-@media (max-width: 768px) {
-    .home {
-        &-hero {
-            padding: 60px 24px;
-
-            &__title {
-                font-size: 36px;
-            }
-
-            &__desc {
-                font-size: 16px;
-            }
+.recent-activity {
+    margin-bottom: 24px;
+    
+    .ant-card {
+        transition: transform 0.3s ease;
+        &:hover {
+            transform: translateY(-4px);
         }
+    }
+}
 
-        &-stats,
-        &-grade,
-        &-subjects,
-        &-features {
-            padding: 40px 24px;
+/* =========================
+   SUBJECT ACCESS
+========================= */
+.subject-access {
+    .subject-item {
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: 1px solid #f0f0f0;
+
+        &:hover {
+            border-color: #1890ff;
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+    }
+}
+
+/* =========================
+   TODAY TASKS
+========================= */
+.today-tasks {
+    .ant-card-head {
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .ant-checkbox-wrapper {
+        font-size: 15px;
+    }
+
+    .ant-list-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+        
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .home-dashboard {
+        padding: 16px;
+    }
+    
+    .dashboard-banner {
+        padding: 20px;
+        text-align: center;
+        
+        .banner-countdown {
+            margin-top: 16px;
+            text-align: left;
         }
     }
 }

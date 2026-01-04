@@ -1,23 +1,35 @@
-import HeroSection from "./components/HeroSection";
-import Statistics from "./components/Statistics";
-import GradeSelection from "./components/GradeSelection";
-import FeaturesSection from "./components/FeaturesSection";
+import DashboardBanner from "./components/DashboardBanner";
+import RecentActivity from "./components/RecentActivity";
+import TodayTasks from "./components/TodayTasks";
+import SubjectAccess from "./components/SubjectAccess";
+import { Row, Col } from "antd";
 import "./Home.scss";
+
 const Home = () => {
   return (
-    <>
-      {/* Hero Section */}
-      <HeroSection></HeroSection>
+    <div className="home-dashboard">
+      {/* Banner Section */}
+      <DashboardBanner />
 
-      {/* Statistics */}
-      <Statistics></Statistics>
+      <div className="dashboard-content">
+        <Row gutter={[24, 24]}>
+          {/* Left Column (Main) */}
+          <Col xs={24} lg={16}>
+            {/* Recent Activity */}
+            <RecentActivity />
 
-      {/* Grade Selection */}
-      <GradeSelection></GradeSelection>
+            <div style={{ marginTop: "32px" }}>
+              <SubjectAccess />
+            </div>
+          </Col>
 
-      {/* Features Section */}
-      <FeaturesSection></FeaturesSection>
-    </>
+          {/* Right Column (Side) */}
+          <Col xs={24} lg={8}>
+            <TodayTasks />
+          </Col>
+        </Row>
+      </div>
+    </div>
   );
 };
 
