@@ -181,41 +181,22 @@ const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
       autoComplete="off"
       scrollToFirstError
     >
-      <Row gutter={16}>
-        <Col xs={24} sm={12}>
-          <Form.Item
-            name="fullName"
-            label="Họ và tên"
-            rules={[
-              { required: true, message: "Vui lòng nhập họ và tên!" },
-              { min: 2, message: "Họ và tên phải có ít nhất 2 ký tự!" }
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-              placeholder="Nhập họ và tên"
-              style={{ borderRadius: '8px' }}
-            />
-          </Form.Item>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Form.Item
-            name="username"
-            label="Tên đăng nhập"
-            rules={[
-              { required: true, message: "Vui lòng nhập tên đăng nhập!" },
-              { min: 3, message: "Tên đăng nhập phải có ít nhất 3 ký tự!" },
-              { pattern: /^[a-zA-Z0-9_]+$/, message: "Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới!" }
-            ]}
-          >
-            <Input
-              prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-              placeholder="Nhập tên đăng nhập"
-              style={{ borderRadius: '8px' }}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
+      <Form.Item
+        name="username"
+        label="Tên đăng nhập"
+        rules={[
+          { required: true, message: "Vui lòng nhập tên đăng nhập!" },
+          { min: 7, message: "Tên đăng nhập phải có ít nhất 7 ký tự!" },
+          { pattern: /^[a-zA-Z0-9]+$/, message: "Tên đăng nhập không được chứa dấu tiếng Việt, khoảng trắng và ký tự đặc biệt!" },
+          { pattern: /\d/, message: "Tên đăng nhập phải chứa ít nhất một chữ số!" }
+        ]}
+      >
+        <Input
+          prefix={<UserOutlined style={{ color: '#1890ff' }} />}
+          placeholder="Nhập tên đăng nhập"
+          style={{ borderRadius: '8px' }}
+        />
+      </Form.Item>
 
       <Form.Item
         name="email"

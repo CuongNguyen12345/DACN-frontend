@@ -17,7 +17,6 @@ function AppRoutes() {
         <Route path="/learning/:subjectId" element={<Learning />} />
         <Route path="/practice" element={<PracticeList />} />
         <Route path="/practice/room/:examId" element={<PracticeRoom />} />
-        <Route path="/practice/room/:examId" element={<PracticeRoom />} />
         <Route path="/practice/result/:examId" element={<PracticeResult />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
