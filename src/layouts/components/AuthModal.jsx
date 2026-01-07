@@ -1,375 +1,326 @@
-import { useState, useEffect } from "react";
-import { Modal, Tabs, Form, Input, Button, Checkbox, Typography, Divider, Space, Avatar, Row, Col } from "antd";
-import {
-  UserOutlined,
-  LockOutlined,
-  BookOutlined,
-  GoogleOutlined,
-  MailOutlined,
-  PhoneOutlined
-} from "@ant-design/icons";
-import { useNavigate, Link } from "react-router-dom";
-import "./AuthModal.css";
 
-const { Title, Text, Paragraph } = Typography;
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  User,
+  Lock,
+  Mail,
+  Phone,
+  BookOpen,
+  X
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogClose
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const AuthModal = ({ isVisible, onClose, initialMode = "login" }) => {
   const [activeTab, setActiveTab] = useState(initialMode);
-  const [loginForm] = Form.useForm();
-  const [registerForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const [loginHover, setLoginHover] = useState(false);
-  const [registerHover, setRegisterHover] = useState(false);
 
-  // Reset tab when modal opens/closes or initialMode changes
   useEffect(() => {
     if (isVisible) {
       setActiveTab(initialMode);
     }
   }, [isVisible, initialMode]);
 
-  const handleLogin = async (values) => {
+  // Login Schema
+  const loginSchema = z.object({
+    username: z.string().min(1, "Vui lòng nhập tên đăng nhập hoặc email"),
+    password: z.string().min(1, "Vui lòng nhập mật khẩu"),
+    remember: z.boolean().default(false),
+  });
+
+  // Register Schema
+  const registerSchema = z.object({
+    username: z.string().min(3, "Tên đăng nhập phải có ít nhất 3 ký tự"),
+    email: z.string().email("Email không hợp lệ"),
+    phone: z.string().optional(),
+    password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+    confirmPassword: z.string(),
+    agreement: z.boolean().refine((val) => val === true, "Bạn phải đồng ý với điều khoản"),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu không khớp",
+    path: ["confirmPassword"],
+  });
+
+  const loginForm = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { username: "", password: "", remember: false },
+  });
+
+  const registerForm = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { username: "", email: "", phone: "", password: "", confirmPassword: "", agreement: false },
+  });
+
+  const onLoginSubmit = async (values) => {
     setLoading(true);
-    try {
-      // Mock API call or use real one
-      // const response = await api.post("/login", values);
-      console.log("Login values:", values);
-
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-      // Simulate success
-      alert("Đăng nhập thành công!");
+    // Mock login
+    setTimeout(() => {
+      setLoading(false);
       onClose();
-      navigate("/");
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Đăng nhập thất bại: " + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
+      console.log("Logged in:", values);
+    }, 1000);
   };
 
-  const handleRegister = async (values) => {
+  const onRegisterSubmit = async (values) => {
     setLoading(true);
-    try {
-      console.log("Register values:", values);
-      // TODO: Implement register logic
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
-      setActiveTab("login"); // Switch to login tab after success
-      registerForm.resetFields();
-    } catch (error) {
-      console.error("Register error:", error);
-    } finally {
+    // Mock register
+    setTimeout(() => {
       setLoading(false);
-    }
+      setActiveTab("login");
+      console.log("Registered:", values);
+    }, 1000);
   };
-
-  const loginContent = (
-    <Form
-      form={loginForm}
-      name="login"
-      onFinish={handleLogin}
-      layout="vertical"
-      size="large"
-      autoComplete="off"
-    >
-      <Form.Item
-        name="username"
-        rules={[
-          {
-            required: true,
-            message: "Vui lòng nhập tên đăng nhập hoặc email!",
-          },
-          { min: 3, message: "Tên đăng nhập phải có ít nhất 3 ký tự!" },
-        ]}
-      >
-        <Input
-          prefix={<UserOutlined style={{ color: "#1890ff" }} />}
-          placeholder="Tên đăng nhập hoặc Email"
-          style={{ borderRadius: "8px" }}
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="password"
-        rules={[
-          { required: true, message: "Vui lòng nhập mật khẩu!" },
-          { min: 6, message: "Mật khẩu phải có ít nhất 6 ký tự!" },
-        ]}
-      >
-        <Input.Password
-          prefix={<LockOutlined style={{ color: "#1890ff" }} />}
-          placeholder="Mật khẩu"
-          style={{ borderRadius: "8px" }}
-        />
-      </Form.Item>
-
-      <Form.Item>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-          }}
-        >
-          <Form.Item name="remember" valuePropName="checked" noStyle>
-            <Checkbox>Ghi nhớ đăng nhập</Checkbox>
-          </Form.Item>
-          <Link
-            to="/forgot-password"
-            onClick={onClose}
-            style={{ color: "#1890ff", fontSize: "14px" }}
-          >
-            Quên mật khẩu?
-          </Link>
-        </div>
-      </Form.Item>
-
-      <Form.Item>
-        <Button
-          type="primary"
-          htmlType="submit"
-          block
-          loading={loading}
-          onMouseEnter={() => setLoginHover(true)}
-          onMouseLeave={() => setLoginHover(false)}
-          style={{
-            height: "48px",
-            borderRadius: "8px",
-            background: loginHover
-              ? "linear-gradient(135deg, #FFC107 0%, #1890ff 100%)"
-              : "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
-            border: "none",
-            fontSize: "16px",
-            fontWeight: "bold",
-            transition: "all 0.7s",
-          }}
-        >
-          Đăng nhập
-        </Button>
-      </Form.Item>
-
-      <Divider>
-        <Text type="secondary" style={{ fontSize: "14px" }}>
-          Hoặc
-        </Text>
-      </Divider>
-
-      <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-        <Button
-          icon={<GoogleOutlined />}
-          block
-          size="large"
-          className="google-login-btn"
-        >
-          Đăng nhập với Google
-        </Button>
-      </Space>
-    </Form>
-  );
-
-  const registerContent = (
-    <Form
-      form={registerForm}
-      name="register"
-      onFinish={handleRegister}
-      layout="vertical"
-      size="large"
-      autoComplete="off"
-      scrollToFirstError
-    >
-      <Form.Item
-        name="username"
-        label="Tên đăng nhập"
-        rules={[
-          { required: true, message: "Vui lòng nhập tên đăng nhập!" },
-          { min: 7, message: "Tên đăng nhập phải có ít nhất 7 ký tự!" },
-          { pattern: /^[a-zA-Z0-9]+$/, message: "Tên đăng nhập không được chứa dấu tiếng Việt, khoảng trắng và ký tự đặc biệt!" },
-          { pattern: /\d/, message: "Tên đăng nhập phải chứa ít nhất một chữ số!" }
-        ]}
-      >
-        <Input
-          prefix={<UserOutlined style={{ color: '#1890ff' }} />}
-          placeholder="Nhập tên đăng nhập"
-          style={{ borderRadius: '8px' }}
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="email"
-        label="Email"
-        rules={[
-          { required: true, message: "Vui lòng nhập email!" },
-          { type: 'email', message: "Email không hợp lệ!" }
-        ]}
-      >
-        <Input
-          prefix={<MailOutlined style={{ color: '#1890ff' }} />}
-          placeholder="Nhập địa chỉ email"
-          style={{ borderRadius: '8px' }}
-        />
-      </Form.Item>
-
-      <Form.Item
-        name="phone"
-        label="Số điện thoại (Tùy chọn)"
-        rules={[
-          { pattern: /^[0-9]{10,11}$/, message: "Số điện thoại không hợp lệ!" }
-        ]}
-      >
-        <Input
-          prefix={<PhoneOutlined style={{ color: '#1890ff' }} />}
-          placeholder="Nhập số điện thoại"
-          style={{ borderRadius: '8px' }}
-        />
-      </Form.Item>
-
-      <Row gutter={16}>
-        <Col xs={24} sm={12}>
-          <Form.Item
-            name="password"
-            label="Mật khẩu"
-            rules={[
-              { required: true, message: "Vui lòng nhập mật khẩu!" },
-              { min: 9, message: "Mật khẩu phải có trên 8 ký tự!" },
-              {
-                pattern: /(?=.*\d)(?=.*[^a-zA-Z0-9])/,
-                message: "Mật khẩu phải có ít nhất 1 số và 1 ký tự đặc biệt!",
-              },
-            ]}
-            hasFeedback
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#1890ff' }} />}
-              placeholder="Nhập mật khẩu"
-              style={{ borderRadius: '8px' }}
-            />
-          </Form.Item>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Form.Item
-            name="confirmPassword"
-            label="Xác nhận mật khẩu"
-            dependencies={['password']}
-            rules={[
-              { required: true, message: "Vui lòng xác nhận mật khẩu!" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('Mật khẩu xác nhận không khớp!'));
-                },
-              }),
-            ]}
-            hasFeedback
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: '#1890ff' }} />}
-              placeholder="Nhập lại mật khẩu"
-              style={{ borderRadius: '8px' }}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Form.Item
-        name="agreement"
-        valuePropName="checked"
-        rules={[
-          {
-            validator: (_, value) =>
-              value ? Promise.resolve() : Promise.reject(new Error('Bạn cần đồng ý với điều khoản sử dụng!')),
-          },
-        ]}
-      >
-        <Checkbox>
-          Tôi đồng ý với{' '}
-          <Link to="/terms" onClick={onClose} style={{ color: '#1890ff' }}>
-            Điều khoản sử dụng
-          </Link>
-          {' '}và{' '}
-          <Link to="/privacy" onClick={onClose} style={{ color: '#1890ff' }}>
-            Chính sách bảo mật
-          </Link>
-        </Checkbox>
-      </Form.Item>
-
-      <Form.Item>
-        <Button
-          type="primary"
-          htmlType="submit"
-          block
-          loading={loading}
-          onMouseEnter={() => setRegisterHover(true)}
-          onMouseLeave={() => setRegisterHover(false)}
-          style={{
-            height: '48px',
-            borderRadius: '8px',
-            background: registerHover
-              ? 'linear-gradient(135deg, #FFC107 0%, #1890ff 100%)'
-              : 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
-            border: 'none',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            transition: 'all 0.7s'
-          }}
-        >
-          Đăng ký
-        </Button>
-      </Form.Item>
-    </Form>
-  );
 
   return (
-    <Modal
-      open={isVisible}
-      onCancel={onClose}
-      footer={null}
-      width={600} // Wider modal for register form
-      centered
-      maskClosable={false}
-    >
-      <div style={{ padding: '20px' }}>
-        <div style={{ textAlign: "center", marginBottom: "20px" }}>
-          <Avatar
-            size={64}
-            style={{
-              background: "linear-gradient(135deg, #1890ff 0%, #FFC107 100%)",
-              marginBottom: "16px",
-            }}
-            icon={<BookOutlined style={{ fontSize: "32px", color: "#fff" }} />}
-          />
-          <Title level={3} style={{ margin: "0 0 8px 0", color: "#1890ff" }}>
-            Edu4All
-          </Title>
-          <Paragraph type="secondary">
-            Hệ thống học tập trực tuyến
-          </Paragraph>
+    <Dialog open={isVisible} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden bg-white border-none shadow-xl rounded-2xl gap-0">
+        {/* Header */}
+        <div className="pt-8 pb-4 text-center px-6 relative">
+          {/* Close Button specific for this custom header if needed, but DialogContent usually has one. 
+                 We can customize it or leave the default. 
+                 Default X is usually fine but let's make sure it doesn't overlap weirdly.
+             */}
+
+          <div className="flex flex-col items-center justify-center gap-3">
+            {/* Logo Icon */}
+            <div className="bg-gradient-to-br from-blue-500 to-sky-400 p-3 rounded-xl shadow-lg shadow-blue-200">
+              <BookOpen className="h-8 w-8 text-white" />
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-blue-600 tracking-tight">Edu4All</h2>
+              <p className="text-gray-500 text-sm font-medium">Hệ thống tự học cho học sinh cấp 3</p>
+            </div>
+          </div>
         </div>
 
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          centered
-          items={[
-            {
-              key: 'login',
-              label: 'Đăng nhập',
-              children: loginContent,
-            },
-            {
-              key: 'register',
-              label: 'Đăng ký',
-              children: registerContent,
-            },
-          ]}
-        />
-      </div>
-    </Modal>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-2 bg-transparent border-b border-gray-100 p-0 rounded-none h-auto">
+            <TabsTrigger
+              value="login"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 py-3 text-gray-500 font-semibold bg-transparent shadow-none"
+            >
+              Đăng nhập
+            </TabsTrigger>
+            <TabsTrigger
+              value="register"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 py-3 text-gray-500 font-semibold bg-transparent shadow-none"
+            >
+              Đăng ký
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="p-6 md:px-8">
+            <TabsContent value="login" className="mt-0 space-y-4">
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Tên đăng nhập / Email</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-600 transition-all" placeholder="Tên đăng nhập hoặc Email" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Mật khẩu</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input type="password" className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-600 transition-all" placeholder="Mật khẩu" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex items-center justify-between text-sm">
+                    <FormField
+                      control={loginForm.control}
+                      name="remember"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-gray-300 text-blue-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded" />
+                          </FormControl>
+                          <FormLabel className="font-normal text-gray-600">Ghi nhớ đăng nhập</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    <Link to="/forgot-password" onClick={onClose} className="text-blue-600 hover:text-blue-700 font-semibold">
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white! font-bold h-11 rounded-lg shadow-blue-200 shadow-md" disabled={loading}>
+                    {loading ? "Đang xử lý..." : "Đăng nhập"}
+                  </Button>
+                </form>
+              </Form>
+
+              <div className="relative flex py-2 items-center">
+                <div className="grow border-t border-gray-200"></div>
+                <span className="shrink-0 px-2 text-xs text-gray-400 uppercase font-bold">HOẶC</span>
+                <div className="grow border-t border-gray-200"></div>
+              </div>
+
+              <Button variant="outline" className="w-full border-red-600 text-red-600! hover:bg-red-600 hover:text-white! h-11 font-semibold" type="button">
+                <span className="mr-2 text-lg">G</span> Đăng nhập với Google
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="register" className="mt-0 space-y-4">
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
+                  <FormField
+                    control={registerForm.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Tên đăng nhập</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input className="pl-9 bg-gray-50 border-gray-200" placeholder="JohnDoe123" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Email</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input className="pl-9 bg-gray-50 border-gray-200" placeholder="name@example.com" {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={registerForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700">Số điện thoại (Tùy chọn)</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input className="pl-9 bg-gray-50 border-gray-200" placeholder="0123..." {...field} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700">Mật khẩu</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input type="password" className="pl-9 bg-gray-50 border-gray-200" placeholder="****" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-gray-700">Nhập lại MK</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input type="password" className="pl-9 bg-gray-50 border-gray-200" placeholder="****" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={registerForm.control}
+                    name="agreement"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-2 space-y-0 mt-2">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="font-normal text-xs text-gray-600">
+                            Tôi đồng ý với <Link to="/terms" onClick={onClose} className="text-blue-600 hover:underline">Điều khoản</Link> và <Link to="/privacy" onClick={onClose} className="text-blue-600 hover:underline">Chính sách bảo mật</Link>
+                          </FormLabel>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-lg mt-2 shadow-md shadow-blue-200" disabled={loading}>
+                    {loading ? "Đang xử lý..." : "Đăng ký"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 };
 

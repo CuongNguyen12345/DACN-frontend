@@ -1,21 +1,16 @@
 import { useState } from "react";
-import { Layout, Typography, Button, Space, Avatar, Menu, Input, Popover, Select, Dropdown } from "antd";
-import { BookOutlined, UserOutlined, SearchOutlined, MoonOutlined, SunOutlined, SettingOutlined, LogoutOutlined } from "@ant-design/icons";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
+import { Header } from "./components/Header";
 import AuthModal from "./components/AuthModal";
-
-const { Header, Footer, Content } = Layout;
-const { Title, Paragraph } = Typography;
+import { BookOpen } from "lucide-react";
 
 const StudentLayout = () => {
   const [isAuthModalVisible, setIsAuthModalVisible] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("login");
-
-  const navigate = useNavigate();
-  const location = useLocation();
-
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock login state
+
+  const navigate = useNavigate();
 
   const openAuthModal = (mode) => {
     setAuthModalMode(mode);
@@ -34,176 +29,78 @@ const StudentLayout = () => {
     setIsLoggedIn(false);
   };
 
-  // Filter Content for Advanced Search
-  const searchFilterContent = (
-    <div style={{ padding: "8px", minWidth: "300px" }}>
-      <Space direction="vertical" style={{ width: "100%" }}>
-        <Typography.Text strong>Bộ lọc tìm kiếm</Typography.Text>
-        <Space>
-          <Select defaultValue="all" style={{ width: 120 }}>
-            <Select.Option value="all">Tất cả lớp</Select.Option>
-            <Select.Option value="10">Lớp 10</Select.Option>
-            <Select.Option value="11">Lớp 11</Select.Option>
-            <Select.Option value="12">Lớp 12</Select.Option>
-          </Select>
-          <Select defaultValue="all" style={{ width: 120 }}>
-            <Select.Option value="all">Tất cả môn</Select.Option>
-            <Select.Option value="math">Toán</Select.Option>
-            <Select.Option value="physics">Lý</Select.Option>
-            <Select.Option value="chemistry">Hóa</Select.Option>
-          </Select>
-        </Space>
-      </Space>
-    </div>
-  );
-
-  const menuItems = [
-    { key: "dashboard", label: "Trang chủ" },
-    { key: "practice", label: "Luyện đề" },
-  ];
-
-  const handleMenuClick = (e) => {
-    if (e.key === "dashboard") navigate("/");
-    if (e.key === "practice") navigate("/practice");
-  };
-
-  const getSelectedKey = () => {
-    if (location.pathname.startsWith("/practice")) return "practice";
-    return "dashboard";
-  };
-
-  const userMenu = (
-    <Menu>
-      <Menu.Item key="profile" icon={<UserOutlined />} onClick={() => navigate('/profile')}>
-        Hồ sơ cá nhân
-      </Menu.Item>
-      <Menu.Item key="settings" icon={<SettingOutlined />}>
-        Cài đặt
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        Đăng xuất
-      </Menu.Item>
-    </Menu>
-  );
-
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f0f2f5" }}>
-      {/* Header */}
+    <div className={`min-h-screen flex flex-col bg-white ${isDarkMode ? 'dark' : ''}`}>
       <Header
-        style={{
-          background: "#fff",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 24px",
-          gap: "16px",
-          position: "sticky",
-          top: 0,
-          zIndex: 1000,
-        }}
-      >
-        {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: "120px" }}>
-          <Avatar
-            size={32}
-            style={{ background: "#1890ff" }}
-            icon={<BookOutlined />}
-          />
-          <Title level={4} style={{ margin: 0, color: "#1890ff", whiteSpace: "nowrap" }}>
-            Edu4All
-          </Title>
-        </div>
+        isLoggedIn={isLoggedIn}
+        navigate={navigate}
+        handleLogout={handleLogout}
+        openAuthModal={openAuthModal}
+        userAvatar={`https://api.dicebear.com/7.x/avataaars/svg?seed=Felix`}
+      />
 
-        {/* Advanced Search */}
-        <div style={{ flex: 1, maxWidth: "400px", display: "flex", justifyContent: "center" }}>
-          <Popover
-            content={searchFilterContent}
-            trigger="click"
-            placement="bottomLeft"
-            arrow={false}
-          >
-            <Input.Search
-              placeholder="Tìm kiếm..."
-              prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-              allowClear
-              enterButton="Tìm kiếm"
-              size="middle"
-              style={{ width: "100%" }}
-            />
-          </Popover>
-        </div>
-
-        {/* Menu */}
-        <Menu
-          mode="horizontal"
-          selectedKeys={[getSelectedKey()]}
-          onClick={handleMenuClick}
-          items={menuItems}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            borderBottom: "none",
-            background: "transparent",
-            justifyContent: "center"
-          }}
-        />
-
-        {/* Right Section */}
-        <Space size="middle">
-          <Button
-            type="text"
-            icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />}
-            onClick={toggleDarkMode}
-            style={{ fontSize: "16px" }}
-          />
-
-          {isLoggedIn ? (
-            <Dropdown overlay={userMenu} placement="bottomRight">
-              <Avatar
-                style={{ backgroundColor: '#87d068', cursor: 'pointer' }}
-                icon={<UserOutlined />}
-              />
-            </Dropdown>
-          ) : (
-            <Space>
-              <Button
-                type="text"
-                onClick={() => openAuthModal("login")}
-              >
-                Đăng nhập
-              </Button>
-              <Button
-                type="primary"
-                onClick={() => openAuthModal("register")}
-              >
-                Đăng ký
-              </Button>
-            </Space>
-          )}
-        </Space>
-      </Header>
-
-      <Content style={{ padding: 0 }}>
+      {/* Main Content */}
+      <main className="flex-1 w-full bg-gray-50/30">
         <Outlet />
-      </Content>
+      </main>
 
       {/* Footer */}
-      <Footer
-        style={{ textAlign: "center", background: "#1890ff", color: "#fff" }}
-      >
-        <Paragraph style={{ color: "#fff", margin: 0 }}>
-          Hệ thống Học tập Edu4All ©{new Date().getFullYear()} - Phát triển bởi DACN
-        </Paragraph>
-      </Footer>
+      <footer className="bg-white pt-16 pb-8 border-t border-gray-100">
+        <div className="container mx-auto px-4">
+          {/* Top Footer */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-blue-600 rounded-lg p-1.5">
+                  <BookOpen className="h-4 w-4 text-white" />
+                </div>
+                <span className="font-bold text-lg text-gray-900">EduPlatform</span>
+              </div>
+              <p className="text-gray-500 text-xs leading-relaxed max-w-xs">
+                Nền tảng tự học toàn diện cho học sinh cấp 3, giúp bạn nắm vững kiến thức và tự tin đạt điểm cao.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-bold text-gray-900 text-sm">Khám phá</h4>
+              <ul className="space-y-2 text-xs text-gray-500">
+                <li><a href="#" className="hover:text-blue-600">Học bài</a></li>
+                <li><a href="#" className="hover:text-blue-600">Luyện đề</a></li>
+                <li><a href="#" className="hover:text-blue-600">Blog</a></li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-bold text-gray-900 text-sm">Về chúng tôi</h4>
+              <ul className="space-y-2 text-xs text-gray-500">
+                <li><a href="#" className="hover:text-blue-600">Sứ mệnh</a></li>
+                <li><a href="#" className="hover:text-blue-600">Liên hệ</a></li>
+                <li><a href="#" className="hover:text-blue-600">Điều khoản</a></li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="font-bold text-gray-900 text-sm">Hỗ trợ</h4>
+              <ul className="space-y-2 text-xs text-gray-500">
+                <li><a href="#" className="hover:text-blue-600">Câu hỏi thường gặp</a></li>
+                <li><a href="#" className="hover:text-blue-600">Góp ý</a></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Footer */}
+          <div className="border-t border-gray-100 pt-8 text-center">
+            <p className="text-gray-400 text-xs">© {new Date().getFullYear()} Edu4All. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
 
       <AuthModal
         isVisible={isAuthModalVisible}
         onClose={closeAuthModal}
         initialMode={authModalMode}
       />
-    </Layout>
+    </div>
   );
 };
 

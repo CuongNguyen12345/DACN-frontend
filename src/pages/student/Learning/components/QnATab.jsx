@@ -1,29 +1,25 @@
 import { useState } from "react";
-
-import { Avatar, Form, Button, Input, List, Tooltip } from "antd";
-import { UserOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
-
-// Since Comment is deprecated in Antd 5, we might need a custom one or just use List.Meta
-// For simplicity, using a List with custom styling to mimic comments.
-
-const { TextArea } = Input;
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+// import dayjs from "dayjs";
 
 const QnATab = () => {
     const [comments, setComments] = useState([
         {
             id: 1,
             author: "Nguyễn Văn A",
-            avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
             content: "Thầy ơi cho em hỏi đoạn 12:30 tại sao lại ra kết quả đó ạ?",
-            datetime: dayjs().subtract(1, 'hour').format('YYYY-MM-DD HH:mm:ss'),
+            datetime: dayjs().subtract(1, 'hour').format('YYYY-MM-DD HH:mm'),
             replies: [
                 {
                     id: 11,
                     author: "Giáo viên",
                     avatar: null, // Default
                     content: "Chào em, ở đoạn đó thầy đã áp dụng công thức (a+b)^2 nhé.",
-                    datetime: dayjs().subtract(30, 'minute').format('YYYY-MM-DD HH:mm:ss'),
+                    datetime: dayjs().subtract(30, 'minute').format('YYYY-MM-DD HH:mm'),
                 }
             ]
         }
@@ -42,9 +38,9 @@ const QnATab = () => {
                 {
                     id: Date.now(),
                     author: "Bạn (Học sinh)",
-                    avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+                    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
                     content: value,
-                    datetime: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+                    datetime: dayjs().format('YYYY-MM-DD HH:mm'),
                     replies: []
                 },
             ]);
@@ -52,43 +48,53 @@ const QnATab = () => {
     };
 
     return (
-        <div className="qna-tab">
-            <div style={{ marginBottom: "24px" }}>
-                <Form.Item>
-                    <TextArea rows={4} onChange={(e) => setValue(e.target.value)} value={value} placeholder="Đặt câu hỏi của bạn tại đây..." />
-                </Form.Item>
-                <Form.Item>
-                    <Button htmlType="submit" loading={submitting} onClick={handleSubmit} type="primary">
-                        Gửi câu hỏi
-                    </Button>
-                </Form.Item>
+        <div className="flex flex-col h-full space-y-6 p-4">
+            <div className="space-y-4">
+                <Textarea
+                    rows={3}
+                    onChange={(e) => setValue(e.target.value)}
+                    value={value}
+                    placeholder="Đặt câu hỏi của bạn tại đây..."
+                    className="resize-none"
+                />
+                <Button onClick={handleSubmit} disabled={submitting || !value}>
+                    {submitting ? "Đang gửi..." : "Gửi câu hỏi"}
+                </Button>
             </div>
 
-            <List
-                className="comment-list"
-                header={`${comments.length} Câu hỏi`}
-                itemLayout="horizontal"
-                dataSource={comments}
-                renderItem={(item) => (
-                    <li>
-                        <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-                            <Avatar src={item.avatar} icon={<UserOutlined />} />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <strong>{item.author}</strong>
-                                    <span style={{ color: "#999", fontSize: "12px" }}>{item.datetime}</span>
+            <div className="flex items-center gap-2 pb-2 border-b">
+                <h4 className="font-semibold text-lg">Hỏi đáp ({comments.length})</h4>
+            </div>
+
+            <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-6">
+                    {comments.map((item) => (
+                        <div key={item.id} className="flex gap-4">
+                            <Avatar className="h-10 w-10 border">
+                                <AvatarImage src={item.avatar} />
+                                <AvatarFallback>{item.author[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 space-y-1">
+                                <div className="flex items-center justify-between">
+                                    <h5 className="font-semibold text-sm">{item.author}</h5>
+                                    <span className="text-xs text-muted-foreground">{item.datetime}</span>
                                 </div>
-                                <p style={{ margin: "4px 0" }}>{item.content}</p>
+                                <p className="text-sm text-foreground/90">{item.content}</p>
 
                                 {/* Replies */}
                                 {item.replies.length > 0 && (
-                                    <div style={{ background: "#f9f9f9", padding: "12px", borderRadius: "8px", marginTop: "8px" }}>
+                                    <div className="mt-3 pl-4 border-l-2 border-muted space-y-4">
                                         {item.replies.map(reply => (
-                                            <div key={reply.id} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
-                                                <Avatar size="small" style={{ backgroundColor: "#87d068" }} icon={<UserOutlined />} />
-                                                <div>
-                                                    <strong>{reply.author}</strong>
-                                                    <p style={{ margin: 0 }}>{reply.content}</p>
+                                            <div key={reply.id} className="flex gap-3">
+                                                <Avatar className="h-8 w-8 bg-green-100 text-green-600">
+                                                    <AvatarFallback>GV</AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <h6 className="font-semibold text-xs text-primary">{reply.author}</h6>
+                                                        <span className="text-[10px] text-muted-foreground">{reply.datetime}</span>
+                                                    </div>
+                                                    <p className="text-sm mt-0.5">{reply.content}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -96,9 +102,9 @@ const QnATab = () => {
                                 )}
                             </div>
                         </div>
-                    </li>
-                )}
-            />
+                    ))}
+                </div>
+            </ScrollArea>
         </div>
     );
 };

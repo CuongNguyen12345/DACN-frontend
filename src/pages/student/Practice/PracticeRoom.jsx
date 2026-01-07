@@ -1,34 +1,37 @@
 import { useState, useEffect } from "react";
-import {
-    Typography,
-    Button,
-    Radio,
-    Space,
-    Card,
-    Row,
-    Col,
-    Statistic,
-    Modal,
-    Layout,
-    Affix,
-    Tag
-} from "antd";
-import {
-    ClockCircleOutlined,
-    ExclamationCircleOutlined,
-    CheckCircleOutlined,
-    FlagOutlined
-} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import {
+    Clock,
+    AlertCircle,
+    CheckCircle2,
+    Flag,
+    Menu
+} from "lucide-react";
 
-const { Title, Paragraph, Text } = Typography;
-const { Header, Content, Sider } = Layout;
-const { Countdown } = Statistic;
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // For mobile question list
 
 const PracticeRoom = () => {
     const navigate = useNavigate();
     const [answers, setAnswers] = useState({}); // { 1: 'A', 2: 'B' }
-    const [deadline, setDeadline] = useState(Date.now() + 90 * 60 * 1000); // 90 mins from now
+    const initialTime = 90 * 60; // 90 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(initialTime);
 
     // Mock Questions
     const questions = Array.from({ length: 50 }, (_, i) => ({
@@ -42,6 +45,26 @@ const PracticeRoom = () => {
         ]
     }));
 
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    handleFinish();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const handleAnswerSelect = (questionId, optionKey) => {
         setAnswers({ ...answers, [questionId]: optionKey });
     };
@@ -50,29 +73,10 @@ const PracticeRoom = () => {
         return questions.length - Object.keys(answers).length;
     };
 
-    const handleSubmit = () => {
-        const unanswered = calculateUnanswered();
-        Modal.confirm({
-            title: 'Bạn chắc chắn muốn nộp bài?',
-            icon: <ExclamationCircleOutlined />,
-            content: unanswered > 0
-                ? `Bạn còn ${unanswered} câu chưa làm. Bạn có chắc chắn muốn kết thúc bài thi?`
-                : 'Bạn đã hoàn thành tất cả câu hỏi.',
-            okText: 'Nộp bài',
-            cancelText: 'Làm tiếp',
-            onOk: () => {
-                // Navigate to result
-                navigate("/practice/result/1");
-            }
-        });
-    };
-
     const handleFinish = () => {
-        Modal.info({
-            title: "Hết giờ!",
-            content: "Hệ thống sẽ tự động nộp bài làm của bạn.",
-            onOk: () => navigate("/practice/result/1")
-        });
+        // Auto submit logic
+        alert("Hết giờ! Hệ thống đang nộp bài...");
+        navigate("/practice/result/1");
     };
 
     const scrollToQuestion = (id) => {
@@ -82,109 +86,139 @@ const PracticeRoom = () => {
         }
     };
 
-    return (
-        <Layout style={{ minHeight: "100vh" }}>
-            {/* Exam Header */}
-            <Header style={{
-                background: "#fff",
-                padding: "0 24px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                zIndex: 100
-            }}>
-                <Title level={4} style={{ margin: 0 }}>Đề thi thử THPT QG 2025 - Môn Toán</Title>
-                <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "#fef0ef", padding: "4px 16px", borderRadius: "20px", border: "1px solid #ffa39e" }}>
-                        <ClockCircleOutlined style={{ color: "#f5222d" }} />
-                        <Countdown
-                            value={deadline}
-                            onFinish={handleFinish}
-                            format="mm:ss"
-                            valueStyle={{ color: "#f5222d", fontSize: "18px", fontWeight: "bold" }}
-                        />
-                    </div>
-                    <Button type="primary" size="large" onClick={handleSubmit}>Nộp bài</Button>
+    const QuestionPalette = () => (
+        <div className="h-full flex flex-col">
+            <h4 className="font-semibold mb-4 px-1">Danh sách câu hỏi</h4>
+            <ScrollArea className="flex-1 pr-4">
+                <div className="grid grid-cols-5 gap-2">
+                    {questions.map(q => (
+                        <Button
+                            key={q.id}
+                            variant={answers[q.id] ? "default" : "outline"}
+                            size="sm"
+                            className={cn(
+                                "w-full h-8 text-xs font-normal",
+                                answers[q.id] ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200"
+                            )}
+                            onClick={() => scrollToQuestion(q.id)}
+                        >
+                            {q.id}
+                        </Button>
+                    ))}
                 </div>
-            </Header>
+            </ScrollArea>
+            <div className="mt-6 pt-4 border-t space-y-2">
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-blue-600"></div>
+                    <span className="text-sm text-gray-600">Đã làm</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 rounded bg-gray-50 border border-gray-200"></div>
+                    <span className="text-sm text-gray-600">Chưa làm</span>
+                </div>
+            </div>
+        </div>
+    );
 
-            <Layout>
-                {/* Question Content (Left/Center) */}
-                <Content style={{ padding: "24px", maxWidth: "1000px", margin: "0 auto", width: "100%" }}>
+    return (
+        <div className="flex flex-col min-h-screen bg-gray-50/30">
+            {/* Header */}
+            <header className="sticky top-16 z-40 bg-white border-b shadow-sm px-4 md:px-8 py-3 flex justify-between items-center">
+                <h1 className="font-bold text-lg md:text-xl truncate max-w-[50%]">Đề thi thử THPT QG 2025 - Môn Toán</h1>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100 font-mono font-bold">
+                        <Clock className="h-4 w-4" />
+                        <span>{formatTime(timeLeft)}</span>
+                    </div>
+
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button size="default" className="bg-primary hover:bg-primary/90">Nộp bài</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Bạn chắc chắn muốn nộp bài?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {calculateUnanswered() > 0
+                                        ? `Bạn còn ${calculateUnanswered()} câu chưa làm. Bạn có chắc chắn muốn kết thúc bài thi không?`
+                                        : "Bạn đã hoàn thành tất cả câu hỏi. Bạn có muốn nộp bài ngay?"}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Làm tiếp</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => navigate("/practice/result/1")}>Nộp bài</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+
+                    {/* Mobile Question Palette Trigger */}
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="icon" className="lg:hidden">
+                                <Menu className="h-4 w-4" />
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="right">
+                            <QuestionPalette />
+                        </SheetContent>
+                    </Sheet>
+                </div>
+            </header>
+
+            <div className="flex-1 container max-w-[1400px] mx-auto p-4 md:p-6 flex gap-8">
+                {/* Main Content - Questions */}
+                <div className="flex-1 max-w-[900px] mx-auto w-full">
                     {questions.map((q) => (
-                        <Card
+                        <div
                             key={q.id}
                             id={`question-${q.id}`}
-                            style={{ marginBottom: "20px", borderRadius: "12px", border: "1px solid #f0f0f0" }}
+                            className="bg-white rounded-xl border p-6 mb-6 shadow-sm scroll-mt-36"
                         >
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-                                <Tag color="blue" style={{ fontSize: "14px", padding: "4px 10px" }}>Câu {q.id}</Tag>
-                                <Button type="text" icon={<FlagOutlined />} size="small">Báo lỗi</Button>
+                            <div className="flex justify-between items-start mb-4">
+                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                    Câu {q.id}
+                                </Badge>
+                                <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-500 h-8 px-2">
+                                    <Flag className="h-4 w-4 mr-1" /> Báo lỗi
+                                </Button>
                             </div>
-                            <Paragraph style={{ fontSize: "16px", fontWeight: 500 }}>{q.content}</Paragraph>
-                            <Radio.Group
-                                onChange={(e) => handleAnswerSelect(q.id, e.target.value)}
-                                value={answers[q.id]}
-                                style={{ width: "100%" }}
-                            >
-                                <Space direction="vertical" style={{ width: "100%" }}>
-                                    {q.options.map(opt => (
-                                        <Radio
-                                            key={opt.key}
-                                            value={opt.key}
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                padding: "12px",
-                                                borderRadius: "8px",
-                                                border: answers[q.id] === opt.key ? "1px solid #1890ff" : "1px solid #d9d9d9",
-                                                background: answers[q.id] === opt.key ? "#e6f7ff" : "transparent",
-                                                width: "100%"
-                                            }}
-                                        >
-                                            <span style={{ fontWeight: "bold", marginRight: "8px" }}>{opt.key}.</span> {opt.text}
-                                        </Radio>
-                                    ))}
-                                </Space>
-                            </Radio.Group>
-                        </Card>
-                    ))}
-                </Content>
 
-                {/* Question Palette (Right Sider) */}
-                <Sider width={320} theme="light" style={{ padding: "24px", borderLeft: "1px solid #f0f0f0", height: "calc(100vh - 64px)", position: "sticky", top: 64, overflowY: "auto" }}>
-                    <Title level={5} style={{ marginBottom: "16px" }}>Danh sách câu hỏi</Title>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "8px" }}>
-                        {questions.map(q => (
-                            <Button
-                                key={q.id}
-                                type={answers[q.id] ? "primary" : "default"}
-                                shape="default"
-                                style={{
-                                    width: "100%",
-                                    background: answers[q.id] ? undefined : "#f5f5f5",
-                                    border: answers[q.id] ? undefined : "none"
-                                }}
-                                onClick={() => scrollToQuestion(q.id)}
+                            <p className="text-base font-medium text-gray-900 mb-6 leading-relaxed">
+                                {q.content}
+                            </p>
+
+                            <RadioGroup
+                                value={answers[q.id]}
+                                onValueChange={(val) => handleAnswerSelect(q.id, val)}
+                                className="space-y-3"
                             >
-                                {q.id}
-                            </Button>
-                        ))}
-                    </div>
-                    <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid #f0f0f0" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                            <div style={{ width: "20px", height: "20px", background: "#1890ff", borderRadius: "4px" }}></div>
-                            <Text>Đã làm</Text>
+                                {q.options.map(opt => (
+                                    <div key={opt.key} className={cn(
+                                        "flex items-center space-x-3 space-y-0 rounded-lg border p-3 cursor-pointer transition-all",
+                                        answers[q.id] === opt.key
+                                            ? "border-blue-500 bg-blue-50 shadow-sm"
+                                            : "border-gray-200 hover:bg-gray-50"
+                                    )}>
+                                        <RadioGroupItem value={opt.key} id={`${q.id}-${opt.key}`} />
+                                        <Label htmlFor={`${q.id}-${opt.key}`} className="flex-1 cursor-pointer font-normal text-base">
+                                            <span className="font-bold mr-2 text-primary">{opt.key}.</span> {opt.text}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <div style={{ width: "20px", height: "20px", background: "#f5f5f5", borderRadius: "4px", border: "1px solid #d9d9d9" }}></div>
-                            <Text>Chưa làm</Text>
-                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop Question Palette */}
+                <div className="hidden lg:block w-80 shrink-0">
+                    <div className="sticky top-28 bg-white rounded-xl border shadow-sm p-4 max-h-[calc(100vh-140px)] flex flex-col">
+                        <QuestionPalette />
                     </div>
-                </Sider>
-            </Layout>
-        </Layout>
+                </div>
+            </div>
+        </div>
     );
 };
 

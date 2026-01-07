@@ -1,58 +1,59 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  Row,
-  Col,
-  Card,
-  List,
-  Typography,
-  Button,
-  Tabs,
-  Breadcrumb,
-  Tag,
-  Tooltip
-} from "antd";
+  PlayCircle,
+  CheckCircle2,
+  ArrowLeft,
+  FileText,
+  HelpCircle,
+  Heart,
+  Download,
+  Edit3,
+  FlaskConical,
+  Maximize2,
+  Minimize2
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  PlayCircleOutlined,
-  CheckCircleFilled,
-  ArrowLeftOutlined,
-  FileTextOutlined,
-  QuestionCircleOutlined,
-  HeartOutlined,
-  HeartFilled,
-  DownloadOutlined,
-  EditOutlined,
-  ExperimentOutlined,
-  FullscreenOutlined,
-  FullscreenExitOutlined
-} from "@ant-design/icons";
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 import NoteTab from "./components/NoteTab";
 import QnATab from "./components/QnATab";
 import QuizTab from "./components/QuizTab";
 
-const { Title, Paragraph, Text } = Typography;
-
 const Learning = () => {
   const { subjectId } = useParams();
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
-  const [focusMode, setFocusMode] = useState(false); // Focus Mode State
+  const [focusMode, setFocusMode] = useState(false);
 
-  // Mock data cho danh sách bài học
+  // Mock data
   const lessons = [
     {
       id: 1,
       title: "Bài 1: Khảo sát hàm số bậc 3",
       duration: "15:30",
-      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Link demo
+      videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
       isCompleted: true,
       content: `
-        <h3>1. Khái niệm cơ bản</h3>
-        <p>Trong bài học này, chúng ta sẽ tìm hiểu về các khái niệm nền tảng...</p>
-        <h3>2. Nội dung chính</h3>
-        <p>Các định luật bảo toàn và ứng dụng thực tiễn trong đời sống.</p>
-        <ul>
+        <h3 class="text-lg font-semibold mb-2">1. Khái niệm cơ bản</h3>
+        <p class="mb-4">Trong bài học này, chúng ta sẽ tìm hiểu về các khái niệm nền tảng...</p>
+        <h3 class="text-lg font-semibold mb-2">2. Nội dung chính</h3>
+        <p class="mb-2">Các định luật bảo toàn và ứng dụng thực tiễn trong đời sống.</p>
+        <ul class="list-disc list-inside space-y-1">
           <li>Định luật 1</li>
           <li>Định luật 2</li>
         </ul>
@@ -94,180 +95,210 @@ const Learning = () => {
 
   const [activeLesson, setActiveLesson] = useState(lessons[0]);
 
-  // Tab items for Interaction Area
-  const tabItems = [
-    {
-      key: '1',
-      label: <span><FileTextOutlined /> Lý thuyết</span>,
-      children: (
-        <div style={{ padding: '20px', background: '#fff' }}>
-          <Title level={4}>{activeLesson.title}</Title>
-          <div dangerouslySetInnerHTML={{ __html: activeLesson.content }} />
-        </div>
-      ),
-    },
-    {
-      key: '2',
-      label: <span><EditOutlined /> Ghi chú</span>,
-      children: <NoteTab lessonId={activeLesson.id} />,
-    },
-    {
-      key: '3',
-      label: <span><QuestionCircleOutlined /> Hỏi đáp</span>,
-      children: <QnATab />,
-    },
-    {
-      key: '4',
-      label: <span><ExperimentOutlined /> Bài tập</span>,
-      children: <QuizTab />,
-    },
-  ];
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f0f2f5",
-        position: focusMode ? "fixed" : "static",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: focusMode ? 9999 : "auto",
-        overflow: "auto"
-      }}
-    >
-      {/* Header Navigation (Hidden in Focus Mode) */}
-      {!focusMode && (
-        <div style={{ background: "#fff", padding: "16px 24px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <Breadcrumb
-            items={[
-              { title: <a onClick={() => navigate('/')}><ArrowLeftOutlined /> Trang chủ</a> },
-              { title: 'Toán học' },
-              { title: activeLesson.title },
-            ]}
-          />
-        </div>
-      )}
-
-      <div style={{ padding: "24px", maxWidth: "1600px", margin: "0 auto" }}>
-        {/* Lesson Header & Tools */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-          <div>
-            <Title level={3} style={{ margin: 0 }}>{activeLesson.title}</Title>
+    <TooltipProvider>
+      <div className={cn(
+        "min-h-[calc(100vh-4rem)] bg-gray-50/50 flex flex-col",
+        focusMode && "fixed inset-0 z-100 bg-background h-screen"
+      )}>
+        {/* Header Navigation (Hidden in Focus Mode) */}
+        {!focusMode && (
+          <div className="bg-background border-b px-6 py-3 shadow-sm">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink onClick={() => navigate('/')} className="cursor-pointer flex items-center gap-1">
+                    <ArrowLeft className="h-4 w-4" /> Trang chủ
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbLink>Toán học</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{activeLesson.title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <Tooltip title={isFavorite ? "Bỏ yêu thích" : "Yêu thích"}>
-              <Button
-                icon={isFavorite ? <HeartFilled style={{ color: "red" }} /> : <HeartOutlined />}
-                onClick={() => setIsFavorite(!isFavorite)}
-              />
-            </Tooltip>
+        )}
 
-            <Tooltip title="Tải tài liệu PDF">
-              <Button icon={<DownloadOutlined />}>Tải tài liệu</Button>
-            </Tooltip>
+        <div className={cn(
+          "flex-1 p-6 transition-all duration-300",
+          focusMode ? "p-0 h-full" : "container mx-auto max-w-[1600px]"
+        )}>
+          {!focusMode && (
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{activeLesson.title}</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsFavorite(!isFavorite)}
+                      className={cn(isFavorite && "text-red-500 hover:text-red-600 border-red-200 bg-red-50")}
+                    >
+                      <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{isFavorite ? "Bỏ yêu thích" : "Yêu thích"}</p>
+                  </TooltipContent>
+                </Tooltip>
 
-            <Tooltip title={focusMode ? "Thoát chế độ tập trung" : "Chế độ tập trung"}>
-              <Button
-                type={focusMode ? "primary" : "default"}
-                icon={focusMode ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-                onClick={() => setFocusMode(!focusMode)}
-              >
-                {focusMode ? "Thoát Focus" : "Focus Mode"}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="mr-2 h-4 w-4" /> Tải tài liệu
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tải tài liệu PDF</p>
+                  </TooltipContent>
+                </Tooltip>
 
-        <Row gutter={[24, 24]}>
-          {/* Left Column: Video & Theory */}
-          <Col xs={24} lg={focusMode ? 24 : 16}>
-            {/* Video Player Section */}
-            <Card
-              styles={{ body: { padding: 0 } }}
-              style={{ marginBottom: "24px", overflow: "hidden", borderRadius: "12px", background: "#000" }}
-            >
-              <div style={{ position: "relative", paddingTop: "56.25%" /* 16:9 Aspect Ratio */ }}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={focusMode ? "default" : "secondary"}
+                      onClick={() => setFocusMode(!focusMode)}
+                    >
+                      {focusMode ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+                      {focusMode ? "Thoát Focus" : "Focus Mode"}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{focusMode ? "Thoát chế độ tập trung" : "Chế độ tập trung"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          )}
+
+          <div className={cn("grid gap-6 h-full", focusMode ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-3")}>
+            {/* Left Column: Video & Theory */}
+            <div className={cn("flex flex-col gap-6", focusMode ? "col-span-1 h-full" : "lg:col-span-2")}>
+              {/* Video Player Section */}
+              <div className={cn(
+                "bg-black relative rounded-xl overflow-hidden shadow-lg ring-1 ring-gray-900/5",
+                focusMode ? "h-full flex items-center justify-center rounded-none" : "aspect-video"
+              )}>
                 <iframe
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    border: "none",
-                  }}
+                  className="w-full h-full absolute inset-0"
                   src={activeLesson.videoUrl}
                   title={activeLesson.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               </div>
-            </Card>
 
-            {/* Interaction Area (Tabs) */}
-            <Card style={{ borderRadius: "12px" }}>
-              <Tabs defaultActiveKey="1" items={tabItems} />
-            </Card>
-          </Col>
+              {/* Interaction Area (Tabs) - Visible below video in Regular Mode, or distinct area in Focus Mode if we implement split view (simplified here to always show tabs below in regular) */}
+              {!focusMode && (
+                <Card className="flex-1 border-none shadow-md">
+                  <Tabs defaultValue="theory" className="w-full h-full flex flex-col">
+                    <div className="px-6 pt-6">
+                      <TabsList className="w-full justify-start h-12 p-1 bg-gray-100/50">
+                        <TabsTrigger value="theory" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                          <FileText className="mr-2 h-4 w-4" /> Lý thuyết
+                        </TabsTrigger>
+                        <TabsTrigger value="note" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                          <Edit3 className="mr-2 h-4 w-4" /> Ghi chú
+                        </TabsTrigger>
+                        <TabsTrigger value="qna" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                          <HelpCircle className="mr-2 h-4 w-4" /> Hỏi đáp
+                        </TabsTrigger>
+                        <TabsTrigger value="quiz" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                          <FlaskConical className="mr-2 h-4 w-4" /> Bài tập
+                        </TabsTrigger>
+                      </TabsList>
+                    </div>
+                    <CardContent className="p-0 flex-1">
+                      <TabsContent value="theory" className="p-6 m-0 animate-in fade-in-50">
+                        <h3 className="text-xl font-bold mb-4 text-primary">{activeLesson.title}</h3>
+                        <div
+                          className="prose prose-sm max-w-none text-gray-600 dark:text-gray-300"
+                          dangerouslySetInnerHTML={{ __html: activeLesson.content }}
+                        />
+                      </TabsContent>
+                      <TabsContent value="note" className="m-0 h-[400px]">
+                        <NoteTab lessonId={activeLesson.id} />
+                      </TabsContent>
+                      <TabsContent value="qna" className="m-0 h-[500px]">
+                        <QnATab />
+                      </TabsContent>
+                      <TabsContent value="quiz" className="m-0 min-h-[400px]">
+                        <QuizTab />
+                      </TabsContent>
+                    </CardContent>
+                  </Tabs>
+                </Card>
+              )}
+            </div>
 
-          {/* Right Column: Lesson List (Hidden in Focus Mode) */}
-          {!focusMode && (
-            <Col xs={24} lg={8}>
-              <Card
-                title="Danh sách bài học"
-                style={{ borderRadius: "12px", height: "100%" }}
-                styles={{ body: { padding: 0, maxHeight: "calc(100vh - 150px)", overflowY: "auto" } }}
-              >
-                <List
-                  itemLayout="horizontal"
-                  dataSource={lessons}
-                  renderItem={(item) => (
-                    <List.Item
-                      onClick={() => setActiveLesson(item)}
-                      style={{
-                        padding: "16px",
-                        cursor: "pointer",
-                        background: activeLesson.id === item.id ? "#e6f7ff" : "transparent",
-                        borderLeft: activeLesson.id === item.id ? "4px solid #1890ff" : "4px solid transparent",
-                        transition: "all 0.3s"
-                      }}
-                    >
-                      <List.Item.Meta
-                        avatar={
-                          item.isCompleted ? (
-                            <CheckCircleFilled style={{ color: "#52c41a", fontSize: "24px" }} />
-                          ) : (
-                            <PlayCircleOutlined
-                              style={{
-                                color: activeLesson.id === item.id ? "#1890ff" : "#ccc",
-                                fontSize: "24px"
-                              }}
-                            />
-                          )
-                        }
-                        title={
-                          <Text strong={activeLesson.id === item.id} style={{ color: activeLesson.id === item.id ? "#1890ff" : "inherit" }}>
-                            {item.title}
-                          </Text>
-                        }
-                        description={
-                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-                            <Text type="secondary" style={{ fontSize: "12px" }}>{item.duration}</Text>
-                            {activeLesson.id === item.id && <Tag color="blue">Đang học</Tag>}
+            {/* Right Column: Lesson List (Hidden in Focus Mode) */}
+            {!focusMode && (
+              <div className="lg:col-span-1 h-full">
+                <Card className="h-full flex flex-col border-none shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
+                  <CardHeader className="border-b bg-white/50 px-6 py-4">
+                    <CardTitle className="text-lg">Danh sách bài học</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1 overflow-hidden">
+                    <ScrollArea className="h-[calc(100vh-250px)]">
+                      <div className="divide-y divide-gray-100">
+                        {lessons.map((item) => (
+                          <div
+                            key={item.id}
+                            onClick={() => setActiveLesson(item)}
+                            className={cn(
+                              "p-4 cursor-pointer hover:bg-gray-50 transition-colors flex gap-3 items-start group relative",
+                              activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80"
+                            )}
+                          >
+                            {activeLesson.id === item.id && (
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
+                            )}
+                            <div className="mt-1">
+                              {item.isCompleted ? (
+                                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                              ) : (
+                                <PlayCircle className={cn(
+                                  "h-5 w-5",
+                                  activeLesson.id === item.id ? "text-blue-600" : "text-gray-300 group-hover:text-gray-400"
+                                )} />
+                              )}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <h4 className={cn(
+                                "text-sm font-medium leading-snug",
+                                activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
+                              )}>
+                                {item.title}
+                              </h4>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">{item.duration}</span>
+                                {activeLesson.id === item.id && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                    Đang học
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            </Col>
-          )}
-        </Row>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

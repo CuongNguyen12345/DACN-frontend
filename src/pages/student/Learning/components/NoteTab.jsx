@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { Input, Button, List, Typography, message } from "antd";
-import { SaveOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Save, Trash2, Clock } from "lucide-react";
 
-const { TextArea } = Input;
-const { Title, Text } = Typography;
+// Mock notification
+const toast = (message) => alert(message); // Replace with Sonner or Toast later
 
 const NoteTab = ({ lessonId }) => {
     const [note, setNote] = useState("");
@@ -20,7 +23,7 @@ const NoteTab = ({ lessonId }) => {
         };
         setSavedNotes([...savedNotes, newNote]);
         setNote("");
-        message.success("Đã lưu ghi chú!");
+        toast("Đã lưu ghi chú!");
     };
 
     const handleDelete = (id) => {
@@ -28,47 +31,51 @@ const NoteTab = ({ lessonId }) => {
     };
 
     return (
-        <div className="note-tab">
-            <div style={{ marginBottom: "16px" }}>
-                <TextArea
+        <div className="flex flex-col h-full space-y-4 p-4">
+            <div className="space-y-2">
+                <Textarea
                     rows={4}
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Ghi chú lại những ý quan trọng..."
+                    className="resize-none"
                 />
-                <Button
-                    type="primary"
-                    icon={<SaveOutlined />}
-                    style={{ marginTop: "8px" }}
-                    onClick={handleSave}
-                >
-                    Lưu Note
+                <Button onClick={handleSave} className="w-full sm:w-auto">
+                    <Save className="mr-2 h-4 w-4" /> Lưu Note
                 </Button>
             </div>
 
-            <Title level={5}>Ghi chú đã lưu</Title>
-            <List
-                dataSource={savedNotes}
-                renderItem={(item) => (
-                    <List.Item
-                        actions={[
-                            <Button
-                                type="text"
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={() => handleDelete(item.id)}
-                            />
-                        ]}
-                    >
-                        <List.Item.Meta
-                            title={<Tag color="blue">{item.time}</Tag>}
-                            description={<Text>{item.content}</Text>}
-                        />
-                    </List.Item>
-                )}
-            />
+            <div className="space-y-2">
+                <h4 className="font-semibold text-lg">Ghi chú đã lưu</h4>
+                <ScrollArea className="h-[300px] rounded-md border p-4">
+                    {savedNotes.length === 0 ? (
+                        <p className="text-center text-muted-foreground text-sm py-4">Chưa có ghi chú nào.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {savedNotes.map((item) => (
+                                <div key={item.id} className="flex items-start justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                    <div className="space-y-1">
+                                        <Badge variant="secondary" className="gap-1">
+                                            <Clock className="h-3 w-3" /> {item.time}
+                                        </Badge>
+                                        <p className="text-sm mt-1">{item.content}</p>
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(item.id)}
+                                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </ScrollArea>
+            </div>
         </div>
     );
 };
-import { Tag } from "antd"; // Missing import added manually
+
 export default NoteTab;

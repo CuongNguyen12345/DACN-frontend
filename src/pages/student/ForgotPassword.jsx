@@ -1,182 +1,217 @@
 import { useState } from "react";
-import { Card, Form, Input, Button, Typography, Row, Col, Avatar, message } from "antd";
-import { 
-  MailOutlined, 
-  SafetyOutlined, 
-  LockOutlined,
-  ArrowLeftOutlined,
-  SendOutlined
-} from "@ant-design/icons";
 import { Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Mail,
+  ShieldCheck,
+  ArrowLeft,
+  Send,
+  BookOpen,
+  CheckCircle2,
+  KeyRound
+} from "lucide-react";
 
-const { Title, Paragraph, Text } = Typography;
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 function ForgotPassword() {
-//   const navigate = useNavigate();
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
-  const [confirmHover, setConfirmHover] = useState(false);
+  const [step, setStep] = useState(1); // 1: Email, 2: OTP
 
-  // Xử lý gửi mã OTP
+  // Form Schema
+  const formSchema = z.object({
+    email: z.string().email("Email không hợp lệ"),
+    otp: z.string().length(6, "Mã OTP phải có 6 ký tự").optional(),
+  });
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      otp: "",
+    },
+  });
+
   const handleSendOtp = async () => {
+    const email = form.getValues("email");
+    if (!email || !z.string().email().safeParse(email).success) {
+      form.setError("email", { type: "manual", message: "Vui lòng nhập đúng email để nhận OTP" });
+      return;
+    }
+
+    setSendingOtp(true);
     try {
-      // Validate trường email trước khi gửi
-      await form.validateFields(['email']);
-      const email = form.getFieldValue('email');
-      
-      setSendingOtp(true);
       console.log("Sending OTP to:", email);
-      
-      // Giả lập gọi API
+      // Mock API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      message.success("Mã OTP đã được gửi đến email của bạn!");
+      // alert("Đã gửi mã OTP!"); // Removed alert for better UX
+      setStep(2); // Move to OTP step
     } catch (error) {
-      if (error.errorFields) {
-        message.error("Vui lòng nhập email hợp lệ trước khi gửi mã!");
-      } else {
-        console.error("Send OTP error:", error);
-      }
+      console.error(error);
     } finally {
       setSendingOtp(false);
     }
   };
 
-  // Xử lý xác nhận đổi mật khẩu
-  const onFinish = async (values) => {
+  const onSubmit = async (values) => {
     setLoading(true);
     try {
-      console.log("Confirm values:", values);
-      // TODO: Implement reset password logic
+      console.log("Reset values:", values);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      message.success("Xác thực thành công! Vui lòng đặt lại mật khẩu.");
-      // navigate("/reset-password"); // Điều hướng tiếp theo
+      alert("Xác thực thành công! Vui lòng đặt lại mật khẩu của bạn.");
     } catch (error) {
-      console.error("Confirm error:", error);
+      alert("Lỗi xác thực");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <Row justify="center" style={{ width: '100%', maxWidth: '1200px' }}>
-        <Col xs={24} sm={24} md={12} lg={10} xl={8}>
-          <Card
-            style={{
-              borderRadius: '16px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              border: 'none'
-            }}
-          >
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <Avatar 
-                size={80} 
-                style={{ 
-                  background: 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
-                  marginBottom: '16px'
-                }} 
-                icon={<LockOutlined style={{ fontSize: '40px', color: '#fff' }} />} 
-              />
-              <Title level={2} style={{ margin: '16px 0 8px 0', color: '#1890ff' }}>
-                Quên mật khẩu
-              </Title>
-              <Paragraph style={{ color: '#666', fontSize: '16px' }}>
-                Nhập email để nhận mã xác thực OTP
-              </Paragraph>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50/50">
+      <Card className="w-full max-w-md shadow-xl border-none rounded-2xl bg-white overflow-hidden">
+        <CardHeader className="text-center space-y-6 pt-8 pb-2">
+          {/* Logo Branding */}
+          <div className="flex flex-col items-center justify-center gap-3">
+            <div className="bg-gradient-to-br from-blue-500 to-sky-400 p-3 rounded-xl shadow-lg shadow-blue-200">
+              <BookOpen className="h-8 w-8 text-white" />
             </div>
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-blue-600 tracking-tight">Edu4All</h2>
+              <p className="text-gray-500 text-sm font-medium">Khôi phục quyền truy cập</p>
+            </div>
+          </div>
+        </CardHeader>
 
-            {/* Form */}
-            <Form
-              form={form}
-              name="forgot-password"
-              onFinish={onFinish}
-              layout="vertical"
-              size="large"
-            >
-              <Form.Item
+        <CardContent className="p-8 pt-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+              {/* Step 1: Email Input */}
+              <FormField
+                control={form.control}
                 name="email"
-                rules={[
-                  { required: true, message: "Vui lòng nhập email!" },
-                  { type: 'email', message: "Email không hợp lệ!" }
-                ]}
-              >
-                <Input
-                  prefix={<MailOutlined style={{ color: '#1890ff' }} />}
-                  placeholder="Nhập địa chỉ email"
-                  style={{ borderRadius: '8px' }}
-                />
-              </Form.Item>
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-700 font-medium">Email đăng ký</FormLabel>
+                    <FormControl>
+                      <div className="relative group">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input
+                          className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-600 h-11 transition-all"
+                          placeholder="name@example.com"
+                          disabled={step === 2}
+                          {...field}
+                        />
+                        {step === 2 && (
+                          <div className="absolute right-3 top-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <Form.Item
-                name="otp"
-                rules={[
-                  { required: true, message: "Vui lòng nhập mã OTP!" },
-                  { len: 6, message: "Mã OTP phải có 6 ký tự!" }
-                ]}
-              >
-                <Input
-                  prefix={<SafetyOutlined style={{ color: '#1890ff' }} />}
-                  placeholder="Nhập mã OTP"
-                  style={{ borderRadius: '8px' }}
-                  maxLength={6}
-                />
-              </Form.Item>
+              {/* Step 2: OTP Input (Only shows after sending OTP) */}
+              {step === 2 && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <FormField
+                    control={form.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-gray-700 font-medium">Mã xác thực OTP</FormLabel>
+                        <FormControl>
+                          <div className="relative group">
+                            <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                            <Input
+                              className="pl-9 bg-gray-50 border-gray-200 focus-visible:ring-blue-600 h-11 transition-all tracking-widest font-mono"
+                              placeholder="000000"
+                              maxLength={6}
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                        <p className="text-xs text-gray-500 text-center pt-2">
+                          Mã OTP đã được gửi đến email của bạn.
+                        </p>
+                      </FormItem>
+                    )}
+                  />
 
-              <Row gutter={16} style={{ marginBottom: '24px' }}>
-                <Col span={12}>
-                  <Button 
-                    block 
-                    icon={<SendOutlined />}
-                    onClick={handleSendOtp}
-                    loading={sendingOtp}
-                    style={{ borderRadius: '8px', height: '48px' }}
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-lg shadow-md shadow-blue-200 transition-all hover:shadow-lg hover:shadow-blue-300"
+                    disabled={loading}
                   >
-                    Gửi mã
+                    {loading ? (
+                      "Đang xác thực..."
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4" /> Bấm vào đây để xác thực
+                      </span>
+                    )}
                   </Button>
-                </Col>
-                <Col span={12}>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
-                    block
-                    loading={loading}
-                    onMouseEnter={() => setConfirmHover(true)}
-                    onMouseLeave={() => setConfirmHover(false)}
-                    style={{
-                      height: '48px',
-                      borderRadius: '8px',
-                      background: confirmHover 
-                        ? 'linear-gradient(135deg, #FFC107 0%, #1890ff 100%)' 
-                        : 'linear-gradient(135deg, #1890ff 0%, #FFC107 100%)',
-                      border: 'none',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s'
-                    }}
-                  >
-                    Xác nhận
-                  </Button>
-                </Col>
-              </Row>
 
-              <div style={{ textAlign: 'center' }}>
-                <Link to="/" style={{ color: '#666', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <ArrowLeftOutlined /> Quay lại đăng nhập
-                </Link>
-              </div>
-            </Form>
-          </Card>
-        </Col>
-      </Row>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setStep(1); setSendingOtp(false); }}
+                      className="text-xs text-blue-600 hover:underline font-medium"
+                    >
+                      Gửi lại mã?
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons for Step 1 */}
+              {step === 1 && (
+                <Button
+                  type="button"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 rounded-lg shadow-md shadow-blue-200 transition-all hover:shadow-lg hover:shadow-blue-300"
+                  onClick={handleSendOtp}
+                  disabled={sendingOtp}
+                >
+                  {sendingOtp ? (
+                    "Đang gửi mã..."
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Send className="h-4 w-4" /> Gửi mã xác thực
+                    </span>
+                  )}
+                </Button>
+              )}
+
+            </form>
+          </Form>
+
+          <div className="mt-8 pt-6 border-t border-gray-100/50 text-center">
+            <Link to="/" className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Quay lại trang chủ
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Background decoration */}
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-100/40 via-gray-50 to-gray-50 pointer-events-none"></div>
     </div>
   );
 }

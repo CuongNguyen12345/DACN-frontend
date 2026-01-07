@@ -1,33 +1,32 @@
-import DashboardBanner from "./components/DashboardBanner";
-import RecentActivity from "./components/RecentActivity";
-import TodayTasks from "./components/TodayTasks";
-import SubjectAccess from "./components/SubjectAccess";
-import { Row, Col } from "antd";
-import "./Home.scss";
+
+import HeroSection from "./components/HeroSection";
+import JourneySection from "./components/JourneySection";
+import BenefitsSection from "./components/BenefitsSection";
+import FeaturedSubjects from "./components/FeaturedSubjects";
 
 const Home = () => {
   return (
-    <div className="home-dashboard">
-      {/* Banner Section */}
-      <DashboardBanner />
+    <div className="home-dashboard pb-20 bg-white">
+      <div className="container mx-auto px-4 space-y-8">
+        {/* Banner Section */}
+        <section>
+          <HeroSection />
+        </section>
 
-      <div className="dashboard-content">
-        <Row gutter={[24, 24]}>
-          {/* Left Column (Main) */}
-          <Col xs={24} lg={16}>
-            {/* Recent Activity */}
-            <RecentActivity />
+        {/* Journey Section */}
+        <section>
+          <JourneySection />
+        </section>
 
-            <div style={{ marginTop: "32px" }}>
-              <SubjectAccess />
-            </div>
-          </Col>
+        {/* Benefits Section */}
+        <section>
+          <BenefitsSection />
+        </section>
 
-          {/* Right Column (Side) */}
-          <Col xs={24} lg={8}>
-            <TodayTasks />
-          </Col>
-        </Row>
+        {/* Featured Subjects */}
+        <section>
+          <FeaturedSubjects />
+        </section>
       </div>
     </div>
   );

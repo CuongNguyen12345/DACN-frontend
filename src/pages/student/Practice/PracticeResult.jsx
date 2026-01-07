@@ -1,8 +1,17 @@
-import { Typography, Card, Row, Col, Progress, Button, List, Tag } from "antd";
-import { CheckCircleOutlined, CloseCircleOutlined, ArrowRightOutlined, ReloadOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import {
+    CheckCircle2,
+    XCircle,
+    ArrowRight,
+    RotateCcw,
+    Trophy
+} from "lucide-react";
 
-const { Title, Text, Paragraph } = Typography;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const PracticeResult = () => {
     const navigate = useNavigate();
@@ -21,62 +30,110 @@ const PracticeResult = () => {
     };
 
     return (
-        <div style={{ padding: "40px 24px", background: "#f0f2f5", minHeight: "100vh" }}>
-            <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <div className="min-h-screen bg-gray-50/50 py-10 px-4 flex justify-center">
+            <div className="w-full max-w-3xl space-y-6">
 
                 {/* Score Card */}
-                <Card style={{ borderRadius: "16px", textAlign: "center", marginBottom: "24px" }}>
-                    <Title level={4} type="secondary">Kết quả làm bài</Title>
-                    <div style={{ margin: "24px 0" }}>
-                        <Progress
-                            type="circle"
-                            percent={(result.score / 10) * 100}
-                            format={() => <span style={{ fontSize: "32px", fontWeight: "bold", color: "#1890ff" }}>{result.score}</span>}
-                            width={180}
-                            strokeColor="#1890ff"
-                        />
-                    </div>
-                    <Title level={3} style={{ marginBottom: "8px" }}>Khá tốt! Bạn đã hoàn thành bài thi.</Title>
-                    <Paragraph>
-                        Bạn làm đúng <Text strong type="success">{result.correct}/{result.total}</Text> câu trong thời gian <Text strong>{result.timeTaken}</Text>.
-                    </Paragraph>
+                <Card className="overflow-hidden border-none shadow-lg">
+                    <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-8 text-white text-center">
+                        <div className="inline-flex p-3 rounded-full bg-white/20 mb-4 backdrop-blur-sm">
+                            <Trophy className="h-8 w-8 text-yellow-300" />
+                        </div>
+                        <h2 className="text-3xl font-bold mb-2">Khá tốt!</h2>
+                        <p className="text-blue-100 mb-8">Bạn đã hoàn thành bài thi xuất sắc.</p>
 
-                    <Row gutter={16} justify="center" style={{ marginTop: "24px" }}>
-                        <Col>
-                            <Button size="large" icon={<ReloadOutlined />} onClick={() => navigate("/practice")}>Làm bài khác</Button>
-                        </Col>
-                        <Col>
-                            <Button size="large" type="primary" icon={<ArrowRightOutlined />}>Xem chi tiết lời giải</Button>
-                        </Col>
-                    </Row>
+                        <div className="relative inline-flex items-center justify-center mb-6">
+                            {/* Simple circular progress visualization using SVG since Shadcn is linear only by default */}
+                            <svg className="h-40 w-40" viewBox="0 0 100 100">
+                                <circle
+                                    className="text-blue-800/40 stroke-current"
+                                    strokeWidth="8"
+                                    cx="50"
+                                    cy="50"
+                                    r="40"
+                                    fill="transparent"
+                                />
+                                <circle
+                                    className="text-white progress-ring__circle stroke-current"
+                                    strokeWidth="8"
+                                    strokeLinecap="round"
+                                    cx="50"
+                                    cy="50"
+                                    r="40"
+                                    fill="transparent"
+                                    strokeDasharray="251.2"
+                                    strokeDashoffset={251.2 - (251.2 * result.score) / 10}
+                                    transform="rotate(-90 50 50)"
+                                />
+                            </svg>
+                            <div className="absolute flex flex-col items-center text-white">
+                                <span className="text-5xl font-bold">{result.score}</span>
+                                <span className="text-sm opacity-80">Điểm</span>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-center gap-8 text-blue-100">
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-white">{result.correct}/{result.total}</p>
+                                <p className="text-xs">Câu đúng</p>
+                            </div>
+                            <div className="w-px bg-blue-400/30"></div>
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-white">{result.timeTaken}</p>
+                                <p className="text-xs">Thời gian</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <CardContent className="p-8">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                onClick={() => navigate("/practice")}
+                                className="border-gray-300"
+                            >
+                                <RotateCcw className="mr-2 h-4 w-4" /> Làm bài khác
+                            </Button>
+                            <Button
+                                size="lg"
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Xem chi tiết lời giải <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardContent>
                 </Card>
 
                 {/* Analytics Card */}
-                <Card title="Phân tích kết quả" style={{ borderRadius: "16px" }}>
-                    <List
-                        dataSource={result.analysis}
-                        renderItem={item => (
-                            <List.Item>
-                                <div style={{ width: "100%" }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                                        <Text strong>{item.topic}</Text>
-                                        <Text>
-                                            {item.correct}/{item.total} câu ({item.percent}%)
-                                        </Text>
+                <Card className="shadow-md">
+                    <CardHeader>
+                        <CardTitle>Phân tích kết quả</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {result.analysis.map((item, index) => (
+                            <div key={index}>
+                                <div className="flex justify-between items-end mb-2">
+                                    <div>
+                                        <p className="font-medium text-gray-900">{item.topic}</p>
                                     </div>
-                                    <Progress
-                                        percent={item.percent}
-                                        status={item.percent >= 80 ? "success" : item.percent >= 50 ? "active" : "exception"}
-                                        strokeColor={item.percent >= 80 ? "#52c41a" : item.percent >= 50 ? "#1890ff" : "#ff4d4f"}
-                                    />
-                                    <div style={{ marginTop: "8px" }}>
-                                        {item.percent < 50 && <Tag color="error">Cần ôn tập thêm</Tag>}
-                                        {item.percent >= 90 && <Tag color="success">Nắm chắc kiến thức</Tag>}
+                                    <div className="text-right">
+                                        <span className="text-sm font-medium">
+                                            {item.correct}/{item.total} <span className="text-muted-foreground">({item.percent}%)</span>
+                                        </span>
                                     </div>
                                 </div>
-                            </List.Item>
-                        )}
-                    />
+                                <Progress value={item.percent} className="h-2.5" indicatorColor={
+                                    item.percent >= 80 ? "bg-green-500" : item.percent >= 50 ? "bg-blue-500" : "bg-red-500"
+                                } />
+                                <div className="mt-2 text-right">
+                                    {item.percent < 50 && <Badge variant="destructive" className="text-[10px] px-1.5 h-5">Cần ôn tập thêm</Badge>}
+                                    {item.percent >= 90 && <Badge variant="default" className="text-[10px] px-1.5 h-5 bg-green-600 hover:bg-green-700">Nắm chắc kiến thức</Badge>}
+                                </div>
+                                {index < result.analysis.length - 1 && <Separator className="mt-4" />}
+                            </div>
+                        ))}
+                    </CardContent>
                 </Card>
             </div>
         </div>
