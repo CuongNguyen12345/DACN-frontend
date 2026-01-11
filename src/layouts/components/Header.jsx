@@ -18,7 +18,7 @@ export const Header = ({ isLoggedIn, navigate, handleLogout, openAuthModal, user
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => navigate('/')}
                 >
-                    <div className="bg-blue-600 rounded-lg p-1.5">
+                    <div className="bg-[#0F4C81] rounded-lg p-1.5">
                         <BookOpen className="h-5 w-5 text-white" />
                     </div>
                     <span className="font-bold text-lg text-gray-900">Edu4All</span>
@@ -30,7 +30,7 @@ export const Header = ({ isLoggedIn, navigate, handleLogout, openAuthModal, user
                         <button
                             key={item.key}
                             onClick={() => navigate(item.path)}
-                            className="text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors"
+                            className="cursor-pointer text-sm font-semibold text-gray-500 hover:text-[#0F4C81] transition-colors"
                         >
                             {item.label}
                         </button>
@@ -40,17 +40,10 @@ export const Header = ({ isLoggedIn, navigate, handleLogout, openAuthModal, user
                 {/* Right Section: Actions */}
                 <div className="flex items-center gap-3">
                     <Button
-                        variant="ghost"
-                        className="text-gray-600 font-semibold hover:bg-gray-50 rounded-full px-6"
-                        onClick={() => openAuthModal("login")}
+                        className="bg-[#0F4C81] hover:bg-[#0d3f6d] text-white font-bold rounded-full px-6"
+                        onClick={() => navigate('/login')}
                     >
                         Đăng nhập
-                    </Button>
-                    <Button
-                        className="bg-blue-600 hover:bg-blue-700 text-white! font-bold rounded-full px-6 shadow-md shadow-blue-200"
-                        onClick={() => openAuthModal("register")}
-                    >
-                        Đăng ký
                     </Button>
                 </div>
             </div>

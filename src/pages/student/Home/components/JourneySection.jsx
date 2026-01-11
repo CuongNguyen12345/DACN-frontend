@@ -1,43 +1,65 @@
-
 import { Button } from "@/components/ui/button";
+import { BookOpen, Atom, Brain, ArrowRight } from "lucide-react";
 
 const JourneySection = () => {
     return (
-        <div className="py-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-center text-blue-900 mb-10">
-                Bắt đầu hành trình của bạn
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Card 1: Knowledge System */}
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-lg transition-shadow text-center flex flex-col items-center">
-                    <img
-                        src="https://cdni.iconscout.com/illustration/premium/thumb/student-studying-at-desk-2974919-2477350.png"
-                        alt="Hệ thống kiến thức"
-                        className="w-48 h-48 object-contain mb-6"
-                    />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Hệ thống kiến thức</h3>
-                    <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-                        Truy cập vào kho bài giảng, lý thuyết và ví dụ chi tiết cho từng môn học.
+        <div className="py-16">
+            <div className="text-center mb-16 space-y-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-[#0F4C81]">
+                    Chọn Lộ Trình Của Bạn
+                </h2>
+                <p className="text-gray-600">
+                    Dù mục tiêu là lấy gốc hay 9+ Đại học, Edu4All đều có giải pháp.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Card 1: Lấy Gốc */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm hover:translate-y-[-5px] border-t-transparent border-t-4 hover:border-t-[#FF6B50] hover:border-t-4 transition-all border border-gray-100 flex flex-col items-start text-left group">
+                    <div className="w-12 h-12 mb-6 text-[#0F4C81]">
+                        <BookOpen className="w-full h-full" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Lấy Gốc Kiến Thức</h3>
+                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                        Hệ thống lại toàn bộ kiến thức nền tảng SGK. Phù hợp cho các bạn mất gốc Toán, Lý, Hóa, Anh.
                     </p>
-                    <Button className="bg-blue-100 hover:bg-blue-200 text-blue-600 font-bold px-8 rounded-full border border-blue-200">
-                        Bắt đầu học
-                    </Button>
+                    <div className="mt-auto">
+                        <Button variant="link" className="text-[#FF6B50] font-bold p-0 hover:no-underline group-hover:gap-2 transition-all">
+                            Xem lộ trình <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Card 2: Practice Exams */}
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-lg transition-shadow text-center flex flex-col items-center">
-                    <img
-                        src="https://cdni.iconscout.com/illustration/premium/thumb/girl-reading-book-2974922-2477353.png"
-                        alt="Luyện đề thi"
-                        className="w-48 h-48 object-contain mb-6"
-                    />
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Luyện đề thi</h3>
-                    <p className="text-gray-500 text-sm mb-6 max-w-xs mx-auto">
-                        Thử sức với hàng ngàn câu hỏi và đề thi thử được biên soạn kỹ lưỡng.
+                {/* Card 2: Luyện Thi */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm hover:translate-y-[-5px] border-t-transparent border-t-4 hover:border-t-[#FF6B50] hover:border-t-4 transition-all border border-gray-100 flex flex-col items-start text-left group">
+                    <div className="w-12 h-12 mb-6 text-[#0F4C81]">
+                        <Atom className="w-full h-full" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Luyện Thi THPT QG</h3>
+                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                        Chiến thuật giải đề tốc độ. Tổng hợp các dạng bài hay xuất hiện trong đề thi 5 năm gần nhất.
                     </p>
-                    <Button className="bg-orange-100 hover:bg-orange-200 text-orange-600 font-bold px-8 rounded-full border border-orange-200">
-                        Luyện để ngay
-                    </Button>
+                    <div className="mt-auto">
+                        <Button variant="link" className="text-[#FF6B50] font-bold p-0 hover:no-underline group-hover:gap-2 transition-all">
+                            Luyện đề ngay <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Card 3: Tư Duy */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm hover:translate-y-[-5px] border-t-transparent border-t-4 hover:border-t-[#FF6B50] hover:border-t-4 transition-all border border-gray-100 flex flex-col items-start text-left group">
+                    <div className="w-12 h-12 mb-6 text-[#0F4C81]">
+                        <Brain className="w-full h-full" strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Tư Duy & Kỹ Năng</h3>
+                    <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                        Phương pháp ghi nhớ Mindmap, quản lý thời gian Pomodoro và định hướng nghề nghiệp.
+                    </p>
+                    <div className="mt-auto">
+                        <Button variant="link" className="text-[#FF6B50] font-bold p-0 hover:no-underline group-hover:gap-2 transition-all">
+                            Khám phá <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
