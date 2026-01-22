@@ -1,20 +1,106 @@
 @import "tailwindcss";
+
+/* Kích hoạt plugin */
 @plugin "tailwindcss-animate";
 
+/* Cấu hình variant dark mode */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* --- PHẦN 1: CẤU HÌNH THEME (MAPPING) --- */
-@theme {
-  /* 1.1. Font chữ & Tiện ích riêng của bạn */
-  --font-sans: 'Inter', sans-serif;
-  --font-montserrat: 'Montserrat', sans-serif;
-  
-  --shadow-custom: 0 4px 20px rgba(0,0,0,0.08);
-  --radius-custom: 12px;
+/* --- PHẦN 1: KHAI BÁO BIẾN MÀU (Đã thêm hsl() để trình duyệt hiểu) --- */
+:root {
+  /* ==============================================
+     A. MÀU THƯƠNG HIỆU EDU4ALL (Đã fix lỗi hiển thị)
+     ============================================== */
 
-  /* 1.2. Màu sắc (Map biến CSS vào Tailwind class) */
+  /* PRIMARY: Màu Xanh Đậm (#0F4C75) */
+  --primary: hsl(204 76% 26%); 
+  --primary-foreground: hsl(0 0% 100%);
+
+  /* SECONDARY: Màu Xanh Nhạt (#3282B8) */
+  --secondary: hsl(204 57% 46%);
+  --secondary-foreground: hsl(0 0% 100%);
+
+  /* ACCENT: Màu Cam (#FF7E67) */
+  --accent: hsl(9 100% 70%);
+  --accent-foreground: hsl(0 0% 100%);
+
+  /* ==============================================
+     B. MÀU HỆ THỐNG (SHADCN)
+     ============================================== */
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(222.2 84% 4.9%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222.2 84% 4.9%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222.2 84% 4.9%);
+
+  --muted: hsl(210 40% 96.1%);
+  --muted-foreground: hsl(215.4 16.3% 46.9%);
+
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(210 40% 98%);
+
+  --border: hsl(214.3 31.8% 91.4%);
+  --input: hsl(214.3 31.8% 91.4%);
+  
+  --ring: hsl(204 76% 26%); /* Ring theo màu Primary */
+  
+  --radius: 0.75rem;
+
+  /* ==============================================
+     C. BIẾN CUSTOM (Để code cũ vẫn chạy tốt)
+     ============================================== */
+  --custom-accent: #FF7E67; 
+  --custom-primary: #0F4C75;
+}
+
+/* --- CHẾ ĐỘ TỐI (DARK MODE) --- */
+.dark {
+  --background: hsl(222.2 84% 4.9%);
+  --foreground: hsl(210 40% 98%);
+
+  --card: hsl(222.2 84% 4.9%);
+  --card-foreground: hsl(210 40% 98%);
+
+  --popover: hsl(222.2 84% 4.9%);
+  --popover-foreground: hsl(210 40% 98%);
+
+  /* Primary sáng hơn cho dark mode */
+  --primary: hsl(204 76% 50%);
+  --primary-foreground: hsl(222.2 47.4% 11.2%);
+
+  /* Secondary sáng hơn */
+  --secondary: hsl(204 57% 60%);
+  --secondary-foreground: hsl(210 40% 98%);
+
+  /* Accent cam sáng hơn (#FF9F89) */
+  --accent: hsl(9 100% 77%);
+  --accent-foreground: hsl(222.2 47.4% 11.2%);
+
+  --muted: hsl(217.2 32.6% 17.5%);
+  --muted-foreground: hsl(215 20.2% 65.1%);
+
+  --destructive: hsl(0 62.8% 30.6%);
+  --destructive-foreground: hsl(210 40% 98%);
+
+  --border: hsl(217.2 32.6% 17.5%);
+  --input: hsl(217.2 32.6% 17.5%);
+  --ring: hsl(204 76% 50%);
+  
+  /* Custom Dark */
+  --custom-accent: #FF9F89; 
+}
+
+/* --- PHẦN 2: MAPPING VÀO TAILWIND --- */
+@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -34,119 +120,27 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Custom Colors Mapping */
+  --color-custom-accent: var(--custom-accent);
+  --color-custom-primary: var(--custom-primary);
+  --color-text-light: #666666;
+  --color-text-dark: #1B262C;
+
+  /* Fonts */
+  --font-sans: "Inter", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+
+  /* Utils */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-custom: 12px;
+  --shadow-custom: 0 4px 20px rgba(0,0,0,0.08);
 }
 
-/* --- PHẦN 2: ĐỊNH NGHĨA GIÁ TRỊ MÀU (GIÁ TRỊ CỦA BẠN) --- */
+/* --- PHẦN 3: BASE STYLES --- */
 @layer base {
-  :root {
-    /* MÌNH ĐÃ THAY THẾ CÁC MÀU MẶC ĐỊNH BẰNG MÀU CỦA EDU4ALL 
-       (Dùng hệ màu của bạn: #0F4C75, #3282B8, #FF7E67...)
-    */
-
-    /* Nền: Màu xám nhạt #F8F9FA của bạn */
-    --background: oklch(0.98 0 0); /* Tương đương #F8F9FA */
-    
-    /* Chữ: Màu đen đậm #1B262C của bạn */
-    --foreground: oklch(0.2 0.03 260); /* Tương đương #1B262C */
-
-    /* Card: Màu trắng */
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.2 0.03 260);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.2 0.03 260);
-
-    /* PRIMARY: Xanh đậm Edu4All (#0F4C75) */
-    --primary: oklch(0.42 0.1 245); 
-    --primary-foreground: oklch(1 0 0); /* Chữ trên nền xanh là màu trắng */
-
-    /* SECONDARY: Xanh sáng Edu4All (#3282B8) */
-    --secondary: oklch(0.65 0.13 245);
-    --secondary-foreground: oklch(1 0 0);
-
-    /* ACCENT: Cam Edu4All (#FF7E67) */
-    --accent: oklch(0.7 0.18 35); 
-    --accent-foreground: oklch(1 0 0);
-
-    /* Các màu tiện ích khác */
-    --muted: oklch(0.96 0 0);
-    --muted-foreground: oklch(0.55 0 0); /* #666666 */
-    
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(1 0 0);
-
-    --border: oklch(0.92 0 0);
-    --input: oklch(0.92 0 0);
-    --ring: oklch(0.42 0.1 245); /* Ring dùng màu Primary */
-    
-    --radius: 0.75rem; /* 12px của bạn */
-
-    /* Sidebar (Giống màu background chính) */
-    --sidebar: oklch(1 0 0);
-    --sidebar-foreground: oklch(0.2 0.03 260);
-    --sidebar-primary: oklch(0.42 0.1 245);
-    --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.96 0 0);
-    --sidebar-accent-foreground: oklch(0.2 0.03 260);
-    --sidebar-border: oklch(0.92 0 0);
-    --sidebar-ring: oklch(0.42 0.1 245);
-  }
-
-  /* Chế độ tối (Dark Mode) - Mình tự phối màu tối dựa trên màu gốc của bạn */
-  .dark {
-    --background: oklch(0.15 0.03 260); /* Nền tối xanh đen */
-    --foreground: oklch(0.98 0 0);      /* Chữ trắng */
-    --card: oklch(0.2 0.03 260);
-    --card-foreground: oklch(0.98 0 0);
-    --popover: oklch(0.2 0.03 260);
-    --popover-foreground: oklch(0.98 0 0);
-    
-    --primary: oklch(0.55 0.12 245); /* Xanh sáng hơn chút để nổi trên nền tối */
-    --primary-foreground: oklch(1 0 0);
-    
-    --secondary: oklch(0.3 0.05 245);
-    --secondary-foreground: oklch(0.98 0 0);
-    
-    --accent: oklch(0.7 0.18 35); /* Giữ nguyên màu cam */
-    --accent-foreground: oklch(1 0 0);
-    
-    --muted: oklch(0.25 0.03 260);
-    --muted-foreground: oklch(0.7 0 0);
-    
-    --destructive: oklch(0.6 0.2 25);
-    --destructive-foreground: oklch(1 0 0);
-    
-    --border: oklch(0.3 0.03 260);
-    --input: oklch(0.3 0.03 260);
-    --ring: oklch(0.55 0.12 245);
-    
-    --sidebar: oklch(0.18 0.03 260);
-    --sidebar-foreground: oklch(0.98 0 0);
-    --sidebar-primary: oklch(0.55 0.12 245);
-    --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.25 0.03 260);
-    --sidebar-accent-foreground: oklch(0.98 0 0);
-    --sidebar-border: oklch(0.3 0.03 260);
-    --sidebar-ring: oklch(0.55 0.12 245);
-  }
-
   * {
     @apply border-border outline-ring/50;
   }
