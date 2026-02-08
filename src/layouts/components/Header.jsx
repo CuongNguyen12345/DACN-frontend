@@ -4,7 +4,7 @@ import { BookOpen } from "lucide-react";
 
 export const Header = ({ isLoggedIn, navigate, handleLogout, openAuthModal, userAvatar }) => {
     const navItems = [
-        { key: "home", label: "Học bài", path: "/courses" },
+        { key: "home", label: "Học bài", path: "/course" },
         { key: "practice", label: "Luyện đề", path: "/practice" },
         { key: "blog", label: "Blog", path: "/blog" },
         { key: "about", label: "Về chúng tôi", path: "/about" },

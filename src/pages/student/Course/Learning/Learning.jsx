@@ -194,6 +194,18 @@ const Learning = () => {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
+
+                {focusMode && (
+                  <div className="absolute top-4 right-4 z-50">
+                    <Button 
+                      variant="destructive" // Màu đỏ cho dễ nhìn
+                      onClick={() => setFocusMode(false)}
+                      className="shadow-lg"
+                    >
+                      <Minimize2 className="mr-2 h-4 w-4" /> Thoát Focus
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Interaction Area (Tabs) - Visible below video in Regular Mode, or distinct area in Focus Mode if we implement split view (simplified here to always show tabs below in regular) */}

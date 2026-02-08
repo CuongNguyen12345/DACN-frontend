@@ -1,4 +1,3 @@
-
 import HeroSection from "./components/HeroSection";
 import JourneySection from "./components/JourneySection";
 import BenefitsSection from "./components/BenefitsSection";
