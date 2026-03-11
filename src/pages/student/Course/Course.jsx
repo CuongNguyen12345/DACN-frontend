@@ -120,19 +120,21 @@ const CourseLibrary = () => {
                 {/* Filter Section - Giữ nguyên cấu trúc, chỉ sửa placeholder */}
                 <Card className="mb-8 shadow-sm">
                     <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                            <div className="lg:col-span-12 xl:col-span-3">
+                        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-4">
+                            {/* 1. Thanh tìm kiếm: Cho chiếm 12 cột ở tablet, 5 cột ở PC (dài nhất) */}
+                            <div className="md:col-span-12 lg:col-span-5">
                                 <div className="relative">
                                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                     <Input
-                                        placeholder="Tìm kiếm bài giảng, giáo viên..." // Update placeholder
-                                        className="pl-8"
+                                        placeholder="Tìm kiếm bài giảng, giáo viên..."
+                                        className="pl-8 w-full"
                                     />
                                 </div>
                             </div>
-                            <div className="lg:col-span-6 xl:col-span-2">
+                            {/* 2. Môn học: Chiếm 6 cột tablet, 3 cột PC */}
+                            <div className="md:col-span-6 lg:col-span-3">
                                 <Select>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Môn học" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -143,9 +145,10 @@ const CourseLibrary = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="lg:col-span-6 xl:col-span-2">
+                            {/* 3. Lớp: Chiếm 6 cột tablet, 2 cột PC */}
+                            <div className="md:col-span-6 lg:col-span-2">
                                 <Select>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Lớp" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -155,34 +158,10 @@ const CourseLibrary = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            {/* Đổi "Loại đề" thành "Chuyên đề" hoặc bỏ đi nếu không cần */}
-                            <div className="lg:col-span-6 xl:col-span-2">
-                                <Select>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sắp xếp" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="newest">Mới nhất</SelectItem>
-                                        <SelectItem value="popular">Phổ biến nhất</SelectItem>
-                                        <SelectItem value="rating">Đánh giá cao</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="lg:col-span-6 xl:col-span-2">
-                                <Select>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Độ khó" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="basic">Cơ bản</SelectItem>
-                                        <SelectItem value="advanced">Vận dụng</SelectItem>
-                                        <SelectItem value="master">Vận dụng cao</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="lg:col-span-12 xl:col-span-1">
+                            {/* 4. Nút lọc: Chiếm 12 cột tablet, 2 cột PC */}
+                            <div className="md:col-span-12 lg:col-span-2">
                                 <Button className="w-full" type="submit">
-                                    <Filter className="mr-2 h-4 w-4 md:hidden xl:block" /> Lọc
+                                    <Filter className="mr-2 h-4 w-4" /> Lọc
                                 </Button>
                             </div>
                         </div>
