@@ -74,9 +74,9 @@ const PracticeRoom = () => {
     };
 
     const handleFinish = () => {
-        // Auto submit logic
         alert("Hết giờ! Hệ thống đang nộp bài...");
-        navigate("/practice/result/1");
+        // Đính kèm answers vào biến state để gửi đi
+        navigate("/practice/result/1", { state: { userAnswers: answers } });
     };
 
     const scrollToQuestion = (id) => {
@@ -147,7 +147,9 @@ const PracticeRoom = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Làm tiếp</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => navigate("/practice/result/1")}>Nộp bài</AlertDialogAction>
+                                <AlertDialogAction onClick={() => navigate("/practice/result/1", { state: { userAnswers: answers } })}>
+                                    Nộp bài
+                                </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
