@@ -12,6 +12,7 @@ import Profile from "../pages/student/Profile/Profile";
 import Course from "../pages/student/Course/Course";
 import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
+import Settings from "@/layouts/components/settings";
 
 function AppRoutes() {
   return (
@@ -29,6 +30,7 @@ function AppRoutes() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/about" element={<About />} />
+        <Route path="/settings" element={<Settings />} />
       </Route>
     </Routes>
   );

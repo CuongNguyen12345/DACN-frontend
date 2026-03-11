@@ -1,13 +1,32 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useState } from "react";
 import loginImage from "../../assets/Kids_Studying_from_Home-pana.png";
+
 const Login = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+
+        // Test đăng nhập giả
+        if (!email || !password) {
+            alert("Vui lòng nhập đầy đủ email và mật khẩu");
+            return;
+        }
+
+        login();
+        navigate("/");
+    };
 
     return (
         <div className="min-h-screen w-full flex bg-white">
@@ -15,7 +34,11 @@ const Login = () => {
             <div className="hidden lg:flex w-1/2 bg-white items-center justify-center p-12 relative">
                 <div className="z-10 max-w-lg text-center space-y-6">
                     <div className="absolute top-8 left-8">
-                        <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-transparent hover:text-[#0F4C81] gap-2 pl-0 text-gray-500 font-medium cursor-pointer">
+                        <Button
+                            variant="ghost"
+                            onClick={() => navigate('/')}
+                            className="hover:bg-transparent hover:text-[#0F4C81] gap-2 pl-0 text-gray-500 font-medium cursor-pointer"
+                        >
                             <ArrowLeft className="w-4 h-4" /> Trang chủ
                         </Button>
                     </div>
@@ -29,9 +52,12 @@ const Login = () => {
 
             {/* Right: Form */}
             <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12 relative">
-                {/* Mobile Back Button */}
                 <div className="absolute top-8 left-8 lg:hidden">
-                    <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-transparent hover:text-[#0F4C81] gap-2 pl-0 text-gray-500 font-medium cursor-pointer">
+                    <Button
+                        variant="ghost"
+                        onClick={() => navigate('/')}
+                        className="hover:bg-transparent hover:text-[#0F4C81] gap-2 pl-0 text-gray-500 font-medium cursor-pointer"
+                    >
                         <ArrowLeft className="w-4 h-4" /> Trang chủ
                     </Button>
                 </div>
@@ -42,22 +68,31 @@ const Login = () => {
                         <p className="text-gray-500">Nhập thông tin để vào học ngay</p>
                     </div>
 
-                    <form className="space-y-6">
+                    <form className="space-y-6" onSubmit={handleLogin}>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="text-xs font-bold text-gray-700">Email</Label>
+                                <Label htmlFor="email" className="text-xs font-bold text-gray-700">
+                                    Email
+                                </Label>
                                 <Input
                                     id="email"
                                     placeholder="vidu@gmail.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
+
                             <div className="space-y-2">
-                                <Label htmlFor="password" className="text-xs font-bold text-gray-700">Mật khẩu</Label>
+                                <Label htmlFor="password" className="text-xs font-bold text-gray-700">
+                                    Mật khẩu
+                                </Label>
                                 <Input
                                     id="password"
                                     type="password"
                                     placeholder="Nhập mật khẩu"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
@@ -65,15 +100,24 @@ const Login = () => {
 
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
-                                <Checkbox id="remember" className="border-gray-300 text-[#0F4C81] data-[state=checked]:bg-[#0F4C81] data-[state=checked]:border-[#0F4C81]" />
-                                <Label htmlFor="remember" className="text-sm font-medium text-gray-600 cursor-pointer">Ghi nhớ tôi</Label>
+                                <Checkbox
+                                    id="remember"
+                                    className="border-gray-300 text-[#0F4C81] data-[state=checked]:bg-[#0F4C81] data-[state=checked]:border-[#0F4C81]"
+                                />
+                                <Label htmlFor="remember" className="text-sm font-medium text-gray-600 cursor-pointer">
+                                    Ghi nhớ tôi
+                                </Label>
                             </div>
+
                             <Link to="/forgot-password" className="text-sm font-bold text-[#0F4C81] hover:underline">
                                 Quên mật khẩu?
                             </Link>
                         </div>
 
-                        <Button className="w-full h-12 bg-[#0F4C81] hover:bg-[#0C3B66] text-white font-bold text-base rounded-lg shadow-lg shadow-blue-900/10">
+                        <Button
+                            type="submit"
+                            className="w-full h-12 bg-[#0F4C81] hover:bg-[#0C3B66] text-white font-bold text-base rounded-lg shadow-lg shadow-blue-900/10"
+                        >
                             Đăng nhập
                         </Button>
                     </form>
@@ -87,7 +131,10 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <Button variant="outline" className="w-full h-12 font-medium text-gray-700 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors duration-300 rounded-lg gap-2">
+                    <Button
+                        variant="outline"
+                        className="w-full h-12 font-medium text-gray-700 border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors duration-300 rounded-lg gap-2"
+                    >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
