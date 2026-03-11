@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LogOut, User, Key, Palette, Sun, Moon } from "lucide-react"; 
 import { useAuth } from "../../context/AuthContext";
@@ -27,6 +28,10 @@ import { Label } from "@/components/ui/label";
 
 export const Header = ({ navigate, userAvatar }) => {
     const { isLoggedIn, logout } = useAuth();
+
+    // Lấy thông tin URL hiện tại
+    const location = useLocation();
+    const currentPath = location.pathname;
     
     // State để điều khiển việc Đóng/Mở Popup Đổi mật khẩu
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -64,15 +69,25 @@ export const Header = ({ navigate, userAvatar }) => {
 
                 {/* Navigation */}
                 <nav className="hidden md:flex items-center gap-10">
-                    {navItems.map((item) => (
-                        <button
-                            key={item.key}
-                            onClick={() => navigate(item.path)}
-                            className="cursor-pointer text-base font-bold text-gray-500 hover:text-[#3B82F6] transition-colors"
-                        >
-                            {item.label}
-                        </button>
-                    ))}
+                    {navItems.map((item) => {
+                        // Kiểm tra xem đường dẫn hiện tại có chứa path của item này không
+                        // Dùng startsWith để nếu vào trang con (VD: /course/123) thì menu "Học bài" vẫn sáng
+                        const isActive = currentPath.startsWith(item.path);
+                        
+                        return (
+                            <button
+                                key={item.key}
+                                onClick={() => navigate(item.path)}
+                                className={`cursor-pointer text-base font-bold transition-colors ${
+                                    isActive 
+                                    ? "text-[#3B82F6] border-b-2 border-[#3B82F6] pb-1" // Màu xanh + gạch chân cho menu đang active
+                                    : "text-gray-500 hover:text-[#3B82F6]" // Menu bình thường
+                                }`}
+                            >
+                                {item.label}
+                            </button>
+                        );
+                    })}
                 </nav>
 
                 {/* Right Section */}
@@ -118,7 +133,7 @@ export const Header = ({ navigate, userAvatar }) => {
                                     </DropdownMenuItem>
                                     
                                     {/* Nút Đổi Theme */}
-                                    <DropdownMenuSub>
+                                    {/* <DropdownMenuSub>
                                         <DropdownMenuSubTrigger className="cursor-pointer">
                                             <Palette className="mr-2 h-4 w-4" />
                                             <span>Giao diện</span>
@@ -135,13 +150,16 @@ export const Header = ({ navigate, userAvatar }) => {
                                                 </DropdownMenuItem>
                                             </DropdownMenuSubContent>
                                         </DropdownMenuPortal>
-                                    </DropdownMenuSub>
+                                    </DropdownMenuSub> */}
                                     
                                     <DropdownMenuSeparator />
                                     
                                     <DropdownMenuItem 
                                         className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50" 
-                                        onClick={logout}
+                                        onClick={() => {
+                                            logout();
+                                            navigate("/");
+                                        }}
                                     >
                                         <LogOut className="mr-2 h-4 w-4" />
                                         <span>Đăng xuất</span>

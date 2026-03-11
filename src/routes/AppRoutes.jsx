@@ -12,7 +12,7 @@ import Profile from "../pages/student/Profile/Profile";
 import Course from "../pages/student/Course/Course";
 import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
-import Settings from "@/layouts/components/settings";
+import ProtectedRoute from "@/routes/components/ProtectedRoute";
 
 function AppRoutes() {
   return (
@@ -20,17 +20,20 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
       <Route path="/" element={<StudentLayout />}>
         <Route index element={<Home />} />
-        <Route path="/course" element={<Course />} />
-        <Route path="/course/learning/:subjectId" element={<Learning />} />
-        <Route path="/practice" element={<PracticeList />} />
-        <Route path="/practice/room/:examId" element={<PracticeRoom />} />
-        <Route path="/practice/result/:examId" element={<PracticeResult />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="course" element={<Course />} />
+        <Route path="practice" element={<PracticeList />} />
+        <Route path="blog" element={<Blog />} />
+        <Route path="about" element={<About />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="course/learning/:subjectId" element={<Learning />} />
+          <Route path="practice/room/:examId" element={<PracticeRoom />} />
+          <Route path="practice/result/:examId" element={<PracticeResult />} />
+          <Route path="profile" element={<Profile />} />
+        </Route>
       </Route>
     </Routes>
   );
