@@ -5,45 +5,50 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import dayjs from "dayjs";
 
-const QnATab = () => {
-    const [comments, setComments] = useState([
-        {
-            id: 1,
-            author: "Nguyễn Văn A",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-            content: "Thầy ơi cho em hỏi đoạn 12:30 tại sao lại ra kết quả đó ạ?",
-            datetime: dayjs().subtract(1, 'hour').format('YYYY-MM-DD HH:mm'),
-            replies: [
-                {
-                    id: 11,
-                    author: "Giáo viên",
-                    avatar: null, // Default
-                    content: "Chào em, ở đoạn đó thầy đã áp dụng công thức (a+b)^2 nhé.",
-                    datetime: dayjs().subtract(30, 'minute').format('YYYY-MM-DD HH:mm'),
-                }
-            ]
-        }
-    ]);
+const initialComments = [
+    {
+        id: 1,
+        author: "Nguyễn Văn A",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
+        content: "Thầy ơi cho em hỏi đoạn 12:30 tại sao lại ra kết quả đó ạ?",
+        datetime: dayjs().subtract(1, "hour").format("YYYY-MM-DD HH:mm"),
+        replies: [
+            {
+                id: 11,
+                author: "Giáo viên",
+                avatar: null,
+                content: "Chào em, ở đoạn đó thầy đã áp dụng công thức (a+b)^2 nhé.",
+                datetime: dayjs().subtract(30, "minute").format("YYYY-MM-DD HH:mm"),
+            },
+        ],
+    },
+];
+
+const QnATab = ({ lessonId }) => {
+    const [comments, setComments] = useState(initialComments);
     const [submitting, setSubmitting] = useState(false);
     const [value, setValue] = useState("");
 
     const handleSubmit = () => {
-        if (!value) return;
+        const trimmedValue = value.trim();
+        if (!trimmedValue) return;
+
         setSubmitting(true);
+
         setTimeout(() => {
-            setSubmitting(false);
+            const newComment = {
+                id: Date.now(),
+                author: "Bạn (Học sinh)",
+                avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
+                content: trimmedValue,
+                datetime: dayjs().format("YYYY-MM-DD HH:mm"),
+                lessonId,
+                replies: [],
+            };
+
+            setComments((prev) => [...prev, newComment]);
             setValue("");
-            setComments([
-                ...comments,
-                {
-                    id: Date.now(),
-                    author: "Bạn (Học sinh)",
-                    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=You",
-                    content: value,
-                    datetime: dayjs().format('YYYY-MM-DD HH:mm'),
-                    replies: []
-                },
-            ]);
+            setSubmitting(false);
         }, 500);
     };
 
@@ -57,7 +62,7 @@ const QnATab = () => {
                     placeholder="Đặt câu hỏi của bạn tại đây..."
                     className="resize-none"
                 />
-                <Button onClick={handleSubmit} disabled={submitting || !value}>
+                <Button onClick={handleSubmit} disabled={submitting || !value.trim()}>
                     {submitting ? "Đang gửi..." : "Gửi câu hỏi"}
                 </Button>
             </div>
@@ -74,25 +79,33 @@ const QnATab = () => {
                                 <AvatarImage src={item.avatar} />
                                 <AvatarFallback>{item.author[0]}</AvatarFallback>
                             </Avatar>
+
                             <div className="flex-1 space-y-1">
                                 <div className="flex items-center justify-between">
                                     <h5 className="font-semibold text-sm">{item.author}</h5>
-                                    <span className="text-xs text-muted-foreground">{item.datetime}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {item.datetime}
+                                    </span>
                                 </div>
+
                                 <p className="text-sm text-foreground/90">{item.content}</p>
 
-                                {/* Replies */}
                                 {item.replies.length > 0 && (
                                     <div className="mt-3 pl-4 border-l-2 border-muted space-y-4">
-                                        {item.replies.map(reply => (
+                                        {item.replies.map((reply) => (
                                             <div key={reply.id} className="flex gap-3">
                                                 <Avatar className="h-8 w-8 bg-green-100 text-green-600">
                                                     <AvatarFallback>GV</AvatarFallback>
                                                 </Avatar>
+
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2">
-                                                        <h6 className="font-semibold text-xs text-primary">{reply.author}</h6>
-                                                        <span className="text-[10px] text-muted-foreground">{reply.datetime}</span>
+                                                        <h6 className="font-semibold text-xs text-primary">
+                                                            {reply.author}
+                                                        </h6>
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {reply.datetime}
+                                                        </span>
                                                     </div>
                                                     <p className="text-sm mt-0.5">{reply.content}</p>
                                                 </div>

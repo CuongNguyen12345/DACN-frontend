@@ -5,29 +5,38 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Save, Trash2, Clock } from "lucide-react";
 
-// Mock notification
-const toast = (message) => alert(message); // Replace with Sonner or Toast later
+const initialSavedNotes = [
+    {
+        id: 1,
+        content: "Đoạn 05:30: Công thức tính nhanh đạo hàm.",
+        time: "05:30",
+    },
+];
+
+const toast = (message) => alert(message);
 
 const NoteTab = ({ lessonId }) => {
     const [note, setNote] = useState("");
-    const [savedNotes, setSavedNotes] = useState([
-        { id: 1, content: "Đoạn 05:30: Công thức tính nhanh đạo hàm.", time: "05:30" }
-    ]);
+    const [savedNotes, setSavedNotes] = useState(initialSavedNotes);
 
     const handleSave = () => {
-        if (!note.trim()) return;
+        const trimmedNote = note.trim();
+        if (!trimmedNote) return;
+
         const newNote = {
             id: Date.now(),
-            content: note,
-            time: "Now" // Mock timestamp relative to video
+            content: trimmedNote,
+            time: "Now",
+            lessonId,
         };
-        setSavedNotes([...savedNotes, newNote]);
+
+        setSavedNotes((prev) => [...prev, newNote]);
         setNote("");
         toast("Đã lưu ghi chú!");
     };
 
     const handleDelete = (id) => {
-        setSavedNotes(savedNotes.filter(n => n.id !== id));
+        setSavedNotes((prev) => prev.filter((item) => item.id !== id));
     };
 
     return (
@@ -41,25 +50,34 @@ const NoteTab = ({ lessonId }) => {
                     className="resize-none"
                 />
                 <Button onClick={handleSave} className="w-full sm:w-auto">
-                    <Save className="mr-2 h-4 w-4" /> Lưu Note
+                    <Save className="mr-2 h-4 w-4" />
+                    Lưu Note
                 </Button>
             </div>
 
             <div className="space-y-2">
                 <h4 className="font-semibold text-lg">Ghi chú đã lưu</h4>
+
                 <ScrollArea className="h-[300px] rounded-md border p-4">
                     {savedNotes.length === 0 ? (
-                        <p className="text-center text-muted-foreground text-sm py-4">Chưa có ghi chú nào.</p>
+                        <p className="text-center text-muted-foreground text-sm py-4">
+                          Chưa có ghi chú nào.
+                        </p>
                     ) : (
                         <div className="space-y-3">
                             {savedNotes.map((item) => (
-                                <div key={item.id} className="flex items-start justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div
+                                    key={item.id}
+                                    className="flex items-start justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm"
+                                >
                                     <div className="space-y-1">
                                         <Badge variant="secondary" className="gap-1">
-                                            <Clock className="h-3 w-3" /> {item.time}
+                                            <Clock className="h-3 w-3" />
+                                            {item.time}
                                         </Badge>
                                         <p className="text-sm mt-1">{item.content}</p>
                                     </div>
+
                                     <Button
                                         variant="ghost"
                                         size="icon"
