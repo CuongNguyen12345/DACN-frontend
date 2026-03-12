@@ -10,7 +10,7 @@ import {
     GraduationCap,
     ChevronLeft,
     ChevronRight,
-    User
+    User as UserIcon
 } from "lucide-react";
 
 import {
@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const StudentList = () => {
+const UserList = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -35,8 +35,8 @@ const StudentList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Mock Data Học viên (Đã đổi HV005 thành Hoạt động)
-    const [students, setStudents] = useState([
+    // Mock Data (Đã đổi tên state thành users)
+    const [users, setUsers] = useState([
         { id: "HV001", name: "Nguyễn Văn An", email: "nguyenvana@gmail.com", classGroup: "Lớp 12A1", status: "Hoạt động", examsTaken: 15, joinedAt: "01/09/2025" },
         { id: "HV002", name: "Trần Thị Bình", email: "tranthibinh.99@gmail.com", classGroup: "Lớp 12A2", status: "Hoạt động", examsTaken: 8, joinedAt: "05/09/2025" },
         { id: "HV003", name: "Lê Văn Cường", email: "cuongle.dev@gmail.com", classGroup: "Lớp 11B1", status: "Bị khóa", examsTaken: 2, joinedAt: "10/09/2025" },
@@ -47,42 +47,37 @@ const StudentList = () => {
 
     // --- XỬ LÝ CHỨC NĂNG ---
 
-    // Chức năng Xem chi tiết
-    const handleView = (id) => {
-        navigate(`/admin/students/view/${id}`); 
-    };
-
     // Chức năng Khóa / Mở khóa tài khoản
-    const handleToggleLock = (student) => {
-        const isCurrentlyLocked = student.status === "Bị khóa";
+    const handleToggleLock = (user) => {
+        const isCurrentlyLocked = user.status === "Bị khóa";
         const actionText = isCurrentlyLocked ? "MỞ KHÓA" : "KHÓA";
         
-        if (window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của học viên ${student.name}?`)) {
-            const updatedStudents = students.map(s => {
-                if (s.id === student.id) {
-                    return { ...s, status: isCurrentlyLocked ? "Hoạt động" : "Bị khóa" };
+        if (window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của người dùng ${user.name}?`)) {
+            const updatedUsers = users.map(u => {
+                if (u.id === user.id) {
+                    return { ...u, status: isCurrentlyLocked ? "Hoạt động" : "Bị khóa" };
                 }
-                return s;
+                return u;
             });
-            setStudents(updatedStudents);
+            setUsers(updatedUsers);
         }
     };
 
     // Lọc dữ liệu
-    const filteredStudents = useMemo(() => {
-        return students.filter(student => {
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
             const matchesSearch = 
-                student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                student.id.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStatus = statusFilter === "all" || student.status === statusFilter;
+                user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                user.id.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = statusFilter === "all" || user.status === statusFilter;
             return matchesSearch && matchesStatus;
         });
-    }, [searchTerm, statusFilter, students]);
+    }, [searchTerm, statusFilter, users]);
 
     // Tính toán dữ liệu cho phân trang
-    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-    const paginatedStudents = filteredStudents.slice(
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const paginatedUsers = filteredUsers.slice(
         (currentPage - 1) * itemsPerPage, 
         currentPage * itemsPerPage
     );
@@ -100,8 +95,8 @@ const StudentList = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Quản lý Học viên</h2>
-                    <p className="text-gray-500 text-sm mt-1">Quản lý danh sách tài khoản học viên, tra cứu và khóa/mở khóa tài khoản.</p>
+                    <h2 className="text-2xl font-bold text-gray-900">Quản lý Người dùng</h2>
+                    <p className="text-gray-500 text-sm mt-1">Quản lý danh sách tài khoản người dùng, tra cứu và khóa/mở khóa tài khoản.</p>
                 </div>
             </div>
 
@@ -113,7 +108,7 @@ const StudentList = () => {
                             <Search className="h-5 w-5 text-gray-400 mr-2" />
                             <input 
                                 type="text" 
-                                placeholder="Tìm kiếm theo mã, tên hoặc email học viên..." 
+                                placeholder="Tìm kiếm theo mã, tên hoặc email..." 
                                 className="bg-transparent border-none outline-none text-sm w-full"
                                 value={searchTerm}
                                 onChange={(e) => {
@@ -161,8 +156,8 @@ const StudentList = () => {
                     <table className="w-full text-sm text-left">
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
                             <tr>
-                                <th className="px-6 py-4">Mã HV</th>
-                                <th className="px-6 py-4">Học viên</th>
+                                <th className="px-6 py-4">Mã ND</th>
+                                <th className="px-6 py-4">Người dùng</th>
                                 <th className="px-6 py-4">Lớp/Khối</th>
                                 <th className="px-6 py-4 text-center">Lượt thi</th>
                                 <th className="px-6 py-4 text-center">Trạng thái</th>
@@ -170,37 +165,37 @@ const StudentList = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {paginatedStudents.length > 0 ? (
-                                paginatedStudents.map((student) => (
-                                    <tr key={student.id} className="hover:bg-slate-50/80 transition-colors group">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{student.id}</td>
+                            {paginatedUsers.length > 0 ? (
+                                paginatedUsers.map((user) => (
+                                    <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
+                                        <td className="px-6 py-4 font-medium text-gray-900">{user.id}</td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900 flex items-center">
-                                                <User className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
-                                                {student.name}
+                                                <UserIcon className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                                                {user.name}
                                             </div>
                                             <div className="text-xs text-gray-500 flex items-center mt-1">
                                                 <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                                                {student.email}
+                                                {user.email}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center text-gray-600">
                                                 <GraduationCap className="h-4 w-4 mr-1.5 text-blue-500" />
-                                                {student.classGroup}
+                                                {user.classGroup}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-1">Tham gia: {student.joinedAt}</div>
+                                            <div className="text-xs text-gray-400 mt-1">Tham gia: {user.joinedAt}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-center font-medium">{student.examsTaken}</td>
+                                        <td className="px-6 py-4 text-center font-medium">{user.examsTaken}</td>
                                         <td className="px-6 py-4 text-center">
-                                            <Badge variant="secondary" className={getStatusBadge(student.status)}>
-                                                {student.status}
+                                            <Badge variant="secondary" className={getStatusBadge(user.status)}>
+                                                {user.status}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button 
-                                                    onClick={() => handleView(student.id)}
+                                                    onClick={() => navigate(`/admin/users/${user.id}`)}
                                                     variant="ghost" size="icon" 
                                                     className="h-8 w-8 text-blue-600 hover:bg-blue-50"
                                                     title="Xem chi tiết"
@@ -208,18 +203,17 @@ const StudentList = () => {
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                                 
-                                                {/* Nút Khóa / Mở khóa thay đổi theo trạng thái hiện tại */}
                                                 <Button 
-                                                    onClick={() => handleToggleLock(student)}
+                                                    onClick={() => handleToggleLock(user)}
                                                     variant="ghost" size="icon" 
                                                     className={cn("h-8 w-8", 
-                                                        student.status === "Bị khóa" 
+                                                        user.status === "Bị khóa" 
                                                             ? "text-emerald-600 hover:bg-emerald-50" 
                                                             : "text-red-600 hover:bg-red-50"
                                                     )}
-                                                    title={student.status === "Bị khóa" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                                                    title={user.status === "Bị khóa" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
                                                 >
-                                                    {student.status === "Bị khóa" ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                                                    {user.status === "Bị khóa" ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                                                 </Button>
                                             </div>
                                         </td>
@@ -228,7 +222,7 @@ const StudentList = () => {
                             ) : (
                                 <tr>
                                     <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                                        Không tìm thấy học viên nào phù hợp.
+                                        Không tìm thấy người dùng nào phù hợp.
                                     </td>
                                 </tr>
                             )}
@@ -269,4 +263,4 @@ const StudentList = () => {
     );
 };
 
-export default StudentList;
+export default UserList;

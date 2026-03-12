@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LogOut, User, Key, Palette, Sun, Moon, Bell } from "lucide-react"; // Đã thêm icon Bell
+import { BookOpen, LogOut, User, Key, Palette, Sun, Moon, Bell, History, Trophy } from "lucide-react"; // Đã thêm icon Bell
 import { useAuth } from "../../context/AuthContext";
 import {
     DropdownMenu,
@@ -186,6 +186,16 @@ export const Header = ({ navigate, userAvatar }) => {
                                     <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
                                         <User className="mr-2 h-4 w-4" />
                                         <span>Trang cá nhân</span>
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/studyhistory")}>
+                                        <History className="mr-2 h-4 w-4" />
+                                        <span>Lịch sử học tập</span>
+                                    </DropdownMenuItem>
+                                    
+                                    <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/leaderboard")}>
+                                        <History className="mr-2 h-4 w-4" />
+                                        <span>Bảng xếp hạng</span>
                                     </DropdownMenuItem>
                                     
                                     <DropdownMenuItem 

@@ -1,23 +1,24 @@
-// src/layouts/AdminLayout.jsx
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard, FileText, Database, Users, BarChart3, Settings,
-    LogOut, Menu, Search, Bell
+    LogOut, Menu, Search, Bell, MessageCircleQuestion // Thêm icon MessageCircleQuestion
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const AdminLayout = () => {
     const navigate = useNavigate();
-    const location = useLocation(); // Để highlight menu đang active
+    const location = useLocation(); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+    // ĐÃ SỬA LẠI ĐƯỜNG DẪN VÀ ICON CHO CHUẨN
     const sidebarItems = [
         { icon: LayoutDashboard, label: "Tổng quan", path: "/admin" },
         { icon: FileText, label: "Quản lý Đề thi", path: "/admin/exams" },
         { icon: Database, label: "Ngân hàng Câu hỏi", path: "/admin/questions" },
-        { icon: Users, label: "Học viên", path: "/admin/users" },
+        { icon: Users, label: "Học viên", path: "/admin/users" }, 
+        { icon: MessageCircleQuestion, label: "Hỏi đáp", path: "/admin/qna" }, 
         { icon: BarChart3, label: "Báo cáo", path: "/admin/reports" },
         { icon: Settings, label: "Cài đặt", path: "/admin/settings" },
     ];
@@ -42,7 +43,9 @@ const AdminLayout = () => {
                 <div className="flex-1 overflow-y-auto py-4">
                     <nav className="space-y-1 px-2">
                         {sidebarItems.map((item, index) => {
-                            const isActive = location.pathname === item.path;
+                            // Cải thiện logic active: kiểm tra nếu pathname bắt đầu bằng path của item (để các trang con cũng sáng menu)
+                            const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                            
                             return (
                                 <button
                                     key={index}
@@ -72,6 +75,17 @@ const AdminLayout = () => {
                         </Button>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Các icon tiện ích (bạn đã import nhưng chưa dùng, mình thêm vào cho đẹp) */}
+                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600">
+                            <Search className="h-5 w-5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600 relative">
+                            <Bell className="h-5 w-5" />
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"></span>
+                        </Button>
+
+                        <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
                         {/* Link tới trang Profile */}
                         <div 
                             onClick={() => navigate('/admin/profile')}
@@ -83,7 +97,7 @@ const AdminLayout = () => {
                     </div>
                 </header>
 
-                {/* Khu vực chứa nội dung thay đổi (Dashboard, Quản lý đề,...) */}
+                {/* Khu vực chứa nội dung thay đổi */}
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 lg:p-8">
                     <Outlet /> 
                 </main>

@@ -2,6 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, UploadCloud, FileText, X, Save } from "lucide-react";
 
+// Import các component Select từ shadcn/ui
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 const ExamEdit = () => {
   const navigate = useNavigate();
   // Lấy params 'id' từ URL (Cấu hình trong AppRoutes là path="exams/edit/:id")
@@ -37,9 +46,14 @@ const ExamEdit = () => {
     });
   }, [id]);
 
-  // Xử lý thay đổi input
+  // Xử lý thay đổi input thông thường
   const handleChange = (e) => {
     const { name, value } = e.target;
+    setExamData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Xử lý thay đổi cho các Dropdown (Select của shadcn)
+  const handleSelectChange = (name, value) => {
     setExamData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -73,7 +87,7 @@ const ExamEdit = () => {
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate("/admin/exams")}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
           </button>
@@ -91,13 +105,13 @@ const ExamEdit = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => navigate("/admin/exams")}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 outline-none"
           >
             Hủy
           </button>
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 outline-none"
           >
             <Save className="h-4 w-4" />
             Lưu thay đổi
@@ -162,7 +176,7 @@ const ExamEdit = () => {
             ) : (
               <div className={`flex items-center justify-between p-4 border rounded-lg ${selectedFile ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-gray-50'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 bg-white rounded-lg ${selectedFile ? 'text-blue-600' : 'text-gray-500'}`}>
+                  <div className={`p-2 bg-white rounded-lg shadow-sm ${selectedFile ? 'text-blue-600' : 'text-gray-500'}`}>
                     <FileText className="h-6 w-6" />
                   </div>
                   <div>
@@ -180,7 +194,7 @@ const ExamEdit = () => {
                 <button 
                   onClick={removeFile}
                   title="Xóa file này"
-                  className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors outline-none"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -195,20 +209,24 @@ const ExamEdit = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Cài đặt đề thi</h3>
             
             <div className="space-y-4">
+              {/* Dropdown Môn học */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
-                <select 
-                  name="subject"
-                  value={examData.subject}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                <Select 
+                  value={examData.subject} 
+                  onValueChange={(value) => handleSelectChange("subject", value)}
                 >
-                  <option value="Toán">Toán Học</option>
-                  <option value="Vật Lý">Vật Lý</option>
-                  <option value="Hóa Học">Hóa Học</option>
-                  <option value="Tiếng Anh">Tiếng Anh</option>
-                  <option value="Ngữ Văn">Ngữ Văn</option>
-                </select>
+                  <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Chọn môn học" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Toán">Toán Học</SelectItem>
+                    <SelectItem value="Vật Lý">Vật Lý</SelectItem>
+                    <SelectItem value="Hóa Học">Hóa Học</SelectItem>
+                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
+                    <SelectItem value="Ngữ Văn">Ngữ Văn</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -219,7 +237,7 @@ const ExamEdit = () => {
                     name="duration"
                     value={examData.duration}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
                 <div>
@@ -229,23 +247,27 @@ const ExamEdit = () => {
                     name="questions"
                     value={examData.questions}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
               </div>
 
+              {/* Dropdown Trạng thái */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                <select 
-                  name="status"
-                  value={examData.status}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                <Select 
+                  value={examData.status} 
+                  onValueChange={(value) => handleSelectChange("status", value)}
                 >
-                  <option value="Bản nháp">Bản nháp (Ẩn)</option>
-                  <option value="Đang mở">Đang mở (Công khai)</option>
-                  <option value="Đã đóng">Đã đóng</option>
-                </select>
+                  <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Chọn trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bản nháp">Bản nháp (Ẩn)</SelectItem>
+                    <SelectItem value="Đang mở">Đang mở (Công khai)</SelectItem>
+                    <SelectItem value="Đã đóng">Đã đóng</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

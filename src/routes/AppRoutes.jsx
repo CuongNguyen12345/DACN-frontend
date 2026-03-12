@@ -16,6 +16,8 @@ import Profile from "../pages/student/Profile/Profile";
 import Course from "../pages/student/Course/Course";
 import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
+import StudyHistory from "@/pages/student/History/StudyHistory";
+import Leaderboard from "@/pages/student/Ranking/Leaderboard";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -25,11 +27,14 @@ import ExamEdit from "@/pages/admin/Exams/ExamEdit";
 import ExamCreate from "@/pages/admin/Exams/ExamCreate";
 import ExamView from "@/pages/admin/Exams/ExamView";
 import QuestionList from "@/pages/admin/Questions/QuestionList";
-import QuestionBank from "@/pages/admin/Questions/QuestionBank";
+import QuestionEdit from "@/pages/admin/Questions/QuestionEdit";
+import QuestionCreate from "@/pages/admin/Questions/QuestionCreate";
+import QuestionView from "@/pages/admin/Questions/QuestionView";
 import UserList from "@/pages/admin/Users/UserList";
 import UserDetail from "@/pages/admin/Users/UserDetail";
 import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
+import QnAManager from "@/pages/admin/QnA/QnAManager";
 
 // Routes & Components
 import ProtectedRoute from "@/routes/components/ProtectedRoute";
@@ -57,6 +62,8 @@ function AppRoutes() {
           <Route path="practice/result/:examId" element={<PracticeResult />} />
           <Route path="practice/review/:examId" element={<PracticeReview />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="studyhistory" element={<StudyHistory />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
         </Route>
       </Route>
 
@@ -74,11 +81,17 @@ function AppRoutes() {
 
         {/* Ngân hàng Câu hỏi */}
         <Route path="questions" element={<QuestionList />} />
-        <Route path="questions/bank" element={<QuestionBank />} />
+        <Route path="questions/create" element={<QuestionCreate />} />
+        <Route path="questions/edit/:id" element={<QuestionEdit />} />
+        <Route path="questions/view/:id" element={<QuestionView />} />
 
         {/* Quản lý Học viên */}
         <Route path="users" element={<UserList />} />
         <Route path="users/:id" element={<UserDetail />} />
+
+        {/* Quản lý Hỏi Đáp */}
+        <Route path="QnA" element={<QnAManager />} />
+        <Route path="QnA/:id" element={<QnAManager />} />
 
         {/* Báo cáo & Cài đặt */}
         <Route path="reports" element={<Reports />} />
