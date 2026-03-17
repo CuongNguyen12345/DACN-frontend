@@ -205,7 +205,11 @@ const PracticeList = () => {
                             <CardContent className="p-5 pt-0 flex-1">
                                 <div className="flex flex-wrap gap-1.5 mb-4">
                                     {exam.tags.map(tag => (
+<<<<<<< HEAD
                                         <Badge key={tag} variant="secondary" className="text-xs font-normal text-muted-foreground">
+=======
+                                        <Badge key={tag} variant="secondary" className="text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200">
+>>>>>>> nhanh_cua_Hao
                                             #{tag}
                                         </Badge>
                                     ))}

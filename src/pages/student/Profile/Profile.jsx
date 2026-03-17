@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import { useState } from "react";
+>>>>>>> nhanh_cua_Hao
 import {
     User,
     Flame,
@@ -14,19 +18,57 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+<<<<<<< HEAD
+=======
+// Component cho Form
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+
+// Các component con của bạn
+>>>>>>> nhanh_cua_Hao
 import RadarChart from "./components/RadarChart";
 import Achievements from "./components/Achievements";
 import Goals from "./components/Goals";
 
 const Profile = () => {
+<<<<<<< HEAD
     // Mock Data
     const user = {
         name: "Nguyễn Văn Nam",
         grade: "Lớp 12A1",
+=======
+    // 1. Chuyển Mock Data thành State để UI tự cập nhật khi sửa xong
+    const [user, setUser] = useState({
+        name: "Nguyễn Văn Nam",
+        grade: "Lớp 12A1",
+        phone: "0901234567", // Thêm vài trường phụ cho form
+        school: "THPT Chuyên",
+>>>>>>> nhanh_cua_Hao
         avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
         streak: 15,
         totalTime: "124h",
         exercises: 450
+<<<<<<< HEAD
+=======
+    });
+
+    // 2. State quản lý Popup và Dữ liệu đang nhập trong Form
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [formData, setFormData] = useState(user);
+
+    const handleSaveProfile = () => {
+        setUser(formData); // Lưu dữ liệu mới vào state chính
+        setIsEditOpen(false); // Đóng popup
+        // Tương lai: Gọi API lưu dữ liệu ở đây
+>>>>>>> nhanh_cua_Hao
     };
 
     const radarData = [
@@ -56,7 +98,11 @@ const Profile = () => {
 
                             <div className="flex-1 text-center md:text-left space-y-2">
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.name}</h1>
+<<<<<<< HEAD
                                 <p className="text-gray-500 text-base">{user.grade}</p>
+=======
+                                <p className="text-gray-500 text-base">{user.grade} - {user.school}</p>
+>>>>>>> nhanh_cua_Hao
                                 <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
                                     <Badge variant="secondary" className="px-3 py-1 bg-orange-100 text-orange-700 hover:bg-orange-100 gap-1.5">
                                         <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.streak} ngày
@@ -68,7 +114,19 @@ const Profile = () => {
                             </div>
 
                             <div className="flex-shrink-0">
+<<<<<<< HEAD
                                 <Button size="lg" className="shadow-sm">
+=======
+                                {/* Gắn sự kiện mở Popup vào Nút này */}
+                                <Button 
+                                    size="lg" 
+                                    className="shadow-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+                                    onClick={() => {
+                                        setFormData(user); // Reset form data
+                                        setIsEditOpen(true);
+                                    }}
+                                >
+>>>>>>> nhanh_cua_Hao
                                     <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa hồ sơ
                                 </Button>
                             </div>
@@ -77,11 +135,19 @@ const Profile = () => {
                 </Card>
 
                 {/* Overview Section */}
+<<<<<<< HEAD
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column: Radar & Goals & Achievements */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Card className="h-full shadow-sm">
+=======
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    {/* Left Column: Radar & Goals & Achievements */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card className="shadow-sm">
+>>>>>>> nhanh_cua_Hao
                                 <CardHeader>
                                     <CardTitle>Năng lực học tập</CardTitle>
                                 </CardHeader>
@@ -89,7 +155,11 @@ const Profile = () => {
                                     <RadarChart data={radarData} size={280} />
                                 </CardContent>
                             </Card>
+<<<<<<< HEAD
                             <Card className="h-full shadow-sm">
+=======
+                            <Card className="shadow-sm">
+>>>>>>> nhanh_cua_Hao
                                 <Goals />
                             </Card>
                         </div>
@@ -99,7 +169,11 @@ const Profile = () => {
 
                     {/* Right Column: Statistics Grid */}
                     <div className="lg:col-span-1">
+<<<<<<< HEAD
                         <Card className="h-full shadow-sm">
+=======
+                        <Card className="shadow-sm">
+>>>>>>> nhanh_cua_Hao
                             <CardHeader>
                                 <CardTitle>Thống kê tổng quan</CardTitle>
                             </CardHeader>
@@ -147,8 +221,78 @@ const Profile = () => {
                     </div>
                 </div>
             </div>
+<<<<<<< HEAD
+=======
+
+            {/* ==========================================
+                DIALOG POPUP CHỈNH SỬA HỒ SƠ
+            ========================================== */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Chỉnh sửa hồ sơ</DialogTitle>
+                        <DialogDescription>
+                            Cập nhật thông tin cá nhân của bạn. Nhấn lưu để áp dụng thay đổi.
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Họ và tên</Label>
+                            <Input 
+                                id="name" 
+                                value={formData.name} 
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="grade">Lớp</Label>
+                                <Input 
+                                    id="grade" 
+                                    value={formData.grade}
+                                    onChange={(e) => setFormData({...formData, grade: e.target.value})}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Số điện thoại</Label>
+                                <Input 
+                                    id="phone" 
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="school">Trường học</Label>
+                            <Input 
+                                id="school" 
+                                value={formData.school}
+                                onChange={(e) => setFormData({...formData, school: e.target.value})}
+                            />
+                        </div>
+                    </div>
+                    
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button className="bg-[#3B82F6] hover:bg-[#2563EB]" onClick={handleSaveProfile}>
+                            Lưu thay đổi
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+>>>>>>> nhanh_cua_Hao
         </div>
     );
 };
 
+<<<<<<< HEAD
 export default Profile;
+=======
+export default Profile;
+>>>>>>> nhanh_cua_Hao
