@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useNavigate } from "react-router-dom";
-=======
 import { useNavigate, useLocation } from "react-router-dom";
->>>>>>> nhanh_cua_Hao
 import {
     CheckCircle2,
     XCircle,
@@ -19,12 +15,9 @@ import { Separator } from "@/components/ui/separator";
 
 const PracticeResult = () => {
     const navigate = useNavigate();
-<<<<<<< HEAD
-=======
     const location = useLocation();
     const userAnswers = location.state?.userAnswers || {}; // Thêm dòng này để nhận đáp án
 
->>>>>>> nhanh_cua_Hao
     // Mock Result Data
     const result = {
         score: 8.4,
@@ -108,10 +101,7 @@ const PracticeResult = () => {
                             <Button
                                 size="lg"
                                 className="bg-blue-600 hover:bg-blue-700"
-<<<<<<< HEAD
-=======
                                 onClick={() => navigate("/practice/review/1", { state: { userAnswers } })}
->>>>>>> nhanh_cua_Hao
                             >
                                 Xem chi tiết lời giải <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
