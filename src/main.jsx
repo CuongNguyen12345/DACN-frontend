@@ -7,12 +7,12 @@ import './index.css';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <BrowserRouter>
-      <ScrollToTop />
-      <AuthProvider>  
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
-  </StrictMode>,
+    <StrictMode>
+        <BrowserRouter>
+            <ScrollToTop />
+            <AuthProvider>  
+                <App />
+            </AuthProvider>
+        </BrowserRouter>
+    </StrictMode>,
 );

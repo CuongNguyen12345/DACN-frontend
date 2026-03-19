@@ -9,6 +9,7 @@ import {
     BookOpen,
     Star,
     MonitorPlay,
+    XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -255,11 +256,11 @@ const CourseLibrary = () => {
 
                             <div className="md:col-span-12 lg:col-span-2 flex gap-2">
                                 <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    type="button"
+                                    variant="ghost"
                                     onClick={handleResetFilter}
+                                    className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all"
                                 >
+                                    <XCircle className="h-4 w-4" />
                                     Xóa lọc
                                 </Button>
                             </div>

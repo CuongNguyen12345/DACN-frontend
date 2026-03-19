@@ -98,7 +98,7 @@ const SavedQuestions = () => {
                         })}
 
                         <PaginationItem>
-                            <PaginationNext 
+                            <PaginationNext
                                 onClick={() => handlePageChange(currentPage + 1)}
                                 className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
