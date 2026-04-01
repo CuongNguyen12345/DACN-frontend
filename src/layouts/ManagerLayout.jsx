@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard, FileText, Database, Users, BarChart3, Settings,
-    LogOut, Menu, Search, Bell, MessageCircleQuestion
+    LogOut, Menu, Search, Bell, MessageCircleQuestion, Home
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -15,12 +15,14 @@ const AdminLayout = () => {
     const location = useLocation(); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+    const basePath = role === "admin" ? "/admin" : "/teacher";
+
     const sidebarItems = [
         // Admin + Teacher
-        { icon: LayoutDashboard, label: "Tổng quan", path: "/admin", roles: ["admin", "teacher"] },
-        { icon: FileText, label: "Quản lý Đề thi", path: "/admin/exams", roles: ["admin", "teacher"] },
-        { icon: Database, label: "Ngân hàng Câu hỏi", path: "/admin/questions", roles: ["admin", "teacher"] },
-        { icon: MessageCircleQuestion, label: "Hỏi đáp", path: "/admin/qna", roles: ["admin", "teacher"] },
+        { icon: LayoutDashboard, label: "Tổng quan", path: basePath, roles: ["admin", "teacher"] },
+        { icon: FileText, label: "Quản lý Đề thi", path: `${basePath}/exams`, roles: ["admin", "teacher"] },
+        { icon: Database, label: "Ngân hàng Câu hỏi", path: `${basePath}/questions`, roles: ["admin", "teacher"] },
+        { icon: MessageCircleQuestion, label: "Hỏi đáp", path: `${basePath}/qna`, roles: ["admin", "teacher"] },
 
         // Admin
         { icon: Users, label: "Học viên", path: "/admin/users", roles: ["admin"] }, 
@@ -51,7 +53,9 @@ const AdminLayout = () => {
                         {sidebarItems
                             .filter(item => item.roles.includes(role))
                             .map((item, index) => {
-                                const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                                const isActive = item.path === basePath
+                                    ? location.pathname === basePath || location.pathname === `${basePath}/`
+                                    : location.pathname.startsWith(item.path);
                             
                                 return (
                                     <button
@@ -71,8 +75,22 @@ const AdminLayout = () => {
                         })}
                     </nav>
 
-                    {/* Nút Đăng xuất ghim ở đáy */}
+                    {/* Vùng ghim ở đáy */}
                     <div className="px-2 pb-4 mt-auto">
+                        <button
+                            onClick={() => navigate("/")}
+                            className={cn(
+                                "flex items-center w-full px-3 py-2.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors group",
+                                !isSidebarOpen && "md:justify-center"
+                            )}
+                            title={!isSidebarOpen ? "Giao diện người dùng" : undefined}
+                        >
+                            <Home className="h-5 w-5 shrink-0" />
+                            <span className={cn("ml-3 text-sm font-medium", !isSidebarOpen && "md:hidden")}>
+                                Giao diện User
+                            </span>
+                        </button>
+
                         <button
                             onClick={() => {
                                 logout();
@@ -113,13 +131,24 @@ const AdminLayout = () => {
 
                         <div className="h-6 w-px bg-gray-200 mx-2"></div>
 
-                        <div 
-                            onClick={() => navigate('/admin/profile')}
-                            className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
-                            title="Hồ sơ cá nhân"
-                        >
-                            {role === "admin" ? "AD" : "GV"}
-                        </div>
+                        {role === "admin" ? (
+                            <div 
+                                onClick={() => navigate('/admin/profile')}
+                                className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                                title="Hồ sơ cá nhân"
+                            >
+                                AD
+                            </div>
+                        ) : (
+                            <div 
+                                onClick={() => navigate('/teacher/profile')}
+                                className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
+                                title="Hồ sơ cá nhân"
+                            >
+                                GV
+                            </div>
+                        )}
+                        
                     </div>
                 </header>
 

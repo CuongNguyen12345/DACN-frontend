@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Header = ({ navigate, userAvatar }) => {
-    const { isLoggedIn, logout } = useAuth();
+    const { isLoggedIn, logout, role } = useAuth();
 
     // Lấy thông tin URL hiện tại
     const location = useLocation();
@@ -199,6 +199,18 @@ export const Header = ({ navigate, userAvatar }) => {
                                         <History className="mr-2 h-4 w-4" />
                                         <span>Bảng xếp hạng</span>
                                     </DropdownMenuItem>
+                                    
+                                    {role === "admin" ? (
+                                        <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/admin")}>
+                                            <User className="mr-2 h-4 w-4" />
+                                            <span>Giao diện Admin</span>
+                                        </DropdownMenuItem>
+                                    ) : role === "teacher" ? (
+                                        <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/teacher")}>
+                                            <User className="mr-2 h-4 w-4" />
+                                            <span>Giao diện giáo viên</span>
+                                        </DropdownMenuItem>
+                                    ) : null}
                                     
                                     <DropdownMenuItem 
                                         className="cursor-pointer" 

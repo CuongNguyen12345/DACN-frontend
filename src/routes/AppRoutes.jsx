@@ -42,6 +42,21 @@ const USER_ROLES = ["user", "teacher", "admin"];
 const TEACHER_ROLES = ["teacher", "admin"];
 const ADMIN_ROLES = ["admin"];
 
+const sharedManagerRoutes = [
+  { path: "exams", element: <ExamList /> },
+  { path: "exams/create", element: <ExamCreate /> },
+  { path: "exams/edit/:id", element: <ExamEdit /> },
+  { path: "exams/view/:id", element: <ExamView /> },
+  
+  { path: "questions", element: <QuestionList /> },
+  { path: "questions/create", element: <QuestionCreate /> },
+  { path: "questions/edit/:id", element: <QuestionEdit /> },
+  { path: "questions/view/:id", element: <QuestionView /> },
+  
+  { path: "qna", element: <QnAManager /> },
+  { path: "qna/:id", element: <QnAManager /> },
+];
+
 function AppRoutes() {
   return (
     <Routes>
@@ -71,42 +86,38 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      {/* Khu admin + teacher*/}
-      <Route element={<ProtectedRoute allowedRoles={TEACHER_ROLES} />}>
-        <Route path="/teacher" element={<Navigator to="/admin" replace />} />
-        <Route path="/admin" element={<ManagerLayout />}>
-          {/* render Overview */}
+      {/* Dành cho Giáo viên */}
+      <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+        <Route path="/teacher" element={<ManagerLayout />}>
           <Route index element={<Overview />} />
           <Route path="profile" element={<ProfileAdmin />} />
-        
-          {/* Quản lý Đề thi */}
-          <Route path="exams" element={<ExamList />} />
-          <Route path="exams/create" element={<ExamCreate />} />
-          <Route path="exams/edit/:id" element={<ExamEdit />} />
-          <Route path="exams/view/:id" element={<ExamView />} />
-
-          {/* Ngân hàng Câu hỏi */}
-          <Route path="questions" element={<QuestionList />} />
-          <Route path="questions/create" element={<QuestionCreate />} />
-          <Route path="questions/edit/:id" element={<QuestionEdit />} />
-          <Route path="questions/view/:id" element={<QuestionView />} />
-
-          {/* Quản lý Hỏi Đáp */}
-          <Route path="qna" element={<QnAManager />} />
-          <Route path="qna/:id" element={<QnAManager />} />
-
-          {/* Admin ONLY */}
-          <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
-            {/* Quản lý Học viên */}
-            <Route path="users" element={<UserList />} />
-            <Route path="users/:id" element={<UserDetail />} />
-
-            {/* Báo cáo & Cài đặt */}
-            <Route path="reports" element={<Reports />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+          
+          {/* Tự động render các route dùng chung */}
+          {sharedManagerRoutes.map((route) => (
+            <Route key={`teacher-${route.path}`} path={route.path} element={route.element} />
+          ))}
         </Route>
       </Route>
+
+      {/* Dành cho Admin */}
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        <Route path="/admin" element={<ManagerLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="profile" element={<ProfileAdmin />} />
+          
+          {/* Tự động render các route dùng chung */}
+          {sharedManagerRoutes.map((route) => (
+            <Route key={`admin-${route.path}`} path={route.path} element={route.element} />
+          ))}
+
+          {/* Các route CHỈ dành cho Admin */}
+          <Route path="users" element={<UserList />} />
+          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+      
     </Routes>
   );
 }
