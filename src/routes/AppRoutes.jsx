@@ -57,7 +57,7 @@ function AppRoutes() {
 
         {/* Các trang học sinh cần đăng nhập */}
         <Route element={<ProtectedRoute />}>
-          <Route path="course/learning/:subjectId" element={<Learning />} />
+          <Route path="course/learning/:lessonId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
           <Route path="practice/review/:examId" element={<PracticeReview />} />
