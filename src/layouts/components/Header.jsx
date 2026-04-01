@@ -162,7 +162,9 @@ export const Header = ({ navigate, userAvatar }) => {
                                         )}
                                     </div>
                                     <div className="p-2 border-t text-center bg-gray-50 rounded-b-md">
-                                        <span className="text-sm text-blue-600 hover:underline cursor-pointer font-medium">
+                                        <span className="text-sm text-blue-600 hover:underline cursor-pointer font-medium"
+                                            onClick={() => navigate("/notification")}
+                                        >
                                             Xem tất cả thông báo
                                         </span>
                                     </div>

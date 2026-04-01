@@ -18,7 +18,7 @@ createRoot(document.getElementById('root')).render(
                 position="top-right"
                 richColors
                 closeButton
-                duration={1000}
+                duration={2000}
                 expand={true}
             />
         </BrowserRouter>

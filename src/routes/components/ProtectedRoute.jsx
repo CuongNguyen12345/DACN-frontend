@@ -13,9 +13,9 @@ const ProtectedRoute = ({ allowedRoles = [] }) => {
       return;
     }
 
-    if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    /* if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
       toast.error("Bạn không có quyền truy cập trang này!");
-    }
+    } */
   }, [isLoggedIn, role, allowedRoles]);
 
   if (!isLoggedIn) {

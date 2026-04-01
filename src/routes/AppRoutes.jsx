@@ -19,6 +19,7 @@ import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
 import StudyHistory from "@/pages/student/History/StudyHistory";
 import Leaderboard from "@/pages/student/Ranking/Leaderboard";
+import NotificationsList from "@/pages/student/Notification/NotificationsList";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -66,6 +67,7 @@ function AppRoutes() {
           <Route path="profile" element={<Profile />} />
           <Route path="studyhistory" element={<StudyHistory />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="notification" element={<NotificationsList />} />
         </Route>
       </Route>
 
