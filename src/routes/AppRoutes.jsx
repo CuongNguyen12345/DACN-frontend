@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/routes/components/ProtectedRoute";
 import StudentLayout from "../layouts/StudentLayout";
-import AdminLayout from "../layouts/AdminLayout"; 
+import ManagerLayout from "../layouts/ManagerLayout";
 
 // Student Pages
 import Home from "../pages/student/Home/Home";
@@ -36,8 +37,9 @@ import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
 
-// Routes & Components
-import ProtectedRoute from "@/routes/components/ProtectedRoute";
+const USER_ROLES = ["user", "teacher", "admin"];
+const TEACHER_ROLES = ["teacher", "admin"];
+const ADMIN_ROLES = ["admin"];
 
 function AppRoutes() {
   return (
@@ -55,8 +57,8 @@ function AppRoutes() {
         <Route path="blog" element={<Blog />} />
         <Route path="about" element={<About />} />
 
-        {/* Các trang học sinh cần đăng nhập */}
-        <Route element={<ProtectedRoute />}>
+        {/* Khu user: user + teacher + admin */}
+        <Route element={<ProtectedRoute allowedRoles={USER_ROLES} />}>
           <Route path="course/learning/:courseId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
@@ -67,35 +69,41 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      {/* 3. KHU VỰC DÀNH CHO ADMIN (Có Admin Sidebar/Header riêng) */}
-      <Route path="/admin" element={<AdminLayout />}>
-        {/* /admin sẽ render Overview */}
-        <Route index element={<Overview />} />
-        <Route path="profile" element={<ProfileAdmin />} />
+      {/* Khu admin + teacher*/}
+      <Route element={<ProtectedRoute allowedRoles={TEACHER_ROLES} />}>
+        <Route path="/teacher" element={<Navigator to="/admin" replace />} />
+        <Route path="/admin" element={<ManagerLayout />}>
+          {/* render Overview */}
+          <Route index element={<Overview />} />
+          <Route path="profile" element={<ProfileAdmin />} />
         
-        {/* Quản lý Đề thi */}
-        <Route path="exams" element={<ExamList />} />
-        <Route path="exams/create" element={<ExamCreate />} />
-        <Route path="exams/edit/:id" element={<ExamEdit />} />
-        <Route path="exams/view/:id" element={<ExamView />} />
+          {/* Quản lý Đề thi */}
+          <Route path="exams" element={<ExamList />} />
+          <Route path="exams/create" element={<ExamCreate />} />
+          <Route path="exams/edit/:id" element={<ExamEdit />} />
+          <Route path="exams/view/:id" element={<ExamView />} />
 
-        {/* Ngân hàng Câu hỏi */}
-        <Route path="questions" element={<QuestionList />} />
-        <Route path="questions/create" element={<QuestionCreate />} />
-        <Route path="questions/edit/:id" element={<QuestionEdit />} />
-        <Route path="questions/view/:id" element={<QuestionView />} />
+          {/* Ngân hàng Câu hỏi */}
+          <Route path="questions" element={<QuestionList />} />
+          <Route path="questions/create" element={<QuestionCreate />} />
+          <Route path="questions/edit/:id" element={<QuestionEdit />} />
+          <Route path="questions/view/:id" element={<QuestionView />} />
 
-        {/* Quản lý Học viên */}
-        <Route path="users" element={<UserList />} />
-        <Route path="users/:id" element={<UserDetail />} />
+          {/* Quản lý Hỏi Đáp */}
+          <Route path="qna" element={<QnAManager />} />
+          <Route path="qna/:id" element={<QnAManager />} />
 
-        {/* Quản lý Hỏi Đáp */}
-        <Route path="QnA" element={<QnAManager />} />
-        <Route path="QnA/:id" element={<QnAManager />} />
+          {/* Admin ONLY */}
+          <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
+            {/* Quản lý Học viên */}
+            <Route path="users" element={<UserList />} />
+            <Route path="users/:id" element={<UserDetail />} />
 
-        {/* Báo cáo & Cài đặt */}
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
+            {/* Báo cáo & Cài đặt */}
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Route>
       </Route>
     </Routes>
   );

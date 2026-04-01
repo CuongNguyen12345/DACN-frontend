@@ -2,30 +2,66 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
 import loginImage from "../../assets/Kids_Studying_from_Home-pana.png";
 
+import { mockLoginApi } from "@/services/mockAuthServices";
+import { toast } from "sonner";
+
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const from = location.state?.from?.pathname;
+    
     const { login } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
 
         // Test đăng nhập giả
         if (!email || !password) {
-            alert("Vui lòng nhập đầy đủ email và mật khẩu");
+            toast.error("Vui lòng nhập đầy đủ email và mật khẩu");
             return;
         }
 
-        login();
-        navigate("/");
+        try {
+            const data = await mockLoginApi({
+                email,
+                matkhau: password,
+            });
+
+            login({
+                token: data.token,
+                user: {
+                    id: data.user.id,
+                    name: data.user.hoten,
+                    email: data.user.email,
+                    role: data.user.vaitro,
+                },
+            });
+
+            toast.success(`Đăng nhập thành công với vai trò ${data.user.vaitro}`);
+
+            if (from) {
+                navigate(from, { replace: true });
+                return;
+            }
+
+            if (data.user.vaitro === "admin" || data.user.vaitro === "teacher") {
+                navigate("/admin", { replace: true });
+                return;
+            }
+
+            navigate("/", { replace: true });
+        } catch (error) {
+            toast.error(error.message || "Đăng nhập thất bại");
+        }
     };
 
     return (

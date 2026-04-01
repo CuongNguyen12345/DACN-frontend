@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Search,
     Filter,
     Clock,
     HelpCircle,
     User,
-    PlayCircle
+    PlayCircle,
+    XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,10 @@ import {
 } from "@/components/ui/pagination";
 import { Separator } from "@/components/ui/separator"; // Ensure imports are correct if I created separator
 // If separator wasn't created, check logic? I saw it in the list.
+
+
+const validSubjects = ["Toán", "Lý", "Hóa", "Tiếng Anh"];
+const validGrades = ["10", "11", "12"];
 
 const PracticeList = () => {
     const navigate = useNavigate();
@@ -100,6 +105,87 @@ const PracticeList = () => {
     const handleStartExam = (id) => {
         navigate(`/practice/room/${id}`);
     };
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const querySubject = searchParams.get("subject");
+    const queryGrade = searchParams.get("grade");
+    const queryKeyword = searchParams.get("keyword");
+
+    const [searchTerm, setSearchTerm] = useState(queryKeyword || "");
+    const [selectedSubject, setSelectedSubject] = useState(
+        validSubjects.includes(querySubject) ? querySubject : "all"
+    );
+    const [selectedGrade, setSelectedGrade] = useState(
+        validGrades.includes(queryGrade) ? queryGrade : "all"
+    );
+
+    const filteredCourses = useMemo(() => {
+        return exams.filter((course) => {
+            const keyword = searchTerm.trim().toLowerCase();
+
+            const matchSearch =
+                keyword === "" ||
+                course.title.toLowerCase().includes(keyword);
+
+            const matchSubject =
+                selectedSubject === "all" || course.subject === selectedSubject;
+
+            const matchGrade =
+                selectedGrade === "all" || String(course.grade) === selectedGrade;
+
+            return matchSearch && matchSubject && matchGrade;
+        });
+    }, [searchTerm, selectedSubject, selectedGrade]);
+
+    const updateQueryParams = ({
+        subject = selectedSubject,
+        grade = selectedGrade,
+        keyword = searchTerm,
+    }) => {
+        const nextParams = new URLSearchParams();
+
+        if (subject && subject !== "all") {
+            nextParams.set("subject", subject);
+        }
+
+        if (grade && grade !== "all") {
+            nextParams.set("grade", grade);
+        }
+
+        if (keyword && keyword.trim() !== "") {
+            nextParams.set("keyword", keyword.trim());
+        }
+
+        setSearchParams(nextParams);
+    };
+
+    const handleSubjectChange = (value) => {
+        setSelectedSubject(value);
+        updateQueryParams({ subject: value });
+    };
+
+    const handleGradeChange = (value) => {
+        setSelectedGrade(value);
+        updateQueryParams({ grade: value });
+    };
+
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        updateQueryParams({ keyword: value });
+    };
+
+    const handleApplyKeyword = () => {
+        updateQueryParams({ keyword: searchTerm });
+    };
+
+    const handleResetFilter = () => {
+        setSearchTerm("");
+        setSelectedSubject("all");
+        setSelectedGrade("all");
+        setSearchParams({});
+    };
 
     return (
         <div className="min-h-screen bg-gray-50/50 py-8 px-4 md:px-8">
@@ -122,28 +208,32 @@ const PracticeList = () => {
                                     <Input
                                         placeholder="Tìm kiếm đề thi..."
                                         className="pl-8"
+                                        value={searchTerm}
+                                        onChange={handleSearchChange}
                                     />
                                 </div>
                             </div>
                             <div className="lg:col-span-6 xl:col-span-2">
-                                <Select>
+                                <Select value={selectedSubject} onValueChange={handleSubjectChange}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Môn học" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="math">Toán</SelectItem>
-                                        <SelectItem value="physics">Lý</SelectItem>
-                                        <SelectItem value="chemistry">Hóa</SelectItem>
-                                        <SelectItem value="english">Tiếng Anh</SelectItem>
+                                        <SelectItem value="all">Tất cả</SelectItem>
+                                        <SelectItem value="Toán">Toán</SelectItem>
+                                        <SelectItem value="Lý">Lý</SelectItem>
+                                        <SelectItem value="Hóa">Hóa</SelectItem>
+                                        <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="lg:col-span-6 xl:col-span-2">
-                                <Select>
+                                <Select value={selectedGrade} onValueChange={handleGradeChange}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Lớp" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="all">Tất cả</SelectItem>
                                         <SelectItem value="10">Lớp 10</SelectItem>
                                         <SelectItem value="11">Lớp 11</SelectItem>
                                         <SelectItem value="12">Lớp 12</SelectItem>
@@ -177,62 +267,72 @@ const PracticeList = () => {
                                 </Select>
                             </div>
                             <div className="lg:col-span-12 xl:col-span-1">
-                                <Button className="w-full" type="submit">
-                                    <Filter className="mr-2 h-4 w-4 md:hidden xl:block" /> Lọc
+                                <Button
+                                    variant="ghost"
+                                    onClick={handleResetFilter}
+                                    className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-red-500 hover:bg-red-50 transition-all"
+                                >
+                                    <XCircle className="h-4 w-4" />
+                                    Xóa lọc
                                 </Button>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Exam List */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                    {exams.map((exam) => (
-                        <Card key={exam.id} className="flex flex-col h-full hover:shadow-lg transition-shadow duration-300 cursor-pointer group" onClick={() => handleStartExam(exam.id)}>
-                            <CardHeader className="p-5 pb-2 space-y-3">
-                                <div className="flex justify-between items-start">
-                                    <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
-                                        {exam.subject}
-                                    </Badge>
-                                    <Badge variant="outline" className={getDifficultyColor(exam.difficulty)}>
-                                        {exam.difficulty}
-                                    </Badge>
-                                </div>
-                                <CardTitle className="text-base font-bold line-clamp-2 min-h-[3rem] group-hover:text-primary transition-colors">
-                                    {exam.title}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-5 pt-0 flex-1">
-                                <div className="flex flex-wrap gap-1.5 mb-4">
-                                    {exam.tags.map(tag => (
-                                        <Badge key={tag} variant="secondary" className="text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200">
-                                            #{tag}
+                {filteredCourses.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                        Không tìm thấy khóa học phù hợp.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        {filteredCourses.map((exam) => (
+                            <Card key={exam.id} className="flex flex-col h-full hover:shadow-lg transition-shadow duration-300 cursor-pointer group" onClick={() => handleStartExam(exam.id)}>
+                                <CardHeader className="p-5 pb-2 space-y-3">
+                                    <div className="flex justify-between items-start">
+                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">
+                                            {exam.subject}
                                         </Badge>
-                                    ))}
-                                </div>
-                                <div className="space-y-2 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Clock className="h-4 w-4" />
-                                        <span>Thời gian: {exam.time} phút</span>
+                                        <Badge variant="outline" className={getDifficultyColor(exam.difficulty)}>
+                                            {exam.difficulty}
+                                        </Badge>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <HelpCircle className="h-4 w-4" />
-                                        <span>Số câu: {exam.questions}</span>
+                                    <CardTitle className="text-base font-bold line-clamp-2 min-h-[3rem] group-hover:text-primary transition-colors">
+                                        {exam.title}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-5 pt-0 flex-1">
+                                    <div className="flex flex-wrap gap-1.5 mb-4">
+                                        {exam.tags.map(tag => (
+                                            <Badge key={tag} variant="secondary" className="text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200">
+                                                #{tag}
+                                            </Badge>
+                                        ))}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
-                                        <span>Đã làm: {exam.users}</span>
+                                    <div className="space-y-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4" />
+                                            <span>Thời gian: {exam.time} phút</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <HelpCircle className="h-4 w-4" />
+                                            <span>Số câu: {exam.questions}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-4 w-4" />
+                                            <span>Đã làm: {exam.users}</span>
+                                        </div>
                                     </div>
-                                </div>
-                            </CardContent>
-                            <CardFooter className="p-5 pt-0 mt-auto">
-                                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                                    <PlayCircle className="mr-2 h-4 w-4" /> Làm bài ngay
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
+                                </CardContent>
+                                <CardFooter className="p-5 pt-0 mt-auto">
+                                    <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                                        <PlayCircle className="mr-2 h-4 w-4" /> Làm bài ngay
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                )}
 
                 <Pagination>
                     <PaginationContent>

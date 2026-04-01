@@ -1,29 +1,55 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider = ({ children }) => {
-  // 1. Khi vừa vào web, hỏi bộ nhớ xem trước đó đã đăng nhập chưa?
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("mock_login") === "true"
-  );
+const USER_STORAGE_KEY = "auth_user";
+const TOKEN_STORAGE_KEY = "auth_token";
 
-  const login = () => {
-    // 2. Khi đăng nhập: Lưu vào bộ nhớ + bật state
-    localStorage.setItem("mock_login", "true");
-    setIsLoggedIn(true);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
+    }
+  });
+
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem(TOKEN_STORAGE_KEY) || null;
+  });
+
+  const isLoggedIn = !!user && !!token;
+
+  const login = ({ token, user }) => {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+
+    setToken(token);
+    setUser(user);
   };
 
   const logout = () => {
-    // 3. Khi đăng xuất: Xóa khỏi bộ nhớ + tắt state
-    localStorage.removeItem("mock_login");
-    setIsLoggedIn(false);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
+
+    setToken(null);
+    setUser(null);
   };
 
-  return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      role: user?.role || null,
+      isLoggedIn,
+      login,
+      logout,
+    }),
+    [user, token, isLoggedIn]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
