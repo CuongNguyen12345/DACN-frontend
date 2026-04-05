@@ -40,14 +40,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = useMemo(
-    () => ({
+    () => {
+      const role = user?.role || null;
+      
+      // Khởi tạo basePath dựa trên role
+      const basePath = role === "admin" ? "/admin" : "/teacher";
+      
+      return {
       user,
       token,
-      role: user?.role || null,
+      role,
+      basePath,
       isLoggedIn,
       login,
       logout,
-    }),
+      }
+    },
     [user, token, isLoggedIn]
   );
 

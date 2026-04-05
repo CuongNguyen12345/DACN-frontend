@@ -24,12 +24,14 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const QnAManager = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyContent, setReplyContent] = useState("");
+    const { role } = useAuth();
 
     // Mock Data Q&A
     const [questions, setQuestions] = useState([
@@ -200,7 +202,7 @@ const QnAManager = () => {
                                 {q.status === "answered" ? (
                                     <div className="ml-8 border-l-2 border-emerald-200 pl-4 py-2">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Badge variant="outline" className="text-xs bg-white text-emerald-700 border-emerald-200">Admin trả lời</Badge>
+                                            <Badge variant="outline" className="text-xs bg-white text-emerald-700 border-emerald-200">{role === "admin" ? "Admin" : "Giáo viên" } trả lời</Badge>
                                         </div>
                                         <p className="text-sm text-gray-700">{q.answer}</p>
                                     </div>

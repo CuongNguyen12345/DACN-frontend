@@ -37,10 +37,9 @@ import UserDetail from "@/pages/admin/Users/UserDetail";
 import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
-
-const USER_ROLES = ["user", "teacher", "admin"];
-const TEACHER_ROLES = ["teacher", "admin"];
-const ADMIN_ROLES = ["admin"];
+import LessonManagement from "@/pages/admin/Lesson/LessonManagement";
+import LessonCreate from "@/pages/admin/Lesson/LessonCreate";
+import LessonEdit from "@/pages/admin/Lesson/LessonEdit";
 
 const sharedManagerRoutes = [
   { path: "exams", element: <ExamList /> },
@@ -54,7 +53,10 @@ const sharedManagerRoutes = [
   { path: "questions/view/:id", element: <QuestionView /> },
   
   { path: "qna", element: <QnAManager /> },
-  { path: "qna/:id", element: <QnAManager /> },
+
+  { path: "lessons", element: <LessonManagement /> },
+  { path: "lessons/create", element: <LessonCreate /> },
+  { path: "lessons/edit/:id", element: <LessonEdit /> },
 ];
 
 function AppRoutes() {
@@ -74,7 +76,7 @@ function AppRoutes() {
         <Route path="about" element={<About />} />
 
         {/* Khu user: user + teacher + admin */}
-        <Route element={<ProtectedRoute allowedRoles={USER_ROLES} />}>
+        <Route>
           <Route path="course/learning/:courseId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />

@@ -8,15 +8,18 @@ import {
     FileText, 
     CheckCircle2, 
     Clock, 
-    BarChart3 
+    BarChart3,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const ExamView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { basePath } = useAuth();
 
     // Mock dữ liệu chi tiết đề thi (Trong thực tế sẽ gọi API theo ID)
     const examDetail = {
@@ -50,7 +53,7 @@ const ExamView = () => {
             <div className="flex items-center justify-between">
                 <Button 
                     variant="ghost" 
-                    onClick={() => navigate("/admin/exams")}
+                    onClick={() => navigate(`/${basePath}/exams`)}
                     className="flex items-center gap-2"
                 >
                     <ArrowLeft className="h-4 w-4" /> Quay lại danh sách
@@ -60,7 +63,7 @@ const ExamView = () => {
                         <Printer className="h-4 w-4" /> In đề thi
                     </Button>
                     <Button 
-                        onClick={() => navigate(`/admin/exams/edit/${id}`)}
+                        onClick={() => navigate(`/${basePath}/exams/edit/${id}`)}
                         className="bg-amber-600 hover:bg-amber-700 text-white gap-2"
                     >
                         <Edit className="h-4 w-4" /> Chỉnh sửa

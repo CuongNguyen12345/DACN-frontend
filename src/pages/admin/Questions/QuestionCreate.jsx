@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, CheckCircle2, Circle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 // Import components từ shadcn/ui
 import {
@@ -13,6 +14,7 @@ import {
 
 const QuestionCreate = () => {
   const navigate = useNavigate();
+  const { basePath } = useAuth();
 
   // Khởi tạo State trống cho câu hỏi mới
   const [questionData, setQuestionData] = useState({
@@ -77,7 +79,7 @@ const QuestionCreate = () => {
     // 3. Xử lý lưu (Gửi API)
     console.log("Dữ liệu câu hỏi mới tạo:", { ...questionData, options });
     alert("Tạo câu hỏi mới thành công!");
-    navigate("/admin/questions"); // Quay lại danh sách câu hỏi
+    navigate(`/${basePath}/questions`); // Quay lại danh sách câu hỏi
   };
 
   return (
@@ -86,7 +88,7 @@ const QuestionCreate = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/admin/questions")}
+            onClick={() => navigate(`/${basePath}/questions`)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -99,7 +101,7 @@ const QuestionCreate = () => {
 
         <div className="flex gap-3">
           <button
-            onClick={() => navigate("/admin/questions")}
+            onClick={() => navigate(`/${basePath}/questions`)}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 outline-none"
           >
             Hủy
