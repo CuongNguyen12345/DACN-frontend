@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, Send } from "lucide-react";
+import api from "@/services/api";
 
 // Import components từ shadcn/ui
 import {
@@ -26,7 +27,7 @@ const QuestionCreate = () => {
   const [questionData, setQuestionData] = useState({
     content: "",
     subject: "Toán",
-    difficulty: "Trung bình",
+    difficulty: "Trung Bình",
     explanation: "",
     status: "Đã duyệt",
   });
@@ -104,22 +105,18 @@ const QuestionCreate = () => {
     setIsChatLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8081/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: `${userMessage}\n\nHãy trả về một câu hỏi trắc nghiệm theo định dạng JSON sau (và KHÔNG thêm bất kỳ text nào khác ngoài JSON):\n{\n  "question": "Nội dung câu hỏi",\n  "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },\n  "answer": "A",\n  "explanation": "Lời giải chi tiết"\n}`,
-        }),
+      const response = await api.post("/api/ai/generate-questions", {
+        message: `${userMessage}\n\nHãy trả về một câu hỏi trắc nghiệm theo định dạng JSON sau (và KHÔNG thêm bất kỳ text nào khác ngoài JSON):\n{\n  "question": "Nội dung câu hỏi",\n  "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },\n  "answer": "A",\n  "explanation": "Lời giải chi tiết"\n}`,
       });
 
-      const data = await response.json();
+      const data = response.data;
       const aiText = data?.result ?? data?.message ?? "Không nhận được phản hồi.";
 
       let parsedQuestion = null;
       try {
         const jsonMatch = aiText.match(/\{[\s\S]*\}/);
         if (jsonMatch) parsedQuestion = JSON.parse(jsonMatch[0]);
-      } catch (e) {}
+      } catch (e) { }
 
       setChatMessages((prev) => [
         ...prev,
@@ -228,9 +225,9 @@ const QuestionCreate = () => {
                 {isChatLoading && <div className="flex justify-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center animate-pulse"><Sparkles className="h-4 w-4 text-white" /></div>
                   <div className="bg-white px-4 py-2 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 flex gap-1 items-center">
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay:'0s'}}></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></div>
-                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>}
               </div>
@@ -241,7 +238,7 @@ const QuestionCreate = () => {
                   <textarea
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); handleSendMessage(); }}}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
                     placeholder="Nhập yêu cầu..."
                     className="flex-1 bg-transparent py-3 border-none focus:ring-0 outline-none text-sm resize-none"
                     rows="1"
@@ -318,7 +315,7 @@ const QuestionCreate = () => {
         <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-6">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
             <h3 className="font-bold text-gray-900 border-b pb-4">Phân loại & Trạng thái</h3>
-            
+
             <div className="space-y-4">
               <SelectGroup label="Môn học" icon="📚">
                 <Select value={questionData.subject} onValueChange={(v) => handleSelectChange("subject", v)}>
@@ -333,7 +330,7 @@ const QuestionCreate = () => {
                 <Select value={questionData.difficulty} onValueChange={(v) => handleSelectChange("difficulty", v)}>
                   <SelectTrigger className="w-full rounded-xl border-gray-200 focus:ring-blue-500"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["Nhận biết", "Thông hiểu", "Vận dụng", "Vận dụng cao"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    {["Dễ", "Trung Bình", "Khó"].map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </SelectGroup>
