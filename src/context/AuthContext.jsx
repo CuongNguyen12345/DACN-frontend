@@ -1,29 +1,53 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
+import api from "../services/api";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  // 1. Khi vừa vào web, hỏi bộ nhớ xem trước đó đã đăng nhập chưa?
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    localStorage.getItem("mock_login") === "true"
-  );
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = () => {
-    // 2. Khi đăng nhập: Lưu vào bộ nhớ + bật state
-    localStorage.setItem("mock_login", "true");
+  const fetchProfile = React.useCallback(async () => {
+    try {
+      const response = await api.get("/api/auth/profile");
+      if (response.data.result) {
+        setUser(response.data.result);
+        setIsLoggedIn(true);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
+
+  const login = (token, userData) => {
+    localStorage.setItem("token", token);
+    setUser(userData);
     setIsLoggedIn(true);
   };
 
   const logout = () => {
-    // 3. Khi đăng xuất: Xóa khỏi bộ nhớ + tắt state
-    localStorage.removeItem("mock_login");
+    localStorage.removeItem("token");
+    setUser(null);
     setIsLoggedIn(false);
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, loading, login, logout, fetchProfile }}>
       {children}
     </AuthContext.Provider>
   );

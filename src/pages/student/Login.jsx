@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import loginImage from "../../assets/Kids_Studying_from_Home-pana.png";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../../firebase";
@@ -27,15 +27,13 @@ const Login = () => {
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8081/api/auth/login",
-        {
-          email,
-          password,
-        },
-      );
+      const response = await api.post("/api/auth/login", {
+        email,
+        password,
+      });
 
-      login(response.data);
+      const { token, user } = response.data.result;
+      login(token, user);
       navigate("/");
     } catch (error) {
       console.error("Lỗi đăng nhập thường:", error);
@@ -73,10 +71,7 @@ const Login = () => {
         // idToken: idToken,
       };
 
-      const response = await axios.post(
-        "http://localhost:8081/api/auth/google",
-        googleUserData,
-        {
+      const response = await api.post("/api/auth/google", googleUserData, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
@@ -84,7 +79,8 @@ const Login = () => {
         },
       );
 
-      login(response.data);
+      const { token, user: loggedInUser } = response.data.result;
+      login(token, loggedInUser);
       navigate("/");
     } catch (error) {
       console.error("Lỗi đăng nhập bằng Google:", error);

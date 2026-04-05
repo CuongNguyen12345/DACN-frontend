@@ -1,4 +1,5 @@
 import { useState } from "react";
+import api from "@/services/api";
 import {
     User,
     Flame,
@@ -8,7 +9,6 @@ import {
     Edit
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,27 +32,49 @@ import RadarChart from "./components/RadarChart";
 import Achievements from "./components/Achievements";
 import Goals from "./components/Goals";
 
+import { useAuth } from "@/context/AuthContext";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 const Profile = () => {
-    // 1. Chuyển Mock Data thành State để UI tự cập nhật khi sửa xong
-    const [user, setUser] = useState({
-        name: "Nguyễn Văn Nam",
-        grade: "Lớp 12A1",
-        phone: "0901234567", // Thêm vài trường phụ cho form
-        school: "THPT Chuyên",
-        avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
-        streak: 15,
-        totalTime: "124h",
-        exercises: 450
-    });
+    const { user, loading, fetchProfile } = useAuth();
+    const navigate = useNavigate();
 
-    // 2. State quản lý Popup và Dữ liệu đang nhập trong Form
+    // All hooks must be declared before any early returns
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [formData, setFormData] = useState(user);
+    const [formData, setFormData] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSaveProfile = () => {
-        setUser(formData); // Lưu dữ liệu mới vào state chính
-        setIsEditOpen(false); // Đóng popup
-        // Tương lai: Gọi API lưu dữ liệu ở đây
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate("/login");
+        }
+    }, [user, loading, navigate]);
+
+    if (loading) return <div>Loading...</div>;
+    if (!user) return null;
+
+    const handleEditClick = () => {
+        setFormData(user);
+        setIsEditOpen(true);
+    };
+
+    const handleSaveProfile = async () => {
+        setIsSaving(true);
+        try {
+            await api.put("/api/auth/profile", {
+                grade: formData.grade,
+                phoneNumber: formData.phoneNumber,
+                schoolName: formData.schoolName,
+            });
+            await fetchProfile();
+            setIsEditOpen(false);
+        } catch (error) {
+            console.error("Cập nhật thất bại:", error);
+            alert(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật thông tin.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const radarData = [
@@ -74,23 +96,25 @@ const Profile = () => {
                         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                             <div className="relative">
                                 <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-white shadow-lg">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback>N</AvatarFallback>
+                                    <AvatarImage src={user.avatar || "https://github.com/shadcn.png"} alt={user.userName} />
+                                    <AvatarFallback>{user.userName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="absolute bottom-0 right-0 h-6 w-6 bg-green-500 border-2 border-white rounded-full"></div>
                             </div>
 
                             <div className="flex-1 text-center md:text-left space-y-2">
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.name}</h1>
-                                <p className="text-gray-500 text-base">{user.grade} - {user.school}</p>
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.userName}</h1>
+                                <p className="text-gray-500 text-base">
+                                    {user.grade || "Chưa có lớp"} - {user.schoolName || "Chưa có trường"}
+                                </p>
                                 <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
-                                    <Badge variant="secondary" className="px-3 py-1 bg-orange-100 text-orange-700 hover:bg-orange-100 gap-1.5">
-                                        <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.streak} ngày
-                                    </Badge>
-                                    <Badge variant="secondary" className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1.5">
-                                        <Clock className="h-3.5 w-3.5" /> Đã học: {user.totalTime}
-                                    </Badge>
-                                </div>
+                                     <Badge variant="secondary" className="px-3 py-1 bg-orange-100 text-orange-700 hover:bg-orange-100 gap-1.5">
+                                         <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.streak || 0} ngày
+                                     </Badge>
+                                     <Badge variant="secondary" className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1.5">
+                                         <Clock className="h-3.5 w-3.5" /> Đã học: {user.totalTime || "0h"}
+                                     </Badge>
+                                 </div>
                             </div>
 
                             <div className="flex-shrink-0">
@@ -98,10 +122,7 @@ const Profile = () => {
                                 <Button
                                     size="lg"
                                     className="shadow-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white"
-                                    onClick={() => {
-                                        setFormData(user); // Reset form data
-                                        setIsEditOpen(true);
-                                    }}
+                                    onClick={handleEditClick}
                                 >
                                     <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa hồ sơ
                                 </Button>
@@ -196,11 +217,11 @@ const Profile = () => {
 
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">Họ và tên</Label>
+                            <Label htmlFor="userName">Họ và tên</Label>
                             <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                id="userName"
+                                value={formData.userName || ""}
+                                onChange={(e) => setFormData({ ...formData, userName: e.target.value })}
                             />
                         </div>
 
@@ -209,26 +230,26 @@ const Profile = () => {
                                 <Label htmlFor="grade">Lớp</Label>
                                 <Input
                                     id="grade"
-                                    value={formData.grade}
+                                    value={formData.grade || ""}
                                     onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="phone">Số điện thoại</Label>
+                                <Label htmlFor="phoneNumber">Số điện thoại</Label>
                                 <Input
-                                    id="phone"
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    id="phoneNumber"
+                                    value={formData.phoneNumber || ""}
+                                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="school">Trường học</Label>
+                            <Label htmlFor="schoolName">Trường học</Label>
                             <Input
-                                id="school"
-                                value={formData.school}
-                                onChange={(e) => setFormData({ ...formData, school: e.target.value })}
+                                id="schoolName"
+                                value={formData.schoolName || ""}
+                                onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
                             />
                         </div>
                     </div>
@@ -237,9 +258,13 @@ const Profile = () => {
                         <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                             Hủy
                         </Button>
-                        <Button className="bg-[#3B82F6] hover:bg-[#2563EB]" onClick={handleSaveProfile}>
-                            Lưu thay đổi
-                        </Button>
+                        <Button
+                                className="bg-[#3B82F6] hover:bg-[#2563EB]"
+                                onClick={handleSaveProfile}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                            </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
