@@ -105,8 +105,8 @@ const QuestionCreate = () => {
     setIsChatLoading(true);
 
     try {
-      const response = await api.post("/api/ai/generate-questions", {
-        message: `${userMessage}\n\nHãy trả về một câu hỏi trắc nghiệm theo định dạng JSON sau (và KHÔNG thêm bất kỳ text nào khác ngoài JSON):\n{\n  "question": "Nội dung câu hỏi",\n  "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },\n  "answer": "A",\n  "explanation": "Lời giải chi tiết"\n}`,
+      const response = await api.post("/api/admin/ai/generate-questions", {
+        message: `${userMessage}\n\nHãy trả về một câu hỏi trắc nghiệm theo định dạng JSON sau (và KHÔNG thêm bất kỳ text nào khác ngoài JSON):\n{\n  "question": "Nội dung câu hỏi",\n  "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },\n  "answer": "A",\n  "explanation": "Lời giải chi tiết",\n  "level": "Dễ | Trung Bình | Khó"\n}`,
       });
 
       const data = response.data;
