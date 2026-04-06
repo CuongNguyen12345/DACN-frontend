@@ -209,18 +209,12 @@ const QuestionList = () => {
                                     <td className="px-6 py-4">
                                         {/* Cho phép click vào nội dung để xem chi tiết */}
                                         <div 
-                                            className="font-medium text-slate-900 line-clamp-2 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
+                                            className="font-medium text-slate-900 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
                                             onClick={() => navigate(`/admin/questions/view/${q.id}`)}
                                         >
                                             {q.content}
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="outline" className="text-[10px] text-slate-500 font-normal">{q.id}</Badge>
-                                            <Badge variant="secondary" className="text-[10px] bg-slate-100 text-slate-700 font-normal">{q.type}</Badge>
-                                            <Badge variant="outline" className={cn("text-[10px] font-medium border", getStatusColor(q.status))}>
-                                                {q.status}
-                                            </Badge>
-                                        </div>
+
                                     </td>
                                     <td className="px-6 py-4 text-slate-500">
                                         <div className="flex flex-col gap-1.5">

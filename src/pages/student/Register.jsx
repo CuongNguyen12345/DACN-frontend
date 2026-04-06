@@ -5,9 +5,44 @@ import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import loginImage from "../../assets/Kids_Studying_from_Home-pana.png";
+import { useState } from "react";
+import axios from "axios";
 
 const Register = () => {
     const navigate = useNavigate();
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setError("");
+
+        if (password !== confirmPassword) {
+            setError("Mật khẩu không khớp");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await axios.post("http://localhost:8081/api/auth/register", {
+                username,
+                email,
+                password
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                navigate("/login");
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || "Đăng ký thất bại. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen w-full flex bg-white">
@@ -41,13 +76,17 @@ const Register = () => {
                         <h1 className="text-3xl font-bold text-[#0F4C81]">Tạo Tài Khoản</h1>
                     </div>
 
-                    <form className="space-y-6">
+                    <form className="space-y-6" onSubmit={handleRegister}>
+                        {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="fullname" className="text-xs font-bold text-gray-700">Họ và tên</Label>
+                                <Label htmlFor="username" className="text-xs font-bold text-gray-700">Họ và tên</Label>
                                 <Input
-                                    id="fullname"
+                                    id="username"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                     placeholder="Nguyen Van A"
+                                    required
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
@@ -55,7 +94,11 @@ const Register = () => {
                                 <Label htmlFor="email" className="text-xs font-bold text-gray-700">Email</Label>
                                 <Input
                                     id="email"
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="vidu@gmail.com"
+                                    required
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
@@ -64,7 +107,10 @@ const Register = () => {
                                 <Input
                                     id="password"
                                     type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Tạo mật khẩu"
+                                    required
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
@@ -73,14 +119,21 @@ const Register = () => {
                                 <Input
                                     id="confirmPassword"
                                     type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     placeholder="Nhập lại mật khẩu"
+                                    required
                                     className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                                 />
                             </div>
                         </div>
 
-                        <Button className="w-full h-12 bg-[#0F4C81] hover:bg-[#0C3B66] text-white font-bold text-base rounded-lg shadow-lg shadow-blue-900/10">
-                            Đăng ký
+                        <Button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-12 bg-[#0F4C81] hover:bg-[#0C3B66] text-white font-bold text-base rounded-lg shadow-lg shadow-blue-900/10"
+                        >
+                            {loading ? "Đang đăng ký..." : "Đăng ký"}
                         </Button>
                     </form>
 

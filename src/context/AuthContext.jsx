@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useState, useContext, useEffect } from "react";
+import api from "../services/api";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -7,49 +9,49 @@ const USER_STORAGE_KEY = "auth_user";
 const TOKEN_STORAGE_KEY = "auth_token";
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = React.useCallback(async () => {
     try {
-      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
-      return savedUser ? JSON.parse(savedUser) : null;
+      const response = await api.get("/api/auth/profile");
+      if (response.data.result) {
+        setUser(response.data.result);
+        setIsLoggedIn(true);
+      }
     } catch (error) {
-      localStorage.removeItem(USER_STORAGE_KEY);
-      return null;
+      console.error("Failed to fetch profile:", error);
+      logout();
+    } finally {
+      setLoading(false);
     }
-  });
+  }, []);
 
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem(TOKEN_STORAGE_KEY) || null;
-  });
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
 
-  const isLoggedIn = !!user && !!token;
-
-  const login = ({ token, user }) => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-
-    setToken(token);
-    setUser(user);
+  const login = (token, userData) => {
+    localStorage.setItem("token", token);
+    setUser(userData);
+    setIsLoggedIn(true);
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    localStorage.removeItem(USER_STORAGE_KEY);
-
-    setToken(null);
+    localStorage.removeItem("token");
     setUser(null);
+    setIsLoggedIn(false);
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      role: user?.role || null,
-      isLoggedIn,
-      login,
-      logout,
-    }),
-    [user, token, isLoggedIn]
+  return (
+    <AuthContext.Provider value={{ isLoggedIn, user, loading, login, logout, fetchProfile }}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
