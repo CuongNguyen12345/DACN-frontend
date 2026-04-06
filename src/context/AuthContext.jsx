@@ -5,9 +5,6 @@ import api from "../services/api";
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
-const USER_STORAGE_KEY = "auth_user";
-const TOKEN_STORAGE_KEY = "auth_token";
-
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
   const [user, setUser] = useState(null);
@@ -50,7 +47,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, loading, login, logout, fetchProfile }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, role: user?.role?.toLowerCase() || null, loading, login, logout, fetchProfile }}>
       {children}
     </AuthContext.Provider>
   );

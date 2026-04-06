@@ -4,19 +4,24 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 const ProtectedRoute = ({ allowedRoles = [] }) => {
-  const { isLoggedIn, role } = useAuth();
+  const { isLoggedIn, role, loading } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
+    if (loading) return;
+
     if (!isLoggedIn) {
       toast.error("Bạn cần đăng nhập để truy cập trang này!");
-      return;
     }
+  }, [isLoggedIn, role, allowedRoles, loading]);
 
-    /* if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-      toast.error("Bạn không có quyền truy cập trang này!");
-    } */
-  }, [isLoggedIn, role, allowedRoles]);
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return <Navigate to="/login" state={{ from: location }} replace />;

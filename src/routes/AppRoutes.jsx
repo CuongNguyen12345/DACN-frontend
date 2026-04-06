@@ -38,7 +38,7 @@ import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
 
-const USER_ROLES = ["user", "teacher", "admin"];
+const USER_ROLES = ["student", "teacher", "admin"];
 const TEACHER_ROLES = ["teacher", "admin"];
 const ADMIN_ROLES = ["admin"];
 
@@ -75,7 +75,7 @@ function AppRoutes() {
 
         {/* Khu user: user + teacher + admin */}
         <Route element={<ProtectedRoute allowedRoles={USER_ROLES} />}>
-          <Route path="course/learning/:courseId" element={<Learning />} />
+          <Route path="course/learning/:lessonId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
           <Route path="practice/review/:examId" element={<PracticeReview />} />
