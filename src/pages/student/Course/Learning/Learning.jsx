@@ -103,7 +103,7 @@ const formatStudyTime = (seconds) => {
 };
 
 const Learning = () => {
-    const { id: courseId } = useParams();
+    const { courseId } = useParams();
     const navigate = useNavigate();
 
     const [isFavorite, setIsFavorite] = useState(false);
@@ -115,6 +115,8 @@ const Learning = () => {
 
     // Lưu thời gian đã học theo từng lesson
     const [lessonStudyMap, setLessonStudyMap] = useState({});
+
+    const storageKey = `lessonStudyMap_course_${courseId}`;
 
     // Dùng ref để luôn lấy đúng giá trị mới nhất khi unmount / beforeunload
     const activeLessonRef = useRef(activeLesson);
@@ -128,11 +130,31 @@ const Learning = () => {
         studySecondsRef.current = studySeconds;
     }, [studySeconds]);
 
-    // Khi đổi bài, load lại thời gian đã học của bài đó
+
     useEffect(() => {
-        const savedSeconds = lessonStudyMap[activeLesson.id] || 0;
-        setStudySeconds(savedSeconds);
-    }, [activeLesson.id, lessonStudyMap]);
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+        setLessonStudyMap(JSON.parse(saved));
+        }
+    }, [storageKey]);
+
+    useEffect(() => {
+        setStudySeconds(lessonStudyMap[activeLesson.id] || 0);
+    }, [activeLesson.id]);
+    useEffect(() => {
+        setLessonStudyMap((prev) => {
+            if (prev[activeLesson.id] === studySeconds) return prev;
+
+            return {
+                ...prev,
+                [activeLesson.id]: studySeconds,
+            };
+        });
+    }, [studySeconds, activeLesson.id]);
+
+    useEffect(() => {
+        localStorage.setItem(storageKey, JSON.stringify(lessonStudyMap));
+    }, [lessonStudyMap, storageKey]);
 
     // Theo dõi tab còn active hay không
     useEffect(() => {
@@ -157,14 +179,6 @@ const Learning = () => {
         return () => clearInterval(interval);
     }, [isPageVisible]);
 
-    // Đồng bộ studySeconds vào map của lesson hiện tại
-    useEffect(() => {
-        setLessonStudyMap((prev) => ({
-            ...prev,
-            [activeLesson.id]: studySeconds,
-        }));
-    }, [studySeconds, activeLesson.id]);
-
     // Lưu log khi rời trang
     useEffect(() => {
         const handleBeforeUnload = () => {
@@ -187,12 +201,6 @@ const Learning = () => {
     }, [courseId]);
 
     const handleLessonChange = (lesson) => {
-        // Lưu tiến độ bài cũ trước khi chuyển
-        setLessonStudyMap((prev) => ({
-            ...prev,
-            [activeLesson.id]: studySeconds,
-        }));
-
         setActiveLesson(lesson);
     };
 

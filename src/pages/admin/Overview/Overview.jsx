@@ -13,10 +13,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const Overview = () => {
     // Khởi tạo hook điều hướng
     const navigate = useNavigate();
+    const { role } = useAuth();
+    const basePath = role === "admin" ? "/admin" : "/teacher";
 
     // Mock Data cho Bảng thống kê
     const stats = [
@@ -39,7 +42,9 @@ const Overview = () => {
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900">Tổng quan hệ thống</h2>
-                    <p className="text-gray-500 text-sm mt-1">Chào mừng Admin quay trở lại!</p>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Chào mừng {role === "admin" ? "Admin" : "Giáo viên"} quay trở lại!
+                    </p>
                 </div>
             </div>
 
@@ -127,7 +132,7 @@ const Overview = () => {
                     <CardContent className="p-4 space-y-3">
                         {/* Link tới trang Tạo/Nhập đề thi */}
                         <Button 
-                            onClick={() => navigate('/admin/exams/create')} 
+                            onClick={() => navigate(`${basePath}/exams/create`)} 
                             variant="outline" 
                             className="w-full justify-start h-12"
                         >
@@ -136,30 +141,34 @@ const Overview = () => {
                         
                         {/* Link tới trang Ngân hàng câu hỏi hoặc Danh sách đề */}
                         <Button 
-                            onClick={() => navigate('/admin/exams')} 
+                            onClick={() => navigate(`${basePath}/exams`)} 
                             variant="outline" 
                             className="w-full justify-start h-12"
                         >
                             <Database className="mr-3 h-5 w-5 text-emerald-500" /> Thêm câu hỏi vào ngân hàng
                         </Button>
+
+                        {role === "admin" && (
+                            <>
+                            {/* Link tới trang Quản lý Học viên */}
+                                <Button 
+                                    onClick={() => navigate('/admin/users')} 
+                                    variant="outline" 
+                                    className="w-full justify-start h-12"
+                                >
+                                    <Users className="mr-3 h-5 w-5 text-purple-500" /> Quản lý tài khoản học sinh
+                                </Button>
                         
-                        {/* Link tới trang Quản lý Học viên */}
-                        <Button 
-                            onClick={() => navigate('/admin/users')} 
-                            variant="outline" 
-                            className="w-full justify-start h-12"
-                        >
-                            <Users className="mr-3 h-5 w-5 text-purple-500" /> Quản lý tài khoản học sinh
-                        </Button>
-                        
-                        {/* Link tới trang Cài đặt (Tab thông báo) */}
-                        <Button 
-                            onClick={() => navigate('/admin/settings')} 
-                            variant="outline" 
-                            className="w-full justify-start h-12 border-dashed border-gray-300"
-                        >
-                            <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt thông báo
-                        </Button>
+                                {/* Link tới trang Cài đặt (Tab thông báo) */}
+                                <Button 
+                                    onClick={() => navigate('/admin/settings')} 
+                                    variant="outline" 
+                                    className="w-full justify-start h-12 border-dashed border-gray-300"
+                                >
+                                    <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt thông báo
+                                </Button>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </div>

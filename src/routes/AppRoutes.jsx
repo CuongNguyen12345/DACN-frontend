@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "@/routes/components/ProtectedRoute";
 import StudentLayout from "../layouts/StudentLayout";
-import AdminLayout from "../layouts/AdminLayout";
+import ManagerLayout from "../layouts/ManagerLayout";
 
 // Student Pages
 import Home from "../pages/student/Home/Home";
@@ -18,6 +19,7 @@ import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
 import StudyHistory from "@/pages/student/History/StudyHistory";
 import Leaderboard from "@/pages/student/Ranking/Leaderboard";
+import NotificationsList from "@/pages/student/Notification/NotificationsList";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -36,8 +38,24 @@ import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
 
-// Routes & Components
-import ProtectedRoute from "@/routes/components/ProtectedRoute";
+const USER_ROLES = ["user", "teacher", "admin"];
+const TEACHER_ROLES = ["teacher", "admin"];
+const ADMIN_ROLES = ["admin"];
+
+const sharedManagerRoutes = [
+  { path: "exams", element: <ExamList /> },
+  { path: "exams/create", element: <ExamCreate /> },
+  { path: "exams/edit/:id", element: <ExamEdit /> },
+  { path: "exams/view/:id", element: <ExamView /> },
+
+  { path: "questions", element: <QuestionList /> },
+  { path: "questions/create", element: <QuestionCreate /> },
+  { path: "questions/edit/:id", element: <QuestionEdit /> },
+  { path: "questions/view/:id", element: <QuestionView /> },
+
+  { path: "qna", element: <QnAManager /> },
+  { path: "qna/:id", element: <QnAManager /> },
+];
 
 function AppRoutes() {
   return (
@@ -55,48 +73,51 @@ function AppRoutes() {
         <Route path="blog" element={<Blog />} />
         <Route path="about" element={<About />} />
 
-        {/* Các trang học sinh cần đăng nhập */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="course/learning/:subjectId" element={<Learning />} />
+        {/* Khu user: user + teacher + admin */}
+        <Route element={<ProtectedRoute allowedRoles={USER_ROLES} />}>
+          <Route path="course/learning/:courseId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
           <Route path="practice/review/:examId" element={<PracticeReview />} />
           <Route path="profile" element={<Profile />} />
           <Route path="studyhistory" element={<StudyHistory />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="notification" element={<NotificationsList />} />
         </Route>
       </Route>
 
-      {/* 3. KHU VỰC DÀNH CHO ADMIN (Có Admin Sidebar/Header riêng) */}
-      <Route path="/admin" element={<AdminLayout />}>
-        {/* /admin sẽ render Overview */}
-        <Route index element={<Overview />} />
-        <Route path="profile" element={<ProfileAdmin />} />
+      {/* Dành cho Giáo viên */}
+      <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
+        <Route path="/teacher" element={<ManagerLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="profile" element={<ProfileAdmin />} />
 
-        {/* Quản lý Đề thi */}
-        <Route path="exams" element={<ExamList />} />
-        <Route path="exams/create" element={<ExamCreate />} />
-        <Route path="exams/edit/:id" element={<ExamEdit />} />
-        <Route path="exams/view/:id" element={<ExamView />} />
-
-        {/* Ngân hàng Câu hỏi */}
-        <Route path="questions" element={<QuestionList />} />
-        <Route path="questions/create" element={<QuestionCreate />} />
-        <Route path="questions/edit/:id" element={<QuestionEdit />} />
-        <Route path="questions/view/:id" element={<QuestionView />} />
-
-        {/* Quản lý Học viên */}
-        <Route path="users" element={<UserList />} />
-        <Route path="users/:id" element={<UserDetail />} />
-
-        {/* Quản lý Hỏi Đáp */}
-        <Route path="QnA" element={<QnAManager />} />
-        <Route path="QnA/:id" element={<QnAManager />} />
-
-        {/* Báo cáo & Cài đặt */}
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
+          {/* Tự động render các route dùng chung */}
+          {sharedManagerRoutes.map((route) => (
+            <Route key={`teacher-${route.path}`} path={route.path} element={route.element} />
+          ))}
+        </Route>
       </Route>
+
+      {/* Dành cho Admin */}
+      <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+        <Route path="/admin" element={<ManagerLayout />}>
+          <Route index element={<Overview />} />
+          <Route path="profile" element={<ProfileAdmin />} />
+
+          {/* Tự động render các route dùng chung */}
+          {sharedManagerRoutes.map((route) => (
+            <Route key={`admin-${route.path}`} path={route.path} element={route.element} />
+          ))}
+
+          {/* Các route CHỈ dành cho Admin */}
+          <Route path="users" element={<UserList />} />
+          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Route>
+
     </Routes>
   );
 }
