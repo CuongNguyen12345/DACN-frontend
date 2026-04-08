@@ -11,9 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import api from "@/services/api";
+
 const QuestionEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [isLoading, setIsLoading] = useState(true);
 
   // State lưu trữ dữ liệu câu hỏi
   const [questionData, setQuestionData] = useState({
@@ -24,7 +27,7 @@ const QuestionEdit = () => {
     status: "Lớp 12",
   });
 
-  // State quản lý 4 đáp án (Mặc định có 4 options)
+  // State quản lý 4 đáp án
   const [options, setOptions] = useState([
     { id: "A", text: "", isCorrect: false },
     { id: "B", text: "", isCorrect: false },
@@ -32,23 +35,54 @@ const QuestionEdit = () => {
     { id: "D", text: "", isCorrect: false },
   ]);
 
-  // Giả lập gọi API lấy dữ liệu câu hỏi cũ
+  // Gọi API lấy dữ liệu câu hỏi
   useEffect(() => {
-    console.log("Đang lấy dữ liệu câu hỏi ID:", id);
-    // Dữ liệu giả lập
-    setQuestionData({
-      content: "Nghiệm của phương trình 2x - 4 = 0 là:",
-      subject: "Toán",
-      difficulty: "Nhận biết",
-      explanation: "Ta có: 2x - 4 = 0 <=> 2x = 4 <=> x = 2.",
-      status: "Lớp 12",
-    });
-    setOptions([
-      { id: "A", text: "x = 1", isCorrect: false },
-      { id: "B", text: "x = 2", isCorrect: true }, // B là đáp án đúng
-      { id: "C", text: "x = -2", isCorrect: false },
-      { id: "D", text: "x = 4", isCorrect: false },
-    ]);
+    const fetchQuestion = async () => {
+      try {
+        const actualId = id.replace("Q-", "");
+        const res = await api.get(`/api/admin/questions/${actualId}`);
+        const data = res.data;
+
+        // Map data từ BE sang FE state
+        let subjectValue = "Toán";
+        if (data.subject === "Vật Lý") subjectValue = "Vật Lý";
+        else if (data.subject === "Hóa Học") subjectValue = "Hóa Học";
+        else if (data.subject === "Tiếng Anh") subjectValue = "Tiếng Anh";
+        else if (data.subject === "Ngữ Văn") subjectValue = "Ngữ Văn";
+
+        let difficultyValue = "Dễ";
+        if (data.level === "Trung bình") difficultyValue = "Trung bình";
+        else if (data.level === "Dễ") difficultyValue = "Dễ";
+        else if (data.level === "Khó") difficultyValue = "Khó";
+
+        setQuestionData({
+          content: data.content || "",
+          subject: subjectValue,
+          difficulty: difficultyValue,
+          explanation: data.explanation || "",
+          status: data.status || "Lớp 12",
+        });
+
+        // Map options
+        if (data.options && data.options.length > 0) {
+          const mappedOptions = data.options.map((opt, index) => ({
+            id: String.fromCharCode(65 + index), // A, B, C, D
+            text: opt.text,
+            isCorrect: opt.isCorrect,
+          }));
+          setOptions(mappedOptions);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy dữ liệu câu hỏi:", error);
+        alert("Không thể tải dữ liệu câu hỏi.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchQuestion();
+    }
   }, [id]);
 
   // Xử lý thay đổi input thông thường
@@ -65,7 +99,7 @@ const QuestionEdit = () => {
   // Xử lý khi gõ text vào đáp án
   const handleOptionTextChange = (id, newText) => {
     setOptions((prev) =>
-      prev.map((opt) => (opt.id === id ? { ...opt, text: newText } : opt))
+      prev.map((opt) => (opt.id === id ? { ...opt, text: newText } : opt)),
     );
   };
 
@@ -74,13 +108,13 @@ const QuestionEdit = () => {
     setOptions((prev) =>
       prev.map((opt) => ({
         ...opt,
-        isCorrect: opt.id === id, // Chỉ cho phép 1 đáp án đúng (Radio behavior)
-      }))
+        isCorrect: opt.id === id,
+      })),
     );
   };
 
   // Lưu câu hỏi
-  const handleSave = () => {
+  const handleSave = async () => {
     // Kiểm tra xem đã chọn đáp án đúng chưa
     const hasCorrectAnswer = options.some((opt) => opt.isCorrect);
     if (!hasCorrectAnswer) {
@@ -88,10 +122,50 @@ const QuestionEdit = () => {
       return;
     }
 
-    console.log("Dữ liệu câu hỏi lưu:", { ...questionData, options });
-    alert(`Lưu câu hỏi #${id} thành công!`);
-    navigate("/admin/questions"); // Chuyển về trang danh sách câu hỏi
+    if (!questionData.content.trim()) {
+      alert("Vui lòng nhập nội dung câu hỏi!");
+      return;
+    }
+
+    try {
+      const actualId = id.replace("Q-", "");
+      const payload = {
+        content: questionData.content,
+        explanation: questionData.explanation,
+        level: questionData.difficulty,
+        subject: questionData.subject,
+        grade: questionData.status,
+        options: options.map((opt) => ({
+          content: opt.text,
+          isCorrect: opt.isCorrect,
+        })),
+      };
+
+      console.log("Gửi Payload cập nhật:", payload);
+
+      const response = await api.put(`/api/admin/questions/${actualId}`, payload);
+      console.log("Cập nhật thành công:", response.data);
+      
+      alert(`Cập nhật câu hỏi #${id} thành công!`);
+      navigate("/admin/questions");
+    } catch (error) {
+      console.error("Lỗi khi lưu câu hỏi:");
+      if (error.response) {
+        console.error("Data:", error.response.data);
+        console.error("Status:", error.response.status);
+        alert(`Lỗi từ máy chủ: ${error.response.data || "Vui lòng kiểm tra lại dữ liệu."}`);
+      } else {
+        console.error("Message:", error.message);
+        alert("Đã có lỗi xảy ra khi lưu câu hỏi. Vui lòng thử lại sau.");
+      }
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-10 text-center text-gray-500">Đang tải dữ liệu...</div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -106,12 +180,16 @@ const QuestionEdit = () => {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-gray-900">Chỉnh sửa câu hỏi</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Chỉnh sửa câu hỏi
+              </h2>
               <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm font-mono font-semibold border border-blue-200">
                 #{id || "NEW"}
               </span>
             </div>
-            <p className="text-sm text-gray-500">Cập nhật nội dung, đáp án và lời giải.</p>
+            <p className="text-sm text-gray-500">
+              Cập nhật nội dung, đáp án và lời giải.
+            </p>
           </div>
         </div>
 
@@ -135,10 +213,11 @@ const QuestionEdit = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Cột trái: Nội dung câu hỏi & Đáp án (Chiếm 2 phần) */}
         <div className="lg:col-span-2 space-y-6">
-          
           {/* Card: Nội dung câu hỏi */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Nội dung câu hỏi <span className="text-red-500">*</span></h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Nội dung câu hỏi <span className="text-red-500">*</span>
+            </h3>
             <textarea
               name="content"
               value={questionData.content}
@@ -152,16 +231,22 @@ const QuestionEdit = () => {
           {/* Card: Các phương án */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Các phương án đáp án</h3>
-              <span className="text-xs text-gray-500 italic">Click vào hình tròn để chọn đáp án đúng</span>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Các phương án đáp án
+              </h3>
+              <span className="text-xs text-gray-500 italic">
+                Click vào hình tròn để chọn đáp án đúng
+              </span>
             </div>
 
             <div className="space-y-3">
               {options.map((option) => (
-                <div 
-                  key={option.id} 
+                <div
+                  key={option.id}
                   className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-                    option.isCorrect ? "border-green-500 bg-green-50/30" : "border-gray-200 bg-gray-50"
+                    option.isCorrect
+                      ? "border-green-500 bg-green-50/30"
+                      : "border-gray-200 bg-gray-50"
                   }`}
                 >
                   {/* Nút chọn đáp án đúng */}
@@ -176,7 +261,7 @@ const QuestionEdit = () => {
                       <Circle className="h-6 w-6" />
                     )}
                   </button>
-                  
+
                   {/* Ký tự A, B, C, D */}
                   <div className="mt-2 font-bold text-gray-700 w-6 text-center">
                     {option.id}.
@@ -185,7 +270,9 @@ const QuestionEdit = () => {
                   {/* Input nội dung đáp án */}
                   <textarea
                     value={option.text}
-                    onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
+                    onChange={(e) =>
+                      handleOptionTextChange(option.id, e.target.value)
+                    }
                     rows="2"
                     placeholder={`Nhập nội dung đáp án ${option.id}...`}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none bg-white"
@@ -197,7 +284,9 @@ const QuestionEdit = () => {
 
           {/* Card: Lời giải chi tiết */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Lời giải chi tiết (Không bắt buộc)</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Lời giải chi tiết (Không bắt buộc)
+            </h3>
             <textarea
               name="explanation"
               value={questionData.explanation}
@@ -207,21 +296,26 @@ const QuestionEdit = () => {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-y"
             ></textarea>
           </div>
-
         </div>
 
         {/* Cột phải: Phân loại & Cài đặt */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân loại câu hỏi</h3>
-            
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Phân loại câu hỏi
+            </h3>
+
             <div className="space-y-5">
               {/* Môn học */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Môn học</label>
-                <Select 
-                  value={questionData.subject} 
-                  onValueChange={(value) => handleSelectChange("subject", value)}
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Môn học
+                </label>
+                <Select
+                  value={questionData.subject}
+                  onValueChange={(value) =>
+                    handleSelectChange("subject", value)
+                  }
                 >
                   <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
                     <SelectValue placeholder="Chọn môn học" />
@@ -238,28 +332,33 @@ const QuestionEdit = () => {
 
               {/* Độ khó */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Độ khó</label>
-                <Select 
-                  value={questionData.difficulty} 
-                  onValueChange={(value) => handleSelectChange("difficulty", value)}
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Độ khó
+                </label>
+                <Select
+                  value={questionData.difficulty}
+                  onValueChange={(value) =>
+                    handleSelectChange("difficulty", value)
+                  }
                 >
                   <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
                     <SelectValue placeholder="Chọn độ khó" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Nhận biết">Nhận biết</SelectItem>
-                    <SelectItem value="Thông hiểu">Thông hiểu</SelectItem>
-                    <SelectItem value="Vận dụng">Vận dụng</SelectItem>
-                    <SelectItem value="Vận dụng cao">Vận dụng cao</SelectItem>
+                    <SelectItem value="Dễ">Dễ</SelectItem>
+                    <SelectItem value="Trung bình">Trung bình</SelectItem>
+                    <SelectItem value="Khó">Khó</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {/* Lớp */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
-                <Select 
-                  value={questionData.status} 
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lớp
+                </label>
+                <Select
+                  value={questionData.status}
                   onValueChange={(value) => handleSelectChange("status", value)}
                 >
                   <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
@@ -272,13 +371,14 @@ const QuestionEdit = () => {
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
           </div>
-          
+
           {/* Gợi ý / Info box */}
           <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-            <h4 className="text-sm font-semibold text-blue-800 mb-2">💡 Mẹo nhỏ</h4>
+            <h4 className="text-sm font-semibold text-blue-800 mb-2">
+              💡 Mẹo nhỏ
+            </h4>
             <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
               <li>Bạn phải chọn ít nhất 1 đáp án đúng để lưu.</li>
               <li>Lời giải chi tiết sẽ hiển thị sau khi học sinh nộp bài.</li>
