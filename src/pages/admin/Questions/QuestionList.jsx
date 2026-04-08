@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
-import { 
-    Search, Plus, Filter, Database, Tag, Edit, Trash2, 
+import { useState, useMemo, useEffect, useCallback } from "react";
+import {
+    Search, Plus, Filter, Database, Tag, Edit, Trash2,
     MoreHorizontal, Download, Upload, CheckSquare, Square,
     ChevronLeft, ChevronRight, Eye
 } from "lucide-react";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
+import api from "@/services/api";
 
 const QuestionList = () => {
     const navigate = useNavigate();
@@ -21,37 +22,65 @@ const QuestionList = () => {
     const [levelFilter, setLevelFilter] = useState("all");
     const [subjectFilter, setSubjectFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all"); // THÊM STATE LỌC TRẠNG THÁI
-    
+
     // 2. States cho chọn nhiều (Bulk Action)
     const [selectedIds, setSelectedIds] = useState([]);
-    
+
     // 3. States cho phân trang
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Mock Data ĐÃ THÊM TRƯỜNG STATUS
-    const [questions, setQuestions] = useState([
-        { id: "Q-101", content: "Đạo hàm của hàm số $y = \\ln(x)$ là gì?", subject: "Toán", level: "Dễ", type: "Trắc nghiệm", status: "Đã duyệt", createdAt: "2026-03-10" },
-        { id: "Q-102", content: "Ai là tác giả của tác phẩm 'Lão Hạc'?", subject: "Ngữ Văn", level: "Dễ", type: "Trắc nghiệm", status: "Đã duyệt", createdAt: "2026-03-11" },
-        { id: "Q-103", content: "Hiện tượng cộng hưởng xảy ra khi nào?", subject: "Vật Lý", level: "Khó", type: "Trắc nghiệm", status: "Cần sửa lại", createdAt: "2026-03-12" },
-        { id: "Q-104", content: "Cấu hình electron của Natri (Z=11)?", subject: "Hóa Học", level: "Trung bình", type: "Trắc nghiệm", status: "Đã duyệt", createdAt: "2026-03-05" },
-        { id: "Q-105", content: "Giải phương trình bậc hai: $x^2 - 5x + 6 = 0$.", subject: "Toán", level: "Trung bình", type: "Tự luận", status: "Bản nháp", createdAt: "2026-03-08" },
-        { id: "Q-106", content: "Tác dụng của lực ma sát nghỉ là gì?", subject: "Vật Lý", level: "Dễ", type: "Trắc nghiệm", status: "Đã duyệt", createdAt: "2026-03-09" },
-    ]);
+    // Theo Mock Data nhưng giờ chúng ta lấy từ BE
+    const [questions, setQuestions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // 4. Custom Hook để Debounce search term
+    function useDebounce(value, delay) {
+        const [debouncedValue, setDebouncedValue] = useState(value);
+        useEffect(() => {
+            const handler = setTimeout(() => {
+                setDebouncedValue(value);
+            }, delay);
+            return () => clearTimeout(handler);
+        }, [value, delay]);
+        return debouncedValue;
+    }
+
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     // --- LOGIC XỬ LÝ DỮ LIỆU ---
+    const fetchQuestions = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const params = {};
+            if (debouncedSearchTerm) params.keyword = debouncedSearchTerm;
+            if (subjectFilter !== "all") params.subject = subjectFilter;
+            if (levelFilter !== "all") params.level = levelFilter;
+            if (statusFilter !== "all") params.grade = statusFilter;
 
-    // Lọc dữ liệu dựa trên search và select
-    const filteredQuestions = useMemo(() => {
-        return questions.filter(q => {
-            const matchesSearch = q.content.toLowerCase().includes(searchTerm.toLowerCase()) || q.id.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesLevel = levelFilter === "all" || q.level === levelFilter;
-            const matchesSubject = subjectFilter === "all" || q.subject === subjectFilter;
-            const matchesStatus = statusFilter === "all" || q.status === statusFilter; // LOGIC LỌC TRẠNG THÁI
-            
-            return matchesSearch && matchesLevel && matchesSubject && matchesStatus;
-        });
-    }, [searchTerm, levelFilter, subjectFilter, statusFilter, questions]);
+            const res = await api.get("/api/admin/questions", { params });
+
+            const formatted = res.data.map(q => ({
+                ...q,
+                createdAt: q.createdAt ? String(q.createdAt).substring(0, 10) : "N/A"
+            }));
+
+            // Xếp mới nhất lên đầu (hoặc BE có thể làm điều này với Sort)
+            setQuestions(formatted.reverse());
+            setCurrentPage(1); // Reset về trang 1 khi lọc
+        } catch (error) {
+            console.error("Lỗi lấy danh sách câu hỏi:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [debouncedSearchTerm, subjectFilter, levelFilter, statusFilter]);
+
+    useEffect(() => {
+        fetchQuestions();
+    }, [fetchQuestions]);
+
+    // Không cần dùng useMemo lọc ở client nữa, server đã lọc rồi
+    const filteredQuestions = questions;
 
     // Phân trang
     const totalPages = Math.ceil(filteredQuestions.length / itemsPerPage);
@@ -70,10 +99,20 @@ const QuestionList = () => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    const handleDelete = (id) => {
+    const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc muốn xóa câu hỏi này?")) {
-            setQuestions(prev => prev.filter(q => q.id !== id));
-            setSelectedIds(prev => prev.filter(i => i !== id));
+            try {
+                // frontend id is like "Q-10"
+                const actualId = id.toString().replace("Q-", "");
+                await api.delete(`/api/admin/questions/${actualId}`);
+
+                // Update internal state
+                setQuestions(prev => prev.filter(q => q.id !== id));
+                setSelectedIds(prev => prev.filter(i => i !== id));
+            } catch (error) {
+                console.error("Lỗi xóa câu hỏi:", error);
+                alert("Xóa không thành công!");
+            }
         }
     };
 
@@ -134,9 +173,9 @@ const QuestionList = () => {
                 <CardContent className="p-4 flex flex-col md:flex-row gap-4">
                     <div className="flex-1 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <input 
+                        <input
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                            placeholder="Tìm kiếm nội dung câu hỏi hoặc ID..."
+                            placeholder="Tìm kiếm nội dung câu hỏi..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -150,10 +189,10 @@ const QuestionList = () => {
                                 <SelectItem value="Toán">Toán</SelectItem>
                                 <SelectItem value="Vật Lý">Vật Lý</SelectItem>
                                 <SelectItem value="Hóa Học">Hóa Học</SelectItem>
-                                <SelectItem value="Ngữ Văn">Ngữ Văn</SelectItem>
+                                <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                             </SelectContent>
                         </Select>
-                        
+
                         {/* LỌC ĐỘ KHÓ */}
                         <Select value={levelFilter} onValueChange={setLevelFilter}>
                             <SelectTrigger className="w-[130px]"><SelectValue placeholder="Độ khó" /></SelectTrigger>
@@ -165,14 +204,14 @@ const QuestionList = () => {
                             </SelectContent>
                         </Select>
 
-                        {/* THÊM LỌC TRẠNG THÁI */}
+                        {/* THÊM LỌC LỚP */}
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
+                            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Mọi trạng thái</SelectItem>
-                                <SelectItem value="Đã duyệt">Đã duyệt</SelectItem>
-                                <SelectItem value="Bản nháp">Bản nháp</SelectItem>
-                                <SelectItem value="Cần sửa lại">Cần sửa lại</SelectItem>
+                                <SelectItem value="all">Tất cả lớp</SelectItem>
+                                <SelectItem value="Lớp 10">Lớp 10</SelectItem>
+                                <SelectItem value="Lớp 11">Lớp 11</SelectItem>
+                                <SelectItem value="Lớp 12">Lớp 12</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -186,7 +225,7 @@ const QuestionList = () => {
                         <thead className="bg-slate-50 border-b border-slate-100 text-slate-600 font-medium">
                             <tr>
                                 <th className="px-6 py-4 w-10">
-                                    <Checkbox 
+                                    <Checkbox
                                         checked={selectedIds.length === paginatedQuestions.length && paginatedQuestions.length > 0}
                                         onCheckedChange={toggleSelectAll}
                                     />
@@ -198,17 +237,25 @@ const QuestionList = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {paginatedQuestions.map((q) => (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-6 text-slate-500">Đang tải dữ liệu...</td>
+                                </tr>
+                            ) : paginatedQuestions.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-6 text-slate-500">Không tìm thấy dữ liệu.</td>
+                                </tr>
+                            ) : paginatedQuestions.map((q) => (
                                 <tr key={q.id} className={cn("hover:bg-slate-50/50 transition-colors group", selectedIds.includes(q.id) && "bg-blue-50/30")}>
                                     <td className="px-6 py-4">
-                                        <Checkbox 
+                                        <Checkbox
                                             checked={selectedIds.includes(q.id)}
                                             onCheckedChange={() => toggleSelectOne(q.id)}
                                         />
                                     </td>
                                     <td className="px-6 py-4">
                                         {/* Cho phép click vào nội dung để xem chi tiết */}
-                                        <div 
+                                        <div
                                             className="font-medium text-slate-900 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
                                             onClick={() => navigate(`/admin/questions/view/${q.id}`)}
                                         >
@@ -218,7 +265,7 @@ const QuestionList = () => {
                                     </td>
                                     <td className="px-6 py-4 text-slate-500">
                                         <div className="flex flex-col gap-1.5">
-                                            <span className="flex items-center gap-1.5 text-slate-700 font-medium"><Tag className="h-3.5 w-3.5" /> {q.subject}</span>
+                                            <span className="flex items-center gap-1.5 text-slate-700 font-medium"><Tag className="h-3.5 w-3.5" /> {q.subject} - {q.status}</span>
                                             <span className="text-[11px] opacity-70">Ngày tạo: {q.createdAt}</span>
                                         </div>
                                     </td>
@@ -231,17 +278,17 @@ const QuestionList = () => {
                                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                             {/* NÚT XEM CHI TIẾT MỚI THÊM */}
                                             <Button
-                                                onClick={() => navigate(`/admin/questions/view/${q.id}`)} 
+                                                onClick={() => navigate(`/admin/questions/view/${q.id}`)}
                                                 variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100">
                                                 <Eye className="h-4 w-4" />
                                             </Button>
-                    
+
                                             <Button
-                                                onClick={() => navigate(`/admin/questions/edit/${q.id}`)} 
+                                                onClick={() => navigate(`/admin/questions/edit/${q.id}`)}
                                                 variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50">
                                                 <Edit className="h-4 w-4" />
                                             </Button>
-                    
+
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => handleDelete(q.id)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -257,14 +304,14 @@ const QuestionList = () => {
                 <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white text-slate-500">
                     <p className="text-xs">Trang {currentPage} / {totalPages || 1}</p>
                     <div className="flex gap-1">
-                        <Button 
+                        <Button
                             variant="outline" size="sm" className="h-8 w-8 p-0"
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => prev - 1)}
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <Button 
+                        <Button
                             variant="outline" size="sm" className="h-8 w-8 p-0"
                             disabled={currentPage === totalPages || totalPages === 0}
                             onClick={() => setCurrentPage(prev => prev + 1)}

@@ -49,7 +49,7 @@ const mockChapters = [
                 id: 1,
                 title: "Bài 1: Khảo sát hàm số bậc 3",
                 duration: "15:30",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+                videoUrl: "https://www.youtube.com/embed/ESQmENrMX5Y",
                 isCompleted: true,
                 content: `
                     <h3 class="text-lg font-semibold mb-2">1. Khái niệm cơ bản</h3>
@@ -329,7 +329,7 @@ const Learning = () => {
                                             onClick={() => setIsFavorite((prev) => !prev)}
                                             className={cn(
                                                 isFavorite &&
-                                                    "text-red-500 hover:text-red-600 border-red-200 bg-red-50"
+                                                "text-red-500 hover:text-red-600 border-red-200 bg-red-50"
                                             )}
                                         >
                                             <Heart
@@ -493,7 +493,7 @@ const Learning = () => {
                                                     const completedLessons = chapter.lessons.filter(l => l.isCompleted).length;
                                                     return (
                                                         <div key={chapter.id} className="border-t border-gray-100">
-                                                            <div 
+                                                            <div
                                                                 className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50/50 group"
                                                                 onClick={() => toggleChapter(chapter.id)}
                                                             >
@@ -507,7 +507,7 @@ const Learning = () => {
                                                                 </div>
                                                                 <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
                                                             </div>
-                                                            
+
                                                             {isExpanded && (
                                                                 <div className="flex flex-col divide-y divide-gray-50 bg-white">
                                                                     {chapter.lessons.map((item) => (
@@ -540,9 +540,9 @@ const Learning = () => {
 
                                                                             <div className="flex-1 space-y-1">
                                                                                 <h4 className={cn(
-                                                                                        "text-sm font-medium leading-snug",
-                                                                                        activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
-                                                                                    )}
+                                                                                    "text-sm font-medium leading-snug",
+                                                                                    activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
+                                                                                )}
                                                                                 >
                                                                                     {item.title}
                                                                                 </h4>

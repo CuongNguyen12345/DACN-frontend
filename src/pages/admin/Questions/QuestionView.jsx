@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import api from "@/services/api";
 import { 
   ArrowLeft, Edit, CheckCircle2, Circle, 
   Tag, Calendar, FileText, Layers, Link as LinkIcon, ExternalLink
@@ -12,31 +13,38 @@ import { Badge } from "@/components/ui/badge";
 
 const QuestionView = () => {
   const navigate = useNavigate();
-  // const { id } = useParams(); // Lấy ID từ URL trong thực tế
+  const { id } = useParams();
 
-  // Mock Data: Chi tiết câu hỏi + Danh sách đề thi chứa câu hỏi này
-  const [question] = useState({
-    id: "Q-101",
-    content: "Đạo hàm của hàm số $y = \\ln(x)$ là gì?",
-    subject: "Toán",
-    level: "Dễ",
-    status: "Đã duyệt",
-    type: "Trắc nghiệm",
-    createdAt: "2026-03-10",
-    explanation: "Áp dụng công thức đạo hàm cơ bản: (ln x)' = 1/x với điều kiện x > 0.",
-    options: [
-      { id: "A", text: "$y' = \\frac{1}{x}$", isCorrect: true },
-      { id: "B", text: "$y' = x$", isCorrect: false },
-      { id: "C", text: "$y' = e^x$", isCorrect: false },
-      { id: "D", text: "$y' = \\frac{1}{x^2}$", isCorrect: false },
-    ],
-    // DỮ LIỆU CÁC ĐỀ THI ĐÃ GÁN
-    linkedExams: [
-      { id: "EX-2024-01", title: "Đề kiểm tra 15p Toán Giải Tích", status: "Đang diễn ra", date: "2026-03-12" },
-      { id: "EX-2024-05", title: "Đề thi Giữa kỳ I - Khối 12", status: "Đã đóng", date: "2026-01-15" },
-      { id: "EX-2024-12", title: "Bài tập về nhà tuần 4", status: "Bản nháp", date: "2026-03-20" },
-    ]
-  });
+  const [question, setQuestion] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQuestion = async () => {
+      try {
+        // id in frontend is like "Q-101", let's extract the actual ID by removing "Q-"
+        const actualId = id.replace("Q-", "");
+        const res = await api.get(`/api/admin/questions/${actualId}`);
+        const data = res.data;
+        data.createdAt = data.createdAt ? String(data.createdAt).substring(0, 10) : "N/A";
+        
+        // Mock linked exams for now since it's not in BE yet
+        data.linkedExams = [
+          { id: "EX-2024-01", title: "Đề kiểm tra 15p Toán Giải Tích", status: "Đang diễn ra", date: "2026-03-12" },
+          { id: "EX-2024-05", title: "Đề thi Giữa kỳ I - Khối 12", status: "Đã đóng", date: "2026-01-15" }
+        ];
+        
+        setQuestion(data);
+      } catch (error) {
+        console.error("Lỗi khi tải chi tiết câu hỏi:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchQuestion();
+    }
+  }, [id]);
 
   const getLevelColor = (level) => {
     switch (level) {
@@ -64,6 +72,14 @@ const QuestionView = () => {
       default: return "bg-slate-100 text-slate-700";
     }
   };
+
+  if (isLoading) {
+    return <div className="p-10 text-center text-slate-500">Đang tải chi tiết câu hỏi...</div>;
+  }
+
+  if (!question) {
+    return <div className="p-10 text-center text-red-500">Không tìm thấy câu hỏi này.</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-10">
@@ -209,7 +225,7 @@ const QuestionView = () => {
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                <span className="text-slate-500 text-sm">Trạng thái</span>
+                <span className="text-slate-500 text-sm">Lớp</span>
                 <Badge variant="outline" className={cn("font-medium border", getStatusColor(question.status))}>
                   {question.status}
                 </Badge>

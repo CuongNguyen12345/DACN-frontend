@@ -21,7 +21,7 @@ const QuestionEdit = () => {
     subject: "Toán",
     difficulty: "Trung bình",
     explanation: "",
-    status: "Đã duyệt",
+    status: "Lớp 12",
   });
 
   // State quản lý 4 đáp án (Mặc định có 4 options)
@@ -41,7 +41,7 @@ const QuestionEdit = () => {
       subject: "Toán",
       difficulty: "Nhận biết",
       explanation: "Ta có: 2x - 4 = 0 <=> 2x = 4 <=> x = 2.",
-      status: "Đã duyệt",
+      status: "Lớp 12",
     });
     setOptions([
       { id: "A", text: "x = 1", isCorrect: false },
@@ -255,20 +255,20 @@ const QuestionEdit = () => {
                 </Select>
               </div>
 
-              {/* Trạng thái */}
+              {/* Lớp */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái duyệt</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Lớp</label>
                 <Select 
                   value={questionData.status} 
                   onValueChange={(value) => handleSelectChange("status", value)}
                 >
                   <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
-                    <SelectValue placeholder="Chọn trạng thái" />
+                    <SelectValue placeholder="Chọn lớp" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Bản nháp">Bản nháp</SelectItem>
-                    <SelectItem value="Đã duyệt">Đã duyệt (Sẵn sàng dùng)</SelectItem>
-                    <SelectItem value="Cần sửa lại">Cần sửa lại</SelectItem>
+                    <SelectItem value="Lớp 10">Lớp 10</SelectItem>
+                    <SelectItem value="Lớp 11">Lớp 11</SelectItem>
+                    <SelectItem value="Lớp 12">Lớp 12</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
