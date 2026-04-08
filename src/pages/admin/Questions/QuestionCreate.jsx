@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 
 const QuestionCreate = () => {
   const navigate = useNavigate();
+  const { basePath } = useAuth();
 
   // Khởi tạo State trống cho câu hỏi mới
   const [questionData, setQuestionData] = useState({

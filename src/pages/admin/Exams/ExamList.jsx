@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const ExamList = () => {
     const navigate = useNavigate();
@@ -34,6 +35,8 @@ const ExamList = () => {
     // Thêm state cho phân trang
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
+
+    const { basePath } = useAuth();
 
     // Mock Data ban đầu
     const [exams, setExams] = useState([
@@ -56,7 +59,7 @@ const ExamList = () => {
     };
 
     const handleView = (id) => {
-        navigate(`/admin/exams/view/${id}`); 
+        navigate(`/${basePath}/exams/view/${id}`); 
     };
 
     // Lọc dữ liệu (dùng useMemo để tối ưu hiệu suất giống QuestionList)
@@ -93,7 +96,7 @@ const ExamList = () => {
                     <p className="text-gray-500 text-sm mt-1">Quản lý danh sách đề thi, tạo mới và chỉnh sửa nội dung.</p>
                 </div>
                 <Button 
-                    onClick={() => navigate("/admin/exams/create")} 
+                    onClick={() => navigate(`/${basePath}/exams/create`)} 
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                     <Plus className="h-4 w-4 mr-2" /> Tạo đề thi mới
@@ -197,7 +200,7 @@ const ExamList = () => {
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                                 <Button 
-                                                    onClick={() => navigate(`/admin/exams/edit/${exam.id}`)}
+                                                    onClick={() => navigate(`/${basePath}/exams/edit/${exam.id}`)}
                                                     variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50"
                                                 >
                                                     <Edit className="h-4 w-4" />

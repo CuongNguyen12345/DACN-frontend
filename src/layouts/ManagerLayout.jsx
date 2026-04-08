@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard, FileText, Database, Users, BarChart3, Settings,
-    LogOut, Menu, Search, Bell, MessageCircleQuestion, Home
+    LogOut, Menu, Search, Bell, MessageCircleQuestion, Home, BookOpen
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -11,16 +11,15 @@ import { useAuth } from "@/context/AuthContext";
 
 const AdminLayout = () => {
     const navigate = useNavigate();
-    const { role, logout } = useAuth();
+    const { basePath, role, logout } = useAuth();
     const location = useLocation(); 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-    const basePath = role === "admin" ? "/admin" : "/teacher";
 
     const sidebarItems = [
         // Admin + Teacher
         { icon: LayoutDashboard, label: "Tổng quan", path: basePath, roles: ["admin", "teacher"] },
         { icon: FileText, label: "Quản lý Đề thi", path: `${basePath}/exams`, roles: ["admin", "teacher"] },
+        { icon: BookOpen, label: "Quản lý bài học", path: `${basePath}/lessons`, roles: ["admin", "teacher"] },
         { icon: Database, label: "Ngân hàng Câu hỏi", path: `${basePath}/questions`, roles: ["admin", "teacher"] },
         { icon: MessageCircleQuestion, label: "Hỏi đáp", path: `${basePath}/qna`, roles: ["admin", "teacher"] },
 

@@ -18,8 +18,7 @@ import { useAuth } from "@/context/AuthContext";
 const Overview = () => {
     // Khởi tạo hook điều hướng
     const navigate = useNavigate();
-    const { role } = useAuth();
-    const basePath = role === "admin" ? "/admin" : "/teacher";
+    const { role, basePath } = useAuth();
 
     // Mock Data cho Bảng thống kê
     const stats = [
@@ -165,7 +164,7 @@ const Overview = () => {
                                     variant="outline" 
                                     className="w-full justify-start h-12 border-dashed border-gray-300"
                                 >
-                                    <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt thông báo
+                                    <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt 
                                 </Button>
                             </>
                         )}

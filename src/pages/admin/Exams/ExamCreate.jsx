@@ -11,8 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useAuth } from "@/context/AuthContext";
+
 const ExamCreate = () => {
   const navigate = useNavigate();
+  const { basePath } = useAuth();
   
   // State lưu trữ dữ liệu form
   const [examData, setExamData] = useState({
@@ -55,7 +58,7 @@ const ExamCreate = () => {
     console.log("Dữ liệu lưu:", examData);
     console.log("File đính kèm:", selectedFile);
     alert("Lưu đề thi thành công! (Demo)");
-    navigate("/admin/exams"); // Quay lại danh sách
+    navigate(`/${basePath}/exams`); // Quay lại danh sách
   };
 
   return (
@@ -64,7 +67,7 @@ const ExamCreate = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => navigate("/admin/exams")}
+            onClick={() => navigate(`/${basePath}/exams`)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -77,7 +80,7 @@ const ExamCreate = () => {
         
         <div className="flex gap-3">
           <button 
-            onClick={() => navigate("/admin/exams")}
+            onClick={() => navigate(`/${basePath}/exams`)}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 outline-none"
           >
             Hủy

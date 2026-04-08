@@ -1,42 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
-  ArrowLeft, Edit, CheckCircle2, Circle, 
-  Tag, Calendar, FileText, Layers, Link as LinkIcon, ExternalLink
+  ArrowLeft, Edit, CheckCircle2, Circle, ExternalLink,
+  Tag, Calendar, FileText, Layers, Link as LinkIcon, Loader2,
+  Trash2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const QuestionView = () => {
   const navigate = useNavigate();
-  // const { id } = useParams(); // Lấy ID từ URL trong thực tế
+  const { id } = useParams(); // Lấy ID từ URL
+  const { basePath } = useAuth();
 
-  // Mock Data: Chi tiết câu hỏi + Danh sách đề thi chứa câu hỏi này
-  const [question] = useState({
-    id: "Q-101",
-    content: "Đạo hàm của hàm số $y = \\ln(x)$ là gì?",
-    subject: "Toán",
-    level: "Dễ",
-    status: "Đã duyệt",
-    type: "Trắc nghiệm",
-    createdAt: "2026-03-10",
-    explanation: "Áp dụng công thức đạo hàm cơ bản: (ln x)' = 1/x với điều kiện x > 0.",
-    options: [
-      { id: "A", text: "$y' = \\frac{1}{x}$", isCorrect: true },
-      { id: "B", text: "$y' = x$", isCorrect: false },
-      { id: "C", text: "$y' = e^x$", isCorrect: false },
-      { id: "D", text: "$y' = \\frac{1}{x^2}$", isCorrect: false },
-    ],
-    // DỮ LIỆU CÁC ĐỀ THI ĐÃ GÁN
-    linkedExams: [
-      { id: "EX-2024-01", title: "Đề kiểm tra 15p Toán Giải Tích", status: "Đang diễn ra", date: "2026-03-12" },
-      { id: "EX-2024-05", title: "Đề thi Giữa kỳ I - Khối 12", status: "Đã đóng", date: "2026-01-15" },
-      { id: "EX-2024-12", title: "Bài tập về nhà tuần 4", status: "Bản nháp", date: "2026-03-20" },
-    ]
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [question, setQuestion] = useState(null);
+
+  // Giả lập gọi API lấy chi tiết câu hỏi
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Fake API delay
+    const timer = setTimeout(() => {
+      setQuestion({
+        id: id || "Q-101",
+        content: "Đạo hàm của hàm số $y = \\ln(x)$ là gì?",
+        subject: "Toán",
+        level: "Dễ",
+        status: "Đã duyệt",
+        type: "Trắc nghiệm",
+        createdAt: "2026-03-10",
+        explanation: "Áp dụng công thức đạo hàm cơ bản: (ln x)' = 1/x với điều kiện x > 0.",
+        options: [
+          { id: "A", text: "$y' = \\frac{1}{x}$", isCorrect: true },
+          { id: "B", text: "$y' = x$", isCorrect: false },
+          { id: "C", text: "$y' = e^x$", isCorrect: false },
+          { id: "D", text: "$y' = \\frac{1}{x^2}$", isCorrect: false },
+        ],
+        linkedExams: [
+          { id: "EX-2024-01", title: "Đề kiểm tra 15p Toán Giải Tích", status: "Đang diễn ra", date: "2026-03-12" },
+          { id: "EX-2024-05", title: "Đề thi Giữa kỳ I - Khối 12", status: "Đã đóng", date: "2026-01-15" },
+          { id: "EX-2024-12", title: "Bài tập về nhà tuần 4", status: "Bản nháp", date: "2026-03-20" },
+        ]
+      });
+      setIsLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [id]);
+
+  const handleDelete = () => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa câu hỏi ${question.id} không?`)) {
+      // Thực hiện gọi API xóa ở đây
+      console.log("Đã xóa câu hỏi:", question.id);
+      navigate(`/${basePath}/questions`); // Xóa xong thì quay về trang danh sách
+    }
+  };
 
   const getLevelColor = (level) => {
     switch (level) {
@@ -65,6 +88,16 @@ const QuestionView = () => {
     }
   };
 
+  // MÀN HÌNH LOADING
+  if (isLoading || !question) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-500">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p>Đang tải thông tin câu hỏi...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-10">
       {/* Header */}
@@ -72,7 +105,7 @@ const QuestionView = () => {
         <div className="flex items-center gap-4">
           <Button
             variant="ghost" size="icon"
-            onClick={() => navigate("/admin/questions")}
+            onClick={() => navigate(`/${basePath}/questions`)}
             className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -85,9 +118,17 @@ const QuestionView = () => {
             <p className="text-sm text-slate-500">Xem trước nội dung hiển thị và thông tin liên kết.</p>
           </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleDelete}
+          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 gap-2"
+        >
+          <Trash2 className="h-4 w-4" />
+          Xóa
+        </Button>
 
         <Button
-          onClick={() => navigate(`/admin/questions/edit/${question.id}`)}
+          onClick={() => navigate(`/${basePath}/questions/edit/${question.id}`)}
           className="bg-blue-600 hover:bg-blue-700 gap-2"
         >
           <Edit className="h-4 w-4" />
@@ -96,10 +137,8 @@ const QuestionView = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Cột trái: Nội dung câu hỏi (Chiếm 2 phần) */}
+        {/* Cột trái */}
         <div className="lg:col-span-2 space-y-6">
-          
-          {/* Nội dung đề bài & Đáp án */}
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">
               <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
@@ -108,13 +147,11 @@ const QuestionView = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* Đề bài */}
               <div className="text-slate-800 text-base leading-relaxed bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                 <span className="font-semibold mr-2">Câu hỏi:</span>
                 {question.content}
               </div>
 
-              {/* Các phương án */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {question.options.map((opt) => (
                   <div 
@@ -139,7 +176,6 @@ const QuestionView = () => {
                 ))}
               </div>
 
-              {/* Lời giải */}
               {question.explanation && (
                 <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
                   <h4 className="text-sm font-semibold text-blue-800 mb-2">Lời giải chi tiết:</h4>
@@ -149,7 +185,6 @@ const QuestionView = () => {
             </CardContent>
           </Card>
 
-          {/* DANH SÁCH ĐỀ THI ĐÃ GÁN */}
           <Card className="border-none shadow-sm">
             <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
               <CardTitle className="text-lg text-slate-800 flex items-center gap-2">
@@ -198,7 +233,7 @@ const QuestionView = () => {
           </Card>
         </div>
 
-        {/* Cột phải: Thông tin thuộc tính (Chiếm 1 phần) */}
+        {/* Cột phải */}
         <div className="space-y-6">
           <Card className="border-none shadow-sm">
             <CardHeader className="bg-slate-50 border-b border-slate-100 pb-4">

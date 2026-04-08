@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Phone, Calendar, Shield, MapPin, 
-  Activity, BookOpen, Award, Edit, Key, GraduationCap, CheckCircle2, Clock
+  Activity, BookOpen, Award, Edit, Key, GraduationCap, CheckCircle2, Clock, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,38 +14,54 @@ const UserDetail = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [student, setStudent] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Thêm state loading
 
   useEffect(() => {
-    // Giả lập gọi API lấy chi tiết học viên dựa trên ID (HV001...)
-    setStudent({
-      id: id || "HV001",
-      name: "Nguyễn Văn An",
-      email: "nguyenvana@gmail.com",
-      phone: "0901234567",
-      address: "Thủ Dầu Một, Bình Dương",
-      classGroup: "Lớp 12A1",
-      status: "Hoạt động",
-      joinedAt: "01/09/2025",
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${id || "HV001"}`,
-      stats: {
-        totalExams: 15,
-        avgScore: 8.5,
-        completedCourses: 5
-      },
-      recentActivities: [
-        { id: 1, action: "Nộp bài thi", target: "Toán Học Giữa Kỳ 1", date: "10:30 - 12/03/2026", status: "Hoàn thành" },
-        { id: 2, action: "Đăng nhập", target: "Trình duyệt Chrome (Windows)", date: "08:15 - 12/03/2026", status: "Thành công" },
-        { id: 3, action: "Xem kết quả", target: "Bài kiểm tra 15p Vật Lý", date: "14:20 - 10/03/2026", status: "Thành công" },
-      ],
-      recentExams: [
-        { id: "E101", title: "Đề thi thử THPT Quốc gia môn Toán", subject: "Toán", score: 8.5, date: "10/03/2026", timeSpent: "85 phút" },
-        { id: "E102", title: "Kiểm tra 15 phút Vật Lý chương 2", subject: "Vật Lý", score: 9.0, date: "08/03/2026", timeSpent: "12 phút" },
-        { id: "E103", title: "Thi giữa kỳ Hóa Học lớp 12", subject: "Hóa Học", score: 7.5, date: "01/03/2026", timeSpent: "40 phút" },
-      ]
-    });
+    setIsLoading(true);
+
+    // Giả lập gọi API có độ trễ (800ms) giống QuestionView
+    const timer = setTimeout(() => {
+      setStudent({
+        id: id || "HV001",
+        name: "Nguyễn Văn An",
+        email: "nguyenvana@gmail.com",
+        phone: "0901234567",
+        address: "Thủ Dầu Một, Bình Dương",
+        classGroup: "Lớp 12A1",
+        status: "Hoạt động",
+        joinedAt: "01/09/2025",
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${id || "HV001"}`,
+        stats: {
+          totalExams: 15,
+          avgScore: 8.5,
+          completedCourses: 5
+        },
+        recentActivities: [
+          { id: 1, action: "Nộp bài thi", target: "Toán Học Giữa Kỳ 1", date: "10:30 - 12/03/2026", status: "Hoàn thành" },
+          { id: 2, action: "Đăng nhập", target: "Trình duyệt Chrome (Windows)", date: "08:15 - 12/03/2026", status: "Thành công" },
+          { id: 3, action: "Xem kết quả", target: "Bài kiểm tra 15p Vật Lý", date: "14:20 - 10/03/2026", status: "Thành công" },
+        ],
+        recentExams: [
+          { id: "E101", title: "Đề thi thử THPT Quốc gia môn Toán", subject: "Toán", score: 8.5, date: "10/03/2026", timeSpent: "85 phút" },
+          { id: "E102", title: "Kiểm tra 15 phút Vật Lý chương 2", subject: "Vật Lý", score: 9.0, date: "08/03/2026", timeSpent: "12 phút" },
+          { id: "E103", title: "Thi giữa kỳ Hóa Học lớp 12", subject: "Hóa Học", score: 7.5, date: "01/03/2026", timeSpent: "40 phút" },
+        ]
+      });
+      setIsLoading(false);
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [id]);
 
-  if (!student) return <div className="p-6 text-center text-gray-500 flex items-center justify-center h-64">Đang tải dữ liệu...</div>;
+  // MÀN HÌNH LOADING
+  if (isLoading || !student) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-500">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <p>Đang tải hồ sơ học viên...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-10">
@@ -53,7 +69,7 @@ const UserDetail = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(-1)} // Nút Back quay lại trang danh sách trước đó
+            onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
             title="Quay lại"
           >
@@ -69,7 +85,7 @@ const UserDetail = () => {
         </div>
 
         <div className="flex gap-2 w-full sm:w-auto">
-          {/* Nút Khóa đã bị xóa vì có ở UserList. Nút Đặt lại pass dời xuống Card Bảo mật. */}
+          {/* Chỉ giữ lại nút Chỉnh sửa */}
           <Button className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 gap-2">
             <Edit className="h-4 w-4" /> Chỉnh sửa hồ sơ
           </Button>
