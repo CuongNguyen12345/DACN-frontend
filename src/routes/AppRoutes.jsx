@@ -32,8 +32,8 @@ import QuestionList from "@/pages/admin/Questions/QuestionList";
 import QuestionEdit from "@/pages/admin/Questions/QuestionEdit";
 import QuestionCreate from "@/pages/admin/Questions/QuestionCreate";
 import QuestionView from "@/pages/admin/Questions/QuestionView";
-import UserList from "@/pages/admin/Users/UserList";
-import UserDetail from "@/pages/admin/Users/UserDetail";
+import AccountManagement from "@/pages/admin/Account/AccountManagement";
+import AccountDetail from "@/pages/admin/Account/AccountDetail";
 import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
@@ -113,8 +113,8 @@ function AppRoutes() {
           ))}
 
           {/* Các route CHỈ dành cho Admin */}
-          <Route path="users" element={<UserList />} />
-          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="accounts" element={<AccountManagement />} />
+          <Route path="accounts/:id" element={<AccountDetail />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>

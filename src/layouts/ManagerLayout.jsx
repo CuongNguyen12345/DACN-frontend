@@ -24,7 +24,7 @@ const AdminLayout = () => {
         { icon: MessageCircleQuestion, label: "Hỏi đáp", path: `${basePath}/qna`, roles: ["admin", "teacher"] },
 
         // Admin
-        { icon: Users, label: "Học viên", path: "/admin/users", roles: ["admin"] }, 
+        { icon: Users, label: "Tài khoản", path: "/admin/accounts", roles: ["admin"] }, 
         { icon: BarChart3, label: "Báo cáo", path: "/admin/reports", roles: ["admin"] },
         { icon: Settings, label: "Cài đặt", path: "/admin/settings", roles: ["admin"] },
     ];

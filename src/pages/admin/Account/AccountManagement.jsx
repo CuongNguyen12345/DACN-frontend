@@ -8,9 +8,11 @@ import {
     Unlock,
     Mail,
     GraduationCap,
+    Briefcase,
     ChevronLeft,
     ChevronRight,
-    User as UserIcon
+    User as UserIcon,
+    Shield
 } from "lucide-react";
 
 import {
@@ -26,23 +28,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-const UserList = () => {
+const AccountManagement = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [roleFilter, setRoleFilter] = useState("all");
     
     // State phân trang
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    // Mock Data (Đã đổi tên state thành users)
+    // Mock Data đã được cập nhật bao gồm Học viên & Giáo viên
     const [users, setUsers] = useState([
-        { id: "HV001", name: "Nguyễn Văn An", email: "nguyenvana@gmail.com", classGroup: "Lớp 12A1", status: "Hoạt động", examsTaken: 15, joinedAt: "01/09/2025" },
-        { id: "HV002", name: "Trần Thị Bình", email: "tranthibinh.99@gmail.com", classGroup: "Lớp 12A2", status: "Hoạt động", examsTaken: 8, joinedAt: "05/09/2025" },
-        { id: "HV003", name: "Lê Văn Cường", email: "cuongle.dev@gmail.com", classGroup: "Lớp 11B1", status: "Bị khóa", examsTaken: 2, joinedAt: "10/09/2025" },
-        { id: "HV004", name: "Phạm Minh Đức", email: "ducpham2008@gmail.com", classGroup: "Lớp 10C1", status: "Hoạt động", examsTaken: 12, joinedAt: "02/09/2025" },
-        { id: "HV005", name: "Hoàng Thanh Tùng", email: "thanhtung.hoang@gmail.com", classGroup: "Lớp 12A1", status: "Hoạt động", examsTaken: 0, joinedAt: "12/03/2026" },
-        { id: "HV006", name: "Vũ Thị Yến", email: "yenvu.k12@gmail.com", classGroup: "Lớp 12A3", status: "Hoạt động", examsTaken: 25, joinedAt: "15/08/2025" },
+        { id: "HV001", name: "Nguyễn Văn An", email: "nguyenvana@gmail.com", role: "Học viên", unit: "Lớp 12A1", status: "Hoạt động", activity: "15 lượt thi", joinedAt: "01/09/2025" },
+        { id: "GV001", name: "Phạm Trần Toán", email: "toan.pt@edu.vn", role: "Giáo viên", unit: "Tổ Toán học", status: "Hoạt động", activity: "12 bài giảng", joinedAt: "10/08/2024" },
+        { id: "HV002", name: "Trần Thị Bình", email: "tranthibinh.99@gmail.com", role: "Học viên", unit: "Lớp 12A2", status: "Hoạt động", activity: "8 lượt thi", joinedAt: "05/09/2025" },
+        { id: "GV002", name: "Lê Thị Ngữ Văn", email: "van.ltn@edu.vn", role: "Giáo viên", unit: "Tổ Ngữ Văn", status: "Hoạt động", activity: "5 bài giảng", joinedAt: "12/08/2024" },
+        { id: "HV003", name: "Lê Văn Cường", email: "cuongle.dev@gmail.com", role: "Học viên", unit: "Lớp 11B1", status: "Bị khóa", activity: "2 lượt thi", joinedAt: "10/09/2025" },
+        { id: "HV004", name: "Phạm Minh Đức", email: "ducpham2008@gmail.com", role: "Học viên", unit: "Lớp 10C1", status: "Hoạt động", activity: "12 lượt thi", joinedAt: "02/09/2025" },
+        { id: "GV003", name: "Hoàng Thanh Tùng", email: "tung.ht@edu.vn", role: "Giáo viên", unit: "Tổ Vật Lý", status: "Bị khóa", activity: "0 bài giảng", joinedAt: "12/03/2026" },
+        { id: "HV006", name: "Vũ Thị Yến", email: "yenvu.k12@gmail.com", role: "Học viên", unit: "Lớp 12A3", status: "Hoạt động", activity: "25 lượt thi", joinedAt: "15/08/2025" },
     ]);
 
     // --- XỬ LÝ CHỨC NĂNG ---
@@ -52,7 +57,7 @@ const UserList = () => {
         const isCurrentlyLocked = user.status === "Bị khóa";
         const actionText = isCurrentlyLocked ? "MỞ KHÓA" : "KHÓA";
         
-        if (window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của người dùng ${user.name}?`)) {
+        if (window.confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của ${user.role.toLowerCase()} ${user.name}?`)) {
             const updatedUsers = users.map(u => {
                 if (u.id === user.id) {
                     return { ...u, status: isCurrentlyLocked ? "Hoạt động" : "Bị khóa" };
@@ -71,9 +76,11 @@ const UserList = () => {
                 user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.id.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesStatus = statusFilter === "all" || user.status === statusFilter;
-            return matchesSearch && matchesStatus;
+            const matchesRole = roleFilter === "all" || user.role === roleFilter;
+            
+            return matchesSearch && matchesStatus && matchesRole;
         });
-    }, [searchTerm, statusFilter, users]);
+    }, [searchTerm, statusFilter, roleFilter, users]);
 
     // Tính toán dữ liệu cho phân trang
     const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -90,13 +97,21 @@ const UserList = () => {
         }
     };
 
+    const getRoleBadge = (role) => {
+        switch (role) {
+            case "Giáo viên": return "bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200";
+            case "Học viên": return "bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200";
+            default: return "bg-gray-100 text-gray-700";
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Quản lý Người dùng</h2>
-                    <p className="text-gray-500 text-sm mt-1">Quản lý danh sách tài khoản người dùng, tra cứu và khóa/mở khóa tài khoản.</p>
+                    <h2 className="text-2xl font-bold text-gray-900">Quản lý Tài khoản</h2>
+                    <p className="text-gray-500 text-sm mt-1">Quản lý danh sách học viên và giáo viên, tra cứu và phân quyền truy cập.</p>
                 </div>
             </div>
 
@@ -104,6 +119,7 @@ const UserList = () => {
             <Card className="border-none shadow-sm">
                 <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        {/* Search Input */}
                         <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 w-full focus-within:ring-2 focus-within:ring-blue-500 transition-all">
                             <Search className="h-5 w-5 text-gray-400 mr-2" />
                             <input 
@@ -117,7 +133,31 @@ const UserList = () => {
                                 }}
                             />
                         </div>
-                        <div className="w-full md:w-[200px]">
+                        
+                        {/* Dropdown Filters */}
+                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            {/* Filter Role */}
+                            <Select 
+                                value={roleFilter} 
+                                onValueChange={(value) => {
+                                    setRoleFilter(value);
+                                    setCurrentPage(1); 
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[160px] bg-white border-gray-200 focus:ring-blue-500">
+                                    <div className="flex items-center gap-2">
+                                        <Shield className="h-4 w-4 text-gray-500" />
+                                        <SelectValue placeholder="Vai trò" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tất cả vai trò</SelectItem>
+                                    <SelectItem value="Giáo viên">Giáo viên</SelectItem>
+                                    <SelectItem value="Học viên">Học viên</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            {/* Filter Status */}
                             <Select 
                                 value={statusFilter} 
                                 onValueChange={(value) => {
@@ -125,7 +165,7 @@ const UserList = () => {
                                     setCurrentPage(1); 
                                 }}
                             >
-                                <SelectTrigger className="w-full bg-white border-gray-200 focus:ring-blue-500">
+                                <SelectTrigger className="w-full sm:w-[180px] bg-white border-gray-200 focus:ring-blue-500">
                                     <div className="flex items-center gap-2">
                                         <Filter className="h-4 w-4 text-gray-500" />
                                         <SelectValue placeholder="Tất cả trạng thái" />
@@ -157,9 +197,10 @@ const UserList = () => {
                         <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
                             <tr>
                                 <th className="px-6 py-4">Mã ND</th>
-                                <th className="px-6 py-4">Người dùng</th>
-                                <th className="px-6 py-4">Lớp/Khối</th>
-                                <th className="px-6 py-4 text-center">Lượt thi</th>
+                                <th className="px-6 py-4">Tài khoản</th>
+                                <th className="px-6 py-4">Vai trò</th>
+                                <th className="px-6 py-4">Đơn vị / Lớp</th>
+                                <th className="px-6 py-4 text-center">Hoạt động</th>
                                 <th className="px-6 py-4 text-center">Trạng thái</th>
                                 <th className="px-6 py-4 text-right">Thao tác</th>
                             </tr>
@@ -180,13 +221,22 @@ const UserList = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
+                                            <Badge variant="outline" className={getRoleBadge(user.role)}>
+                                                {user.role}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-6 py-4">
                                             <div className="flex items-center text-gray-600">
-                                                <GraduationCap className="h-4 w-4 mr-1.5 text-blue-500" />
-                                                {user.classGroup}
+                                                {user.role === "Giáo viên" ? (
+                                                    <Briefcase className="h-4 w-4 mr-1.5 text-purple-500" />
+                                                ) : (
+                                                    <GraduationCap className="h-4 w-4 mr-1.5 text-blue-500" />
+                                                )}
+                                                {user.unit}
                                             </div>
                                             <div className="text-xs text-gray-400 mt-1">Tham gia: {user.joinedAt}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-center font-medium">{user.examsTaken}</td>
+                                        <td className="px-6 py-4 text-center text-gray-600">{user.activity}</td>
                                         <td className="px-6 py-4 text-center">
                                             <Badge variant="secondary" className={getStatusBadge(user.status)}>
                                                 {user.status}
@@ -195,7 +245,7 @@ const UserList = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button 
-                                                    onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                    onClick={() => navigate(`/admin/accounts/${user.id}`)}
                                                     variant="ghost" size="icon" 
                                                     className="h-8 w-8 text-blue-600 hover:bg-blue-50"
                                                     title="Xem chi tiết"
@@ -221,8 +271,8 @@ const UserList = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                                        Không tìm thấy người dùng nào phù hợp.
+                                    <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                                        Không tìm thấy tài khoản nào phù hợp.
                                     </td>
                                 </tr>
                             )}
@@ -263,4 +313,4 @@ const UserList = () => {
     );
 };
 
-export default UserList;
+export default AccountManagement;
