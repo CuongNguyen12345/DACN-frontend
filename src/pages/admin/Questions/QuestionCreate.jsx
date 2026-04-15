@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText } from "lucide-react";
 import api from "@/services/api";
 
 // Import components từ shadcn/ui
@@ -41,6 +41,12 @@ const QuestionCreate = () => {
   ]);
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [importSettings, setImportSettings] = useState({
+    subject: "Toán",
+    grade: "Lớp 10",
+  });
 
   // Xử lý thay đổi input
   const handleChange = (e) => {
@@ -246,6 +252,164 @@ const QuestionCreate = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* IMPORT MODAL */}
+          <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex-1 md:flex-none gap-2">
+                <Upload className="h-4 w-4" /> Import
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white">
+              <div className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <DialogTitle className="text-xl font-bold text-gray-800">
+                    Hướng dẫn nhập câu hỏi
+                  </DialogTitle>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-blue-700 font-bold">
+                    <Info className="h-5 w-5" />
+                    <span>Hướng dẫn chi tiết:</span>
+                  </div>
+
+                  <ul className="space-y-3 text-sm text-blue-800/90">
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <span><strong>Định dạng file:</strong> Excel (.xlsx, .xls) hoặc CSV</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <span><strong>Cấu trúc bảng:</strong> Mỗi hàng tương ứng với một câu hỏi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <div className="space-y-2">
+                        <strong>Thứ tự các cột:</strong>
+                        <ol className="list-decimal list-inside space-y-1 ml-2 text-blue-700/80 font-medium">
+                          <li><span className="text-blue-900 font-bold">nội dung</span> (Bắt buộc) - Đề bài</li>
+                          <li><span className="text-blue-900 font-bold">đáp án A</span> (Bắt buộc)</li>
+                          <li><span className="text-blue-900 font-bold">đáp án B</span> (Bắt buộc)</li>
+                          <li><span className="text-blue-900 font-bold">đáp án C</span> (Bắt buộc)</li>
+                          <li><span className="text-blue-900 font-bold">đáp án D</span> (Bắt buộc)</li>
+                          <li><span className="text-blue-900 font-bold">đáp án đúng</span> (Bắt buộc) - A, B, C hoặc D</li>
+                          <li><span>giải thích</span> - Lời giải (Không bắt buộc)</li>
+                          <li><span>độ khó</span> - Dễ, Trung Bình, Khó</li>
+                        </ol>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <span><strong>Dòng đầu tiên:</strong> Phải là tiêu đề (header) của các cột</span>
+                    </li>
+                  </ul>
+
+                  <Button 
+                    variant="secondary" 
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-5 font-bold shadow-sm shadow-blue-200 gap-2 border-none"
+                    onClick={() => {
+                      // Logic tải file mẫu ở đây
+                      alert("Đang tải file mẫu...");
+                    }}
+                  >
+                    <Download className="h-4 w-4" /> Tải file mẫu .xlsx
+                  </Button>
+                </div>
+
+                {/* Select Subject and Grade */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                      <span className="text-xs">📚</span> Môn học:
+                    </label>
+                    <Select 
+                      value={importSettings.subject} 
+                      onValueChange={(v) => setImportSettings(prev => ({...prev, subject: v}))}
+                    >
+                      <SelectTrigger className="rounded-xl border-gray-200 focus:ring-blue-500 shadow-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Toán", "Vật Lý", "Hóa Học", "Tiếng Anh"].map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                      <span className="text-xs">🏫</span> Lớp:
+                    </label>
+                    <Select 
+                      value={importSettings.grade} 
+                      onValueChange={(v) => setImportSettings(prev => ({...prev, grade: v}))}
+                    >
+                      <SelectTrigger className="rounded-xl border-gray-200 focus:ring-blue-500 shadow-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Lớp 10", "Lớp 11", "Lớp 12"].map(g => (
+                          <SelectItem key={g} value={g}>{g}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* File Upload Area */}
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-500" /> Chọn file Excel/CSV:
+                  </label>
+                  <div className="relative group">
+                    <input 
+                      type="file" 
+                      id="file-upload" 
+                      className="hidden" 
+                      accept=".xlsx, .xls, .csv"
+                      onChange={(e) => setFileName(e.target.files[0]?.name || "")}
+                    />
+                    <label 
+                      htmlFor="file-upload"
+                      className="flex items-center gap-3 w-full p-1 pr-4 bg-white border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer group-hover:border-blue-400 group-hover:bg-blue-50/30 transition-all"
+                    >
+                      <div className="bg-gray-100 group-hover:bg-blue-100 p-2.5 rounded-xl transition-colors">
+                        <FileSpreadsheet className="h-5 w-5 text-gray-500 group-hover:text-blue-600" />
+                      </div>
+                      <span className={`text-sm flex-1 truncate ${fileName ? "text-gray-900 font-medium" : "text-gray-400"}`}>
+                        {fileName || "Chưa chọn file nào..."}
+                      </span>
+                      <div className="px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 shadow-sm">
+                        Browse
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Footer */}
+              <div className="p-4 bg-gray-50 border-t flex gap-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex-1 rounded-xl text-gray-500"
+                  onClick={() => setIsImportModalOpen(false)}
+                >
+                  Hủy bỏ
+                </Button>
+                <Button 
+                  className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                  disabled={!fileName}
+                  onClick={() => {
+                    alert(`Import ${fileName} vào môn ${importSettings.subject} - ${importSettings.grade}`);
+                    setIsImportModalOpen(false);
+                  }}
+                >
+                  Bắt đầu nhập dữ liệu
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           {/* AI MODAL TRIGGER */}
           <Dialog open={isAIModalOpen} onOpenChange={setIsAIModalOpen}>
             <DialogTrigger asChild>
@@ -447,7 +611,7 @@ const QuestionCreate = () => {
                 <Select value={questionData.subject} onValueChange={(v) => handleSelectChange("subject", v)}>
                   <SelectTrigger className="w-full rounded-xl border-gray-200 focus:ring-blue-500"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["Toán", "Vật Lý", "Hóa Học", "Tiếng Anh", "Ngữ Văn"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {["Toán", "Vật Lý", "Hóa Học", "Tiếng Anh"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </SelectGroup>

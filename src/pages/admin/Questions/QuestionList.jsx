@@ -146,9 +146,6 @@ const QuestionList = () => {
                     <p className="text-slate-500 text-sm">Quản lý và tổ chức kho câu hỏi đa phương thức.</p>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
-                    <Button variant="outline" className="flex-1 md:flex-none gap-2">
-                        <Upload className="h-4 w-4" /> Import
-                    </Button>
                     <Button
                         onClick={() => navigate("/admin/questions/create")}
                         className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 gap-2">
