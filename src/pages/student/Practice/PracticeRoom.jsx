@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import api from "@/services/api";
 import {
     Clock,
     AlertCircle,
@@ -28,36 +29,51 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // For mobile question list
 
 const PracticeRoom = () => {
+    const { examId } = useParams();
     const navigate = useNavigate();
-    const [answers, setAnswers] = useState({}); // { 1: 'A', 2: 'B' }
-    const initialTime = 90 * 60; // 90 minutes in seconds
-    const [timeLeft, setTimeLeft] = useState(initialTime);
 
-    // Mock Questions
-    const questions = Array.from({ length: 50 }, (_, i) => ({
-        id: i + 1,
-        content: `Câu hỏi số ${i + 1}: Tìm tập xác định của hàm số y = (x - 2)^(-3)?`,
-        options: [
-            { key: "A", text: "R \\ {2}" },
-            { key: "B", text: "R" },
-            { key: "C", text: "(2; +∞)" },
-            { key: "D", text: "(-∞; 2)" }
-        ]
-    }));
+    const [exam, setExam] = useState(null);
+    const [questions, setQuestions] = useState([]);
+    const [answers, setAnswers] = useState({}); // { questionId: 'A' }
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchExam = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const res = await api.get(`/api/exam/${examId}`);
+            const data = res.data;
+            setExam(data);
+            setQuestions(data.questions || []);
+            setTimeLeft(data.duration * 60);
+        } catch (error) {
+            console.error("Lỗi tải thông tin đề thi:", error);
+            alert("Không thể tải thông tin đề thi.");
+            navigate("/practice");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [examId, navigate]);
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    handleFinish();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
+        fetchExam();
+    }, [fetchExam]);
+
+    useEffect(() => {
+        if (!isLoading && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        handleFinish();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [isLoading, timeLeft]);
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -73,10 +89,40 @@ const PracticeRoom = () => {
         return questions.length - Object.keys(answers).length;
     };
 
-    const handleFinish = () => {
-        alert("Hết giờ! Hệ thống đang nộp bài...");
-        // Đính kèm answers vào biến state để gửi đi
-        navigate("/practice/result/1", { state: { userAnswers: answers } });
+    const handleFinish = async () => {
+        // Gọi API cập nhật số lượt làm bài
+        try {
+            await api.post(`/api/exam/${examId}/submit`);
+        } catch (error) {
+            console.error("Lỗi cập nhật lượt làm bài:", error);
+        }
+
+        // Tính toán kết quả nhãn tiền
+        let correctCount = 0;
+        questions.forEach((q) => {
+            const userAnswer = answers[q.id];
+            const correctOption = q.options.find(opt => opt.correct);
+            if (userAnswer && correctOption && userAnswer === correctOption.label) {
+                correctCount++;
+            }
+        });
+
+        const score = Number(((correctCount / questions.length) * 10).toFixed(1));
+        const timeSpentSeconds = (exam.duration * 60) - timeLeft;
+        const timeTaken = formatTime(timeSpentSeconds);
+
+        const resultData = {
+            examId: examId,
+            examTitle: exam.title,
+            score,
+            correct: correctCount,
+            total: questions.length,
+            timeTaken,
+            userAnswers: answers,
+            questions: questions // Gửi kèm data question để xem lại bài
+        };
+
+        navigate(`/practice/result/${examId}`, { state: resultData });
     };
 
     const scrollToQuestion = (id) => {
@@ -102,7 +148,7 @@ const PracticeRoom = () => {
                             )}
                             onClick={() => scrollToQuestion(q.id)}
                         >
-                            {q.id}
+                            {q.orderNumber}
                         </Button>
                     ))}
                 </div>
@@ -124,7 +170,9 @@ const PracticeRoom = () => {
         <div className="flex flex-col min-h-screen bg-gray-50/30">
             {/* Header */}
             <header className="sticky top-16 z-40 bg-white border-b shadow-sm px-4 md:px-8 py-3 flex justify-between items-center">
-                <h1 className="font-bold text-lg md:text-xl truncate max-w-[50%]">Đề thi thử THPT QG 2025 - Môn Toán</h1>
+                <h1 className="font-bold text-lg md:text-xl truncate max-w-[50%]" title={exam?.title}>
+                    {exam?.title || "Đang tải..."}
+                </h1>
 
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-red-50 text-red-600 px-3 py-1.5 rounded-full border border-red-100 font-mono font-bold">
@@ -134,7 +182,7 @@ const PracticeRoom = () => {
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button size="default" className="bg-primary hover:bg-primary/90">Nộp bài</Button>
+                            <Button size="default" className="bg-primary hover:bg-primary/90" disabled={isLoading}>Nộp bài</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -147,7 +195,7 @@ const PracticeRoom = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Làm tiếp</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => navigate("/practice/result/1", { state: { userAnswers: answers } })}>
+                                <AlertDialogAction onClick={handleFinish}>
                                     Nộp bài
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -179,7 +227,7 @@ const PracticeRoom = () => {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-                                    Câu {q.id}
+                                    Câu {q.orderNumber}
                                 </Badge>
                                 <Button variant="ghost" size="sm" className="text-gray-400 hover:text-red-500 h-8 px-2">
                                     <Flag className="h-4 w-4 mr-1" /> Báo lỗi
@@ -196,15 +244,15 @@ const PracticeRoom = () => {
                                 className="space-y-3"
                             >
                                 {q.options.map(opt => (
-                                    <div key={opt.key} className={cn(
+                                    <div key={opt.label} className={cn(
                                         "flex items-center space-x-3 space-y-0 rounded-lg border p-3 cursor-pointer transition-all",
-                                        answers[q.id] === opt.key
+                                        answers[q.id] === opt.label
                                             ? "border-blue-500 bg-blue-50 shadow-sm"
                                             : "border-gray-200 hover:bg-gray-50"
                                     )}>
-                                        <RadioGroupItem value={opt.key} id={`${q.id}-${opt.key}`} />
-                                        <Label htmlFor={`${q.id}-${opt.key}`} className="flex-1 cursor-pointer font-normal text-base">
-                                            <span className="font-bold mr-2 text-primary">{opt.key}.</span> {opt.text}
+                                        <RadioGroupItem value={opt.label} id={`${q.id}-${opt.label}`} />
+                                        <Label htmlFor={`${q.id}-${opt.label}`} className="flex-1 cursor-pointer font-normal text-base">
+                                            <span className="font-bold mr-2 text-primary">{opt.label}.</span> {opt.content}
                                         </Label>
                                     </div>
                                 ))}

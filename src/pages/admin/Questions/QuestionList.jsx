@@ -118,10 +118,10 @@ const QuestionList = () => {
 
     const getLevelColor = (level) => {
         switch (level) {
-            case "Dễ": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-            case "Trung bình": return "bg-amber-50 text-amber-700 border-amber-200";
-            case "Khó": return "bg-rose-50 text-rose-700 border-rose-200";
-            default: return "bg-slate-50 text-slate-700";
+            case "Dễ": return "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50";
+            case "Trung bình": return "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50";
+            case "Khó": return "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50";
+            default: return "bg-slate-50 text-slate-700 hover:bg-slate-50";
         }
     };
 
@@ -231,7 +231,8 @@ const QuestionList = () => {
                                     />
                                 </th>
                                 <th className="px-6 py-4 min-w-[300px]">Nội dung câu hỏi</th>
-                                <th className="px-6 py-4">Phân loại</th>
+                                <th className="px-6 py-4 text-center">Môn học</th>
+                                <th className="px-6 py-4 text-center">Lớp</th>
                                 <th className="px-6 py-4 text-center">Độ khó</th>
                                 <th className="px-6 py-4 text-right">Thao tác</th>
                             </tr>
@@ -239,11 +240,11 @@ const QuestionList = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-6 text-slate-500">Đang tải dữ liệu...</td>
+                                    <td colSpan="6" className="text-center py-6 text-slate-500">Đang tải dữ liệu...</td>
                                 </tr>
                             ) : paginatedQuestions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-6 text-slate-500">Không tìm thấy dữ liệu.</td>
+                                    <td colSpan="6" className="text-center py-6 text-slate-500">Không tìm thấy dữ liệu.</td>
                                 </tr>
                             ) : paginatedQuestions.map((q) => (
                                 <tr key={q.id} className={cn("hover:bg-slate-50/50 transition-colors group", selectedIds.includes(q.id) && "bg-blue-50/30")}>
@@ -261,13 +262,15 @@ const QuestionList = () => {
                                         >
                                             {q.content}
                                         </div>
-
+                                        <span className="text-[11px] text-slate-500 mt-1 block">Ngày tạo: {q.createdAt}</span>
                                     </td>
-                                    <td className="px-6 py-4 text-slate-500">
-                                        <div className="flex flex-col gap-1.5">
-                                            <span className="flex items-center gap-1.5 text-slate-700 font-medium"><Tag className="h-3.5 w-3.5" /> {q.subject} - {q.status}</span>
-                                            <span className="text-[11px] opacity-70">Ngày tạo: {q.createdAt}</span>
-                                        </div>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="inline-flex items-center gap-1.5 text-slate-700 font-medium">
+                                            <Tag className="h-3.5 w-3.5 text-slate-400" /> {q.subject}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="text-slate-700 font-medium">{q.status}</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <Badge className={cn("font-normal border shadow-none", getLevelColor(q.level))}>

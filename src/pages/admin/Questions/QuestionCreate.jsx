@@ -100,7 +100,7 @@ const QuestionCreate = () => {
     try {
       const response = await api.post("/api/admin/ai/generate-questions", {
         message: `${userMessage}
-        Hãy trả về mảng các câu hỏi trắc nghiệm theo định dạng JSON sau (và KHÔNG thêm bất kỳ text nào khác ngoài JSON):
+        Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array (KHÔNG thêm bất kỳ text nào ngoài JSON):
         [
           {
             "question": "Nội dung câu hỏi",
@@ -111,7 +111,32 @@ const QuestionCreate = () => {
             "class": "10 | 11 | 12",
             "level": "Dễ | Trung Bình | Khó"
           }
-        ]`,
+        ]
+        Quy tắc xác định độ khó (BẮT BUỘC tuân thủ):
+        1. Trước khi gán "level", phải xác định dạng câu hỏi thuộc loại nào:
+          - Lý thuyết / nhận biết
+          - Áp dụng trực tiếp công thức
+          - Biến đổi công thức (1-2 bước)
+          - Bài toán nhiều bước / kết hợp nhiều kiến thức
+        2. Mapping level theo đúng quy tắc:
+          - "Dễ": Lý thuyết hoặc áp dụng trực tiếp công thức
+          - "Trung Bình": Biến đổi công thức, suy luận 1-2 bước
+          - "Khó": Nhiều bước giải, kết hợp nhiều kiến thức
+        3. Không được gán level ngẫu nhiên. Level phải phù hợp với bản chất câu hỏi.
+        Yêu cầu:
+        - Câu hỏi rõ ràng, chính xác
+        - Đáp án đúng khớp với lời giải
+        - Phân loại subject và class phù hợp
+        - Không thêm bất kỳ văn bản nào ngoài JSON
+        QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
+        - Không sử dụng LaTeX hoặc ký hiệu dạng \frac, \sqrt, \alpha, $...$
+        - Không dùng dấu backslash (\)
+        - Viết công thức bằng text Unicode:
+          + α thay cho \alpha
+          + √ thay cho \sqrt
+          + 1/3 thay cho \frac{1}{3}
+        - Output phải hiển thị được trực tiếp trên giao diện web không cần render toán,
+        `,
       });
 
       const data = response.data;
