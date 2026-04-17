@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import {
-    Search, Plus, Filter, Database, Tag, Edit, Trash2,
-    MoreHorizontal, Download, Upload, CheckSquare, Square,
-    ChevronLeft, ChevronRight, Eye
+    MoreHorizontal, Download, Upload, CheckSquare, Square, Database, Plus, Search, Tag, Edit, Save,
+    ChevronLeft, ChevronRight, Eye, Trash2, HelpCircle, PlusCircle, Info, FileSpreadsheet, FileText, ChevronDown, Sparkles
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +14,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 const QuestionList = () => {
     const navigate = useNavigate();
@@ -33,6 +40,110 @@ const QuestionList = () => {
     // Theo Mock Data nhưng giờ chúng ta lấy từ BE
     const [questions, setQuestions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Batch Add States
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isInstructionOpen, setIsInstructionOpen] = useState(false);
+    const [importSettings, setImportSettings] = useState({
+        subject: "Toán",
+        grade: "Lớp 10",
+    });
+    const [batchQuestions, setBatchQuestions] = useState([
+        { id: Date.now(), content: "", a: "", b: "", c: "", d: "", correct: "A", explanation: "" }
+    ]);
+
+    const handleAddBatchRow = () => {
+        setBatchQuestions(prev => [
+            ...prev,
+            { id: Date.now(), content: "", a: "", b: "", c: "", d: "", correct: "A", explanation: "" }
+        ]);
+    };
+
+    const handleRemoveBatchRow = (id) => {
+        if (batchQuestions.length > 1) {
+            setBatchQuestions(prev => prev.filter(q => q.id !== id));
+        }
+    };
+
+    const handleUpdateBatchRow = (id, field, value) => {
+        setBatchQuestions(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q));
+    };
+
+    const handleSaveBatch = async () => {
+        const validQuestions = batchQuestions.filter(q => q.content.trim() !== "");
+        if (validQuestions.length === 0) {
+            alert("Vui lòng nhập ít nhất một câu hỏi có nội dung!");
+            return;
+        }
+
+        try {
+            const payload = {
+                subject: importSettings.subject,
+                grade: importSettings.grade,
+                questions: validQuestions.map(q => ({
+                    content: q.content,
+                    options: [
+                        { content: q.a, isCorrect: q.correct === "A" },
+                        { content: q.b, isCorrect: q.correct === "B" },
+                        { content: q.c, isCorrect: q.correct === "C" },
+                        { content: q.d, isCorrect: q.correct === "D" },
+                    ],
+                    explanation: q.explanation,
+                    level: "Trung Bình"
+                }))
+            };
+
+            await api.post("/api/admin/questions", payload);
+            alert(`Đã thêm thành công ${validQuestions.length} câu hỏi vào ngân hàng!`);
+            setIsImportModalOpen(false);
+            fetchQuestions(); // Refresh list
+        }
+        catch (error) {
+            console.error("Lưu batch thất bại:", error);
+            alert("Đã xảy ra lỗi khi lưu danh sách câu hỏi.");
+        }
+    };
+
+    const handleImportFile = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const bstr = evt.target.result;
+            const wb = XLSX.read(bstr, { type: "binary" });
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+            // Skip header row and map data
+            const importedQuestions = data.slice(1).map((row, index) => {
+                if (!row[0]) return null; // Skip empty rows
+                return {
+                    id: Date.now() + index,
+                    content: row[0] || "",
+                    a: row[1] || "",
+                    b: row[2] || "",
+                    c: row[3] || "",
+                    d: row[4] || "",
+                    correct: (row[5] || "A").toString().toUpperCase().trim(),
+                    explanation: row[6] || ""
+                };
+            }).filter(q => q !== null);
+
+            if (importedQuestions.length > 0) {
+                setBatchQuestions(prev => {
+                    // If first row is empty, replace it, otherwise append
+                    const firstRowEmpty = prev.length === 1 && !prev[0].content;
+                    return firstRowEmpty ? importedQuestions : [...prev, ...importedQuestions];
+                });
+                alert(`Đã nhập thành công ${importedQuestions.length} câu hỏi!`);
+            }
+        };
+        reader.readAsBinaryString(file);
+        // Reset input
+        e.target.value = null;
+    };
 
     // 4. Custom Hook để Debounce search term
     function useDebounce(value, delay) {
@@ -321,6 +432,7 @@ const QuestionList = () => {
                     </div>
                 </div>
             </Card>
+
         </div>
     );
 };

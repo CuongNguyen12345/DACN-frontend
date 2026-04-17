@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, ChevronRight, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText, Trash2, HelpCircle, PlusCircle } from "lucide-react";
+import * as XLSX from "xlsx";
 import api from "@/services/api";
 
 // Import components từ shadcn/ui
@@ -42,11 +43,115 @@ const QuestionCreate = () => {
 
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isInstructionOpen, setIsInstructionOpen] = useState(false);
   const [fileName, setFileName] = useState("");
   const [importSettings, setImportSettings] = useState({
     subject: "Toán",
     grade: "Lớp 10",
   });
+
+  // Batch Questions State
+  const [batchQuestions, setBatchQuestions] = useState([
+    { id: Date.now(), content: "", a: "", b: "", c: "", d: "", correct: "A", explanation: "", level: "Trung Bình" }
+  ]);
+
+  const handleAddBatchRow = () => {
+    setBatchQuestions(prev => [
+      ...prev,
+      { id: Date.now(), content: "", a: "", b: "", c: "", d: "", correct: "A", explanation: "", level: "Trung Bình" }
+    ]);
+  };
+
+  const handleRemoveBatchRow = (id) => {
+    if (batchQuestions.length > 1) {
+      setBatchQuestions(prev => prev.filter(q => q.id !== id));
+    }
+  };
+
+  const handleUpdateBatchRow = (id, field, value) => {
+    setBatchQuestions(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q));
+  };
+
+  const handleSaveBatch = async () => {
+    const validQuestions = batchQuestions.filter(q => q.content.trim() !== "");
+    if (validQuestions.length === 0) {
+      alert("Vui lòng nhập ít nhất một câu hỏi có nội dung!");
+      return;
+    }
+
+    try {
+      const payload = {
+        subject: importSettings.subject,
+        grade: importSettings.grade,
+        questions: validQuestions.map(q => ({
+          content: q.content,
+          options: [
+            { content: q.a, isCorrect: q.correct === "A" },
+            { content: q.b, isCorrect: q.correct === "B" },
+            { content: q.c, isCorrect: q.correct === "C" },
+            { content: q.d, isCorrect: q.correct === "D" },
+          ],
+          explanation: q.explanation,
+          level: q.level || "Trung Bình"
+        }))
+      };
+
+      await api.post("/api/admin/questions", payload);
+      alert(`Đã thêm thành công ${validQuestions.length} câu hỏi vào ngân hàng!`);
+      setIsImportModalOpen(false);
+      navigate("/admin/questions");
+    }
+    catch (error) {
+      console.error("Lưu batch thất bại:", error);
+      alert("Đã xảy ra lỗi khi lưu danh sách câu hỏi.");
+    }
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: "binary" });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      // Skip header row and map data
+      // Cột: Nội dung | A | B | C | D | Đúng | Độ khó | Giải thích
+      const importedQuestions = data.slice(1).map((row, index) => {
+        if (!row[0]) return null; // Skip empty rows
+        const rawLevel = (row[6] || "").toString().trim();
+        const levelMap = { "de": "Dễ", "dễ": "Dễ", "easy": "Dễ", "trung binh": "Trung Bình", "trung bình": "Trung Bình", "medium": "Trung Bình", "kho": "Khó", "khó": "Khó", "hard": "Khó" };
+        const level = levelMap[rawLevel.toLowerCase()] || rawLevel || "Trung Bình";
+        return {
+          id: Date.now() + index,
+          content: row[0] || "",
+          a: row[1] || "",
+          b: row[2] || "",
+          c: row[3] || "",
+          d: row[4] || "",
+          correct: (row[5] || "A").toString().toUpperCase().trim(),
+          level,
+          explanation: row[7] || ""
+        };
+      }).filter(q => q !== null);
+
+      if (importedQuestions.length > 0) {
+        setBatchQuestions(prev => {
+          // If first row is empty, replace it, otherwise append
+          const firstRowEmpty = prev.length === 1 && !prev[0].content;
+          return firstRowEmpty ? importedQuestions : [...prev, ...importedQuestions];
+        });
+        alert(`Đã nhập thành công ${importedQuestions.length} câu hỏi!`);
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Reset input
+    e.target.value = null;
+  };
 
   // Xử lý thay đổi input
   const handleChange = (e) => {
@@ -106,43 +211,43 @@ const QuestionCreate = () => {
     try {
       const response = await api.post("/api/admin/ai/generate-questions", {
         message: `${userMessage}
-        Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array (KHÔNG thêm bất kỳ text nào ngoài JSON):
-        [
-          {
-            "question": "Nội dung câu hỏi",
-            "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },
-            "answer": "A",
-            "explanation": "Lời giải chi tiết",
-            "subject": "Toán | Lý | Hóa | Anh",
-            "class": "10 | 11 | 12",
-            "level": "Dễ | Trung Bình | Khó"
-          }
-        ]
-        Quy tắc xác định độ khó (BẮT BUỘC tuân thủ):
-        1. Trước khi gán "level", phải xác định dạng câu hỏi thuộc loại nào:
-          - Lý thuyết / nhận biết
-          - Áp dụng trực tiếp công thức
-          - Biến đổi công thức (1-2 bước)
-          - Bài toán nhiều bước / kết hợp nhiều kiến thức
-        2. Mapping level theo đúng quy tắc:
-          - "Dễ": Lý thuyết hoặc áp dụng trực tiếp công thức
-          - "Trung Bình": Biến đổi công thức, suy luận 1-2 bước
-          - "Khó": Nhiều bước giải, kết hợp nhiều kiến thức
-        3. Không được gán level ngẫu nhiên. Level phải phù hợp với bản chất câu hỏi.
-        Yêu cầu:
-        - Câu hỏi rõ ràng, chính xác
-        - Đáp án đúng khớp với lời giải
-        - Phân loại subject và class phù hợp
-        - Không thêm bất kỳ văn bản nào ngoài JSON
-        QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
-        - Không sử dụng LaTeX hoặc ký hiệu dạng \frac, \sqrt, \alpha, $...$
-        - Không dùng dấu backslash (\)
-        - Viết công thức bằng text Unicode:
-          + α thay cho \alpha
-          + √ thay cho \sqrt
-          + 1/3 thay cho \frac{1}{3}
-        - Output phải hiển thị được trực tiếp trên giao diện web không cần render toán,
-        `,
+      Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array (KHÔNG thêm bất kỳ text nào ngoài JSON):
+      [
+        {
+          "question": "Nội dung câu hỏi",
+          "options": { "A": "Đáp án A", "B": "Đáp án B", "C": "Đáp án C", "D": "Đáp án D" },
+          "answer": "A",
+          "explanation": "Lời giải chi tiết",
+          "subject": "Toán | Lý | Hóa | Anh",
+          "class": "10 | 11 | 12",
+          "level": "Dễ | Trung Bình | Khó"
+        }
+      ]
+      Quy tắc xác định độ khó (BẮT BUỘC tuân thủ):
+      1. Trước khi gán "level", phải xác định dạng câu hỏi thuộc loại nào:
+        - Lý thuyết / nhận biết
+        - Áp dụng trực tiếp công thức
+        - Biến đổi công thức (1-2 bước)
+        - Bài toán nhiều bước / kết hợp nhiều kiến thức
+      2. Mapping level theo đúng quy tắc:
+        - "Dễ": Lý thuyết hoặc áp dụng trực tiếp công thức
+        - "Trung Bình": Biến đổi công thức, suy luận 1-2 bước
+        - "Khó": Nhiều bước giải, kết hợp nhiều kiến thức
+      3. Không được gán level ngẫu nhiên. Level phải phù hợp với bản chất câu hỏi.
+      Yêu cầu:
+      - Câu hỏi rõ ràng, chính xác
+      - Đáp án đúng khớp với lời giải
+      - Phân loại subject và class phù hợp
+      - Không thêm bất kỳ văn bản nào ngoài JSON
+      QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
+      - Không sử dụng LaTeX hoặc ký hiệu dạng \frac, \sqrt, \alpha, $...$
+      - Không dùng dấu backslash (\)
+      - Viết công thức bằng text Unicode:
+        + α thay cho \alpha
+        + √ thay cho \sqrt
+        + 1/3 thay cho \frac{1}{3}
+      - Output phải hiển thị được trực tiếp trên giao diện web không cần render toán,
+      `,
       });
 
       const data = response.data;
@@ -232,6 +337,26 @@ const QuestionCreate = () => {
     }
   };
 
+  // Helper Components
+  const CardLayout = ({ title, subtitle, children }) => (
+    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
+      <div className="flex flex-col">
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        {subtitle && <p className="text-xs text-gray-400 font-medium italic">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+
+  const SelectGroup = ({ label, icon, children }) => (
+    <div className="space-y-2">
+      <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+        <span className="text-xs">{icon}</span> {label}
+      </label>
+      {children}
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
       {/* Header section */}
@@ -255,79 +380,24 @@ const QuestionCreate = () => {
           {/* IMPORT MODAL */}
           <Dialog open={isImportModalOpen} onOpenChange={setIsImportModalOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="flex-1 md:flex-none gap-2">
+              <Button variant="outline" className="border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 gap-2">
                 <Upload className="h-4 w-4" /> Import
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-xl p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white">
-              <div className="p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-xl font-bold text-gray-800">
-                    Hướng dẫn nhập câu hỏi
-                  </DialogTitle>
-                </div>
-
-                {/* Info Box */}
-                <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center gap-2 text-blue-700 font-bold">
-                    <Info className="h-5 w-5" />
-                    <span>Hướng dẫn chi tiết:</span>
-                  </div>
-
-                  <ul className="space-y-3 text-sm text-blue-800/90">
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                      <span><strong>Định dạng file:</strong> Excel (.xlsx, .xls) hoặc CSV</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                      <span><strong>Cấu trúc bảng:</strong> Mỗi hàng tương ứng với một câu hỏi</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                      <div className="space-y-2">
-                        <strong>Thứ tự các cột:</strong>
-                        <ol className="list-decimal list-inside space-y-1 ml-2 text-blue-700/80 font-medium">
-                          <li><span className="text-blue-900 font-bold">nội dung</span> (Bắt buộc) - Đề bài</li>
-                          <li><span className="text-blue-900 font-bold">đáp án A</span> (Bắt buộc)</li>
-                          <li><span className="text-blue-900 font-bold">đáp án B</span> (Bắt buộc)</li>
-                          <li><span className="text-blue-900 font-bold">đáp án C</span> (Bắt buộc)</li>
-                          <li><span className="text-blue-900 font-bold">đáp án D</span> (Bắt buộc)</li>
-                          <li><span className="text-blue-900 font-bold">đáp án đúng</span> (Bắt buộc) - A, B, C hoặc D</li>
-                          <li><span>giải thích</span> - Lời giải (Không bắt buộc)</li>
-                          <li><span>độ khó</span> - Dễ, Trung Bình, Khó</li>
-                        </ol>
-                      </div>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                      <span><strong>Dòng đầu tiên:</strong> Phải là tiêu đề (header) của các cột</span>
-                    </li>
-                  </ul>
-
-                  <Button 
-                    variant="secondary" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-5 font-bold shadow-sm shadow-blue-200 gap-2 border-none"
-                    onClick={() => {
-                      // Logic tải file mẫu ở đây
-                      alert("Đang tải file mẫu...");
-                    }}
-                  >
-                    <Download className="h-4 w-4" /> Tải file mẫu .xlsx
-                  </Button>
-                </div>
-
-                {/* Select Subject and Grade */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
-                      <span className="text-xs">📚</span> Môn học:
-                    </label>
-                    <Select 
-                      value={importSettings.subject} 
-                      onValueChange={(v) => setImportSettings(prev => ({...prev, subject: v}))}
+            <DialogContent className="max-w-[95vw] w-[1400px] p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white max-h-[90vh] flex flex-col">
+              {/* Header logic from image */}
+              <div className="p-6 border-b flex flex-wrap items-center justify-between gap-4 shrink-0">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    Thêm câu hỏi hàng loạt
+                  </h3>
+                  <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100 px-3">
+                    <span className="text-sm font-bold text-gray-600">Môn:</span>
+                    <Select
+                      value={importSettings.subject}
+                      onValueChange={(v) => setImportSettings(prev => ({ ...prev, subject: v }))}
                     >
-                      <SelectTrigger className="rounded-xl border-gray-200 focus:ring-blue-500 shadow-sm">
+                      <SelectTrigger className="w-[140px] h-9 rounded-xl border-none bg-white shadow-sm font-medium">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -336,16 +406,13 @@ const QuestionCreate = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
-                      <span className="text-xs">🏫</span> Lớp:
-                    </label>
-                    <Select 
-                      value={importSettings.grade} 
-                      onValueChange={(v) => setImportSettings(prev => ({...prev, grade: v}))}
+                    <div className="w-px h-5 bg-gray-200" />
+                    <span className="text-sm font-bold text-gray-600">Lớp:</span>
+                    <Select
+                      value={importSettings.grade}
+                      onValueChange={(v) => setImportSettings(prev => ({ ...prev, grade: v }))}
                     >
-                      <SelectTrigger className="rounded-xl border-gray-200 focus:ring-blue-500 shadow-sm">
+                      <SelectTrigger className="w-[120px] h-9 rounded-xl border-none bg-white shadow-sm font-medium">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -357,55 +424,239 @@ const QuestionCreate = () => {
                   </div>
                 </div>
 
-                {/* File Upload Area */}
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-500" /> Chọn file Excel/CSV:
-                  </label>
+                <div className="flex items-center gap-2">
+                  {/* Nhập file button with dropdown feel */}
                   <div className="relative group">
-                    <input 
-                      type="file" 
-                      id="file-upload" 
-                      className="hidden" 
+                    <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-5 py-2.5 flex items-center gap-2 h-11 font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">
+                      <Upload className="h-4 w-4" /> Nhập file <ChevronRight className="h-4 w-4 rotate-90" />
+                    </Button>
+                    <input
+                      type="file"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
                       accept=".xlsx, .xls, .csv"
-                      onChange={(e) => setFileName(e.target.files[0]?.name || "")}
+                      onChange={handleImportFile}
                     />
-                    <label 
-                      htmlFor="file-upload"
-                      className="flex items-center gap-3 w-full p-1 pr-4 bg-white border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer group-hover:border-blue-400 group-hover:bg-blue-50/30 transition-all"
-                    >
-                      <div className="bg-gray-100 group-hover:bg-blue-100 p-2.5 rounded-xl transition-colors">
-                        <FileSpreadsheet className="h-5 w-5 text-gray-500 group-hover:text-blue-600" />
-                      </div>
-                      <span className={`text-sm flex-1 truncate ${fileName ? "text-gray-900 font-medium" : "text-gray-400"}`}>
-                        {fileName || "Chưa chọn file nào..."}
-                      </span>
-                      <div className="px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 shadow-sm">
-                        Browse
-                      </div>
-                    </label>
                   </div>
+
+                  {/* Hướng dẫn button */}
+                  <Button
+                    variant="outline"
+                    className="rounded-full h-11 px-5 font-bold border-gray-200 text-gray-600 gap-2 hover:bg-gray-50 shadow-sm"
+                    onClick={() => setIsInstructionOpen(true)}
+                  >
+                    <HelpCircle className="h-4 w-4" /> Hướng dẫn
+                  </Button>
+
+                  {/* Thêm nhanh button */}
+                  <Button
+                    className="bg-accent hover:bg-accent/90 text-white rounded-full h-11 px-5 font-bold gap-2 shadow-lg shadow-accent/20"
+                    onClick={() => {
+                      setIsImportModalOpen(false);
+                      setIsAIModalOpen(true);
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4" /> Thêm nhanh
+                  </Button>
                 </div>
               </div>
 
+              {/* Table Body Area */}
+              <div className="flex-1 overflow-auto p-0 min-h-[400px]">
+                <table className="w-full text-sm border-collapse">
+                  <thead className="sticky top-0 bg-slate-50 z-10 border-b border-gray-200 text-gray-500 font-bold uppercase tracking-wider text-[11px]">
+                    <tr>
+                      <th className="px-4 py-4 text-center w-12">#</th>
+                      <th className="px-4 py-4 text-left min-w-[300px]">NỘI DUNG CÂU HỎI *</th>
+                      <th className="px-4 py-4 text-left w-40">ĐÁP ÁN A *</th>
+                      <th className="px-4 py-4 text-left w-40">ĐÁP ÁN B *</th>
+                      <th className="px-4 py-4 text-left w-40">ĐÁP ÁN C *</th>
+                      <th className="px-4 py-4 text-left w-40">ĐÁP ÁN D *</th>
+                      <th className="px-4 py-4 text-center w-28">ĐÚNG *</th>
+                      <th className="px-4 py-4 text-center w-32">ĐỘ KHÓ</th>
+                      <th className="px-4 py-4 text-left min-w-[200px]">GIẢI THÍCH</th>
+                      <th className="px-4 py-4 text-center w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {batchQuestions.map((q, index) => (
+                      <tr key={q.id} className="hover:bg-blue-50/30 transition-colors group">
+                        <td className="px-4 py-3 text-center text-gray-400 font-medium">
+                          {index + 1}
+                        </td>
+                        <td className="px-2 py-3">
+                          <textarea
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all resize-none min-h-[60px]"
+                            placeholder="Nhập đề bài..."
+                            value={q.content}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "content", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-3">
+                          <input
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                            placeholder="Đáp án A"
+                            value={q.a}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "a", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-3">
+                          <input
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                            placeholder="Đáp án B"
+                            value={q.b}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "b", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-3">
+                          <input
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                            placeholder="Đáp án C"
+                            value={q.c}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "c", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-3">
+                          <input
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                            placeholder="Đáp án D"
+                            value={q.d}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "d", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-2 py-3">
+                          <Select
+                            value={q.correct}
+                            onValueChange={(v) => handleUpdateBatchRow(q.id, "correct", v)}
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-gray-100">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["A", "B", "C", "D"].map(l => (
+                                <SelectItem key={l} value={l}>{l}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-3">
+                          <Select
+                            value={q.level}
+                            onValueChange={(v) => handleUpdateBatchRow(q.id, "level", v)}
+                          >
+                            <SelectTrigger className="w-full rounded-xl border-gray-100 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {["Dễ", "Trung Bình", "Khó"].map(l => (
+                                <SelectItem key={l} value={l}>{l}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-2 py-3">
+                          <input
+                            className="w-full bg-white border border-gray-100 rounded-xl px-3 py-2 text-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                            placeholder="Giải thích đáp án"
+                            value={q.explanation}
+                            onChange={(e) => handleUpdateBatchRow(q.id, "explanation", e.target.value)}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleRemoveBatchRow(q.id)}
+                            className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan="10" className="p-4">
+                        <button
+                          onClick={handleAddBatchRow}
+                          className="w-full py-4 border-2 border-dashed border-gray-100 rounded-2xl text-gray-400 font-bold hover:border-blue-300 hover:text-blue-500 hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                        >
+                          <PlusCircle className="h-5 w-5" /> Thêm dòng
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
               {/* Action Footer */}
-              <div className="p-4 bg-gray-50 border-t flex gap-3">
-                <Button 
-                  variant="ghost" 
-                  className="flex-1 rounded-xl text-gray-500"
+              <div className="p-6 bg-white border-t flex justify-end items-center gap-4 shrink-0">
+                <Button
+                  variant="ghost"
+                  className="rounded-xl text-blue-500 font-bold px-8 hover:bg-blue-50"
                   onClick={() => setIsImportModalOpen(false)}
                 >
-                  Hủy bỏ
+                  Hủy
                 </Button>
-                <Button 
-                  className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 disabled:opacity-50"
-                  disabled={!fileName}
-                  onClick={() => {
-                    alert(`Import ${fileName} vào môn ${importSettings.subject} - ${importSettings.grade}`);
-                    setIsImportModalOpen(false);
-                  }}
+                <Button
+                  className="bg-primary hover:bg-primary/90 text-white rounded-2xl px-12 py-6 h-auto text-lg font-bold shadow-xl shadow-primary/20"
+                  onClick={handleSaveBatch}
                 >
-                  Bắt đầu nhập dữ liệu
+                  Lưu {batchQuestions.filter(q => q.content.trim() !== "").length} câu hỏi
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* INSTRUCTION SUB-MODAL */}
+          <Dialog open={isInstructionOpen} onOpenChange={setIsInstructionOpen}>
+            <DialogContent className="max-w-xl p-0 overflow-hidden rounded-3xl border-none shadow-2xl bg-white">
+              <div className="p-6 space-y-6">
+                <DialogHeader>
+                  <DialogTitle className="text-xl font-bold text-gray-800">
+                    Hướng dẫn nhập câu hỏi
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-blue-700 font-bold">
+                    <Info className="h-5 w-5" />
+                    <span>Quy trình nhập dữ liệu:</span>
+                  </div>
+
+                  <ul className="space-y-3 text-sm text-blue-800/90">
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <span><strong>Nhập trực tiếp:</strong> Bạn có thể gõ nội dung câu hỏi và các đáp án trực tiếp vào bảng.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <span><strong>Import Excel:</strong> Sử dụng nút "Nhập file" để tải lên file Excel/CSV theo đúng mẫu.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                      <div className="space-y-2">
+                        <strong>Cấu trúc file Excel mẫu:</strong>
+                        <ol className="list-decimal list-inside space-y-1 ml-2 text-blue-700/80 font-medium">
+                          <li>nội dung (Bắt buộc)</li>
+                          <li>đáp án A, B, C, D (Bắt buộc)</li>
+                          <li>đáp án đúng (A, B, C hoặc D)</li>
+                        </ol>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <Button
+                    variant="secondary"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-5 font-bold shadow-sm shadow-blue-200 gap-2 border-none"
+                    onClick={() => alert("Đang tải file mẫu...")}
+                  >
+                    <Download className="h-4 w-4" /> Tải file mẫu .xlsx
+                  </Button>
+                </div>
+              </div>
+              <div className="p-4 bg-gray-50 border-t flex justify-end">
+                <Button
+                  className="bg-gray-900 text-white rounded-xl px-8"
+                  onClick={() => setIsInstructionOpen(false)}
+                >
+                  Đã hiểu
                 </Button>
               </div>
             </DialogContent>
@@ -542,7 +793,7 @@ const QuestionCreate = () => {
             </DialogContent>
           </Dialog>
 
-          <Button variant="ghost" onClick={() => navigate("/admin/questions")} className="text-gray-500 hover:text-gray-700">Hủy</Button>
+          <Button variant="ghost" onClick={() => navigate("/admin/questions")} className="text-gray-500 hover:text-white">Hủy</Button>
           <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white gap-2 px-6">
             <Save className="h-4 w-4" />
             Lưu câu hỏi
@@ -650,26 +901,5 @@ const QuestionCreate = () => {
       </div>
     </div>
   );
-};
-
-// Helper Components
-const CardLayout = ({ title, subtitle, children }) => (
-  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-3">
-    <div className="flex flex-col">
-      <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-      {subtitle && <p className="text-xs text-gray-400 font-medium italic">{subtitle}</p>}
-    </div>
-    {children}
-  </div>
-);
-
-const SelectGroup = ({ label, icon, children }) => (
-  <div className="space-y-2">
-    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-      <span className="text-xs">{icon}</span> {label}
-    </label>
-    {children}
-  </div>
-);
-
+}
 export default QuestionCreate;
