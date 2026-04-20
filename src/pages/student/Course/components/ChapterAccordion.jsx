@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Accordion,
   AccordionContent,
@@ -6,7 +5,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import LessonCard from "./LessonCard";
-import { Badge } from "@/components/ui/badge";
 
 const ChapterAccordion = ({ chapters, onLessonSelect }) => {
   if (!chapters || chapters.length === 0) {

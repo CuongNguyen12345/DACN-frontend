@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, ChevronRight, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText, Trash2, HelpCircle, PlusCircle, Paperclip } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, ChevronRight, Loader2, Lightbulb, Upload, Info, Download, X, FileText, Trash2, HelpCircle, PlusCircle, Paperclip } from "lucide-react";
 import * as XLSX from "xlsx";
 import api from "@/services/api";
 
@@ -44,7 +44,6 @@ const QuestionCreate = () => {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isInstructionOpen, setIsInstructionOpen] = useState(false);
-  const [fileName, setFileName] = useState("");
   const [importSettings, setImportSettings] = useState({
     subject: "Toán",
     grade: "Lớp 10",
@@ -198,7 +197,6 @@ const QuestionCreate = () => {
   // =============================================
   const [prompt, setPrompt] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("topic");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
 
   // File attachment state for AI chat

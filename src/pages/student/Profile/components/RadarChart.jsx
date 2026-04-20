@@ -1,5 +1,3 @@
-import React from 'react';
-
 const RadarChart = ({ data, size = 300 }) => {
     // data: [{ subject: 'Math', value: 80 }, ...] value 0-100
     const center = size / 2;
