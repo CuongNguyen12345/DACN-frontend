@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import api from "@/services/api";
 import {
     PlayCircle,
     CheckCircle2,
@@ -40,77 +41,6 @@ import NoteTab from "./components/NoteTab";
 import QnATab from "./components/QnATab";
 import QuizTab from "./components/QuizTab";
 
-const mockChapters = [
-    {
-        id: "c1",
-        title: "Chương 1: Mệnh đề toán học. Tập hợp",
-        lessons: [
-            {
-                id: 1,
-                title: "Bài 1: Khảo sát hàm số bậc 3",
-                duration: "15:30",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                isCompleted: true,
-                content: `
-                    <h3 class="text-lg font-semibold mb-2">1. Khái niệm cơ bản</h3>
-                    <p class="mb-4">Trong bài học này, chúng ta sẽ tìm hiểu về các khái niệm nền tảng...</p>
-                    <h3 class="text-lg font-semibold mb-2">2. Nội dung chính</h3>
-                    <p class="mb-2">Các định luật bảo toàn và ứng dụng thực tiễn trong đời sống.</p>
-                    <ul class="list-disc list-inside space-y-1">
-                        <li>Định luật 1</li>
-                        <li>Định luật 2</li>
-                    </ul>
-                `,
-            },
-            {
-                id: 2,
-                title: "Bài 2: Các định luật cơ bản",
-                duration: "20:45",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                isCompleted: false,
-                content: "<p>Nội dung lý thuyết bài 2 đang được cập nhật...</p>",
-            },
-        ],
-    },
-    {
-        id: "c2",
-        title: "Chương 2: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
-        lessons: [
-            {
-                id: 3,
-                title: "Bài 3: Bài tập vận dụng",
-                duration: "45:00",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                isCompleted: false,
-                content: "<p>Hướng dẫn giải bài tập chi tiết...</p>",
-            },
-            {
-                id: 4,
-                title: "Bài 4: Ôn tập chương 1",
-                duration: "30:15",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                isCompleted: false,
-                content: "<p>Tổng hợp kiến thức chương 1...</p>",
-            },
-        ],
-    },
-    {
-        id: "c3",
-        title: "Chương 3: Hàm số và đồ thị",
-        lessons: [
-            {
-                id: 5,
-                title: "Bài 5: Kiểm tra 15 phút",
-                duration: "15:00",
-                videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                isCompleted: false,
-                content: "<p>Đề kiểm tra trắc nghiệm...</p>",
-            },
-        ],
-    },
-];
-
-const mockLessons = mockChapters.flatMap(chapter => chapter.lessons);
 
 const formatStudyTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
@@ -126,17 +56,75 @@ const Learning = () => {
     const { lessonId } = useParams();
     const navigate = useNavigate();
 
+    const [chapters, setChapters] = useState([]);
+    const [activeLesson, setActiveLesson] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
     const [studySeconds, setStudySeconds] = useState(0);
     const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
     const [lessonStudyMap, setLessonStudyMap] = useState({});
-    const [expandedChapters, setExpandedChapters] = useState(["c1"]);
+    const [expandedChapters, setExpandedChapters] = useState([]);
 
-    const activeLesson =
-        mockLessons.find((item) => item.id === Number(lessonId)) || null;
+    // Fetch chapters and active lesson data
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch lesson details
+                const lessonRes = await api.get(`/api/learning/lesson/${lessonId}`);
+                const lessonData = lessonRes.data;
+                
+                // Map API response to expected format
+                setActiveLesson({
+                    id: lessonData.id,
+                    title: lessonData.lessonName,
+                    videoUrl: lessonData.videoUrl?.includes('embed') 
+                        ? lessonData.videoUrl 
+                        : `https://www.youtube.com/embed/${lessonData.videoUrl}`,
+                    content: lessonData.content || "<p>Nội dung đang được cập nhật...</p>",
+                    pdfUrl: lessonData.pdfUrl
+                });
 
-    const activeLessonRef = useRef(activeLesson);
+                // Fetch chapters for the current course
+                const chaptersRes = await api.get(`/api/learning/course/content?lessonId=${lessonId}`);
+                const transformedChapters = chaptersRes.data.map(chap => ({
+                    id: `c${chap.id}`,
+                    title: chap.chapterName,
+                    lessons: chap.lessons.map(l => ({
+                        id: l.id,
+                        title: l.lessonName,
+                        duration: "0:00", // Cần bổ sung thời lượng nếu có từ DB
+                        videoUrl: l.videoUrl,
+                        isCompleted: false // Cần bổ sung trạng thái hoàn thành từ DB
+                    }))
+                }));
+                setChapters(transformedChapters);
+
+                // Tự động mở chương chứa bài học hiện tại
+                const currentChapter = transformedChapters.find(c => 
+                    c.lessons.some(l => l.id === Number(lessonId))
+                );
+                if (currentChapter) {
+                    setExpandedChapters(prev => Array.from(new Set([...prev, currentChapter.id])));
+                }
+
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu học tập:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (lessonId) {
+            fetchData();
+        }
+    }, [lessonId]);
+
+    const activeLessonRef = useRef(null);
+    useEffect(() => {
+        activeLessonRef.current = activeLesson;
+    }, [activeLesson]);
 
     const toggleChapter = (chapterId) => {
         setExpandedChapters((prev) =>
@@ -146,25 +134,7 @@ const Learning = () => {
         );
     };
 
-    useEffect(() => {
-        if (activeLesson) {
-            setExpandedChapters((prev) => {
-                const chapter = mockChapters.find((c) =>
-                    c.lessons.some((l) => l.id === activeLesson.id)
-                );
-                if (chapter && !prev.includes(chapter.id)) {
-                    return [...prev, chapter.id];
-                }
-                return prev;
-            });
-        }
-    }, [activeLesson]);
     const studySecondsRef = useRef(studySeconds);
-
-    useEffect(() => {
-        activeLessonRef.current = activeLesson;
-    }, [activeLesson]);
-
     useEffect(() => {
         studySecondsRef.current = studySeconds;
     }, [studySeconds]);
@@ -185,7 +155,7 @@ const Learning = () => {
 
         const savedSeconds = lessonStudyMap[activeLesson.id] || 0;
         setStudySeconds(savedSeconds);
-    }, [lessonId]);
+    }, [lessonId, !!activeLesson]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -195,7 +165,7 @@ const Learning = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [isPageVisible, activeLesson]);
+    }, [isPageVisible, !!activeLesson]);
 
     useEffect(() => {
         const handleBeforeUnload = () => {
@@ -227,6 +197,15 @@ const Learning = () => {
         navigate(`/course/learning/${lesson.id}`);
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gray-50 space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                <p className="text-slate-500 font-medium font-serif italic text-lg animate-pulse">Đang tải nội dung học tập...</p>
+            </div>
+        );
+    }
+
     if (!activeLesson) {
         return (
             <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gray-50">
@@ -236,8 +215,8 @@ const Learning = () => {
                         <p className="text-muted-foreground mb-4">
                             Bài học bạn chọn không tồn tại hoặc đã bị xóa.
                         </p>
-                        <Button onClick={() => navigate("/course/learning/1")}>
-                            Về bài học đầu tiên
+                        <Button onClick={() => navigate("/course")}>
+                            Quay lại danh sách khóa học
                         </Button>
                     </CardContent>
                 </Card>
@@ -488,7 +467,7 @@ const Learning = () => {
                                     <CardContent className="p-0 flex-1 overflow-hidden">
                                         <ScrollArea className="h-[calc(100vh-250px)]">
                                             <div className="flex flex-col border-b border-gray-100">
-                                                {mockChapters.map((chapter) => {
+                                                {chapters.map((chapter) => {
                                                     const isExpanded = expandedChapters.includes(chapter.id);
                                                     const completedLessons = chapter.lessons.filter(l => l.isCompleted).length;
                                                     return (

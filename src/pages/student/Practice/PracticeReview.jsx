@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
     ArrowLeft,
     CheckCircle2,
@@ -17,24 +17,27 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const PracticeReview = () => {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // MOCK DATA: Giả lập đáp án của user (thực tế bạn lấy từ API hoặc state/Redux)
-    const userAnswers = { 1: "A", 2: "C", 3: "B", 4: "D", 5: "A" }; 
+    // Nhận dữ liệu thực từ state do PracticeResult truyền sang
+    const data = location.state || {};
+    const { 
+        examId, 
+        examTitle = "Giải đáp đề thi", 
+        score = 0, 
+        correct = 0, 
+        total = 0, 
+        userAnswers = {},
+        questions = [] 
+    } = data;
 
-    // MOCK DATA: Thêm trường correctAnswer và explanation vào danh sách câu hỏi
-    const questions = Array.from({ length: 50 }, (_, i) => ({
-        id: i + 1,
-        content: `Câu hỏi số ${i + 1}: Tìm tập xác định của hàm số y = (x - 2)^(-3)?`,
-        options: [
-            { key: "A", text: "R \\ {2}" },
-            { key: "B", text: "R" },
-            { key: "C", text: "(2; +∞)" },
-            { key: "D", text: "(-∞; 2)" }
-        ],
-        // Giả lập luân phiên đáp án đúng để test giao diện
-        correctAnswer: ["A", "B", "C", "D"][i % 4], 
-        explanation: `Lời giải chi tiết cho câu ${i + 1}: Hàm số y = (x - 2)^(-3) lũy thừa với số mũ âm, do đó điều kiện là cơ số phải khác 0. Suy ra x - 2 ≠ 0 ⇔ x ≠ 2. Vậy tập xác định là D = R \\ {2}.`
-    }));
+    // Nếu không có dữ liệu, quay lại trang trước
+    if (!examId) {
+        useEffect(() => {
+            navigate("/practice");
+        }, [navigate]);
+        return null;
+    }
 
     const scrollToQuestion = (id) => {
         const element = document.getElementById(`question-${id}`);
@@ -51,9 +54,10 @@ const PracticeReview = () => {
                 <div className="grid grid-cols-5 gap-2">
                     {questions.map(q => {
                         const isAnswered = !!userAnswers[q.id];
-                        const isCorrect = userAnswers[q.id] === q.correctAnswer;
+                        const correctOption = q.options.find(o => o.correct);
+                        const isCorrect = userAnswers[q.id] === correctOption?.label;
                         
-                        let btnClass = "bg-gray-50 text-gray-500 border-gray-200"; // Chưa làm
+                        let btnClass = "bg-gray-50 text-gray-400 border-gray-200"; // Chưa làm
                         if (isAnswered) {
                             btnClass = isCorrect 
                                 ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200" // Đúng
@@ -68,7 +72,7 @@ const PracticeReview = () => {
                                 className={cn("w-full h-8 text-xs font-semibold", btnClass)}
                                 onClick={() => scrollToQuestion(q.id)}
                             >
-                                {q.id}
+                                {q.orderNumber}
                             </Button>
                         )
                     })}
@@ -99,14 +103,16 @@ const PracticeReview = () => {
                     <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <h1 className="font-bold text-lg md:text-xl truncate">Giải đáp: Đề thi thử THPT QG 2025</h1>
+                    <h1 className="font-bold text-lg md:text-xl truncate" title={examTitle}>
+                        Giải đáp: {examTitle}
+                    </h1>
                 </div>
 
                 <div className="flex items-center gap-4">
                     <div className="hidden md:flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full border border-blue-100 font-semibold">
-                        <span>Điểm: 8.4</span>
+                        <span>Điểm: {score}</span>
                         <span className="mx-2">|</span>
-                        <span>Đúng: 42/50</span>
+                        <span>Đúng: {correct}/{total}</span>
                     </div>
 
                     {/* Mobile Question Palette Trigger */}
@@ -128,7 +134,8 @@ const PracticeReview = () => {
                 <div className="flex-1 max-w-[900px] mx-auto w-full">
                     {questions.map((q) => {
                         const userAnswer = userAnswers[q.id];
-                        const isCorrect = userAnswer === q.correctAnswer;
+                        const correctOption = q.options.find(o => o.correct);
+                        const isCorrect = userAnswer === correctOption?.label;
                         const isUnanswered = !userAnswer;
 
                         return (
@@ -143,7 +150,7 @@ const PracticeReview = () => {
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-                                        Câu {q.id}
+                                        Câu {q.orderNumber}
                                     </Badge>
                                     
                                     {/* Hiển thị Icon trạng thái đúng/sai */}
@@ -172,8 +179,8 @@ const PracticeReview = () => {
                                 {/* Options List */}
                                 <div className="space-y-3">
                                     {q.options.map(opt => {
-                                        const isThisOptionCorrect = opt.key === q.correctAnswer;
-                                        const isThisOptionUserPicked = opt.key === userAnswer;
+                                        const isThisOptionCorrect = opt.correct;
+                                        const isThisOptionUserPicked = opt.label === userAnswer;
 
                                         let optionClass = "border-gray-200 bg-white text-gray-600"; // Mặc định
                                         let icon = null;
@@ -186,13 +193,10 @@ const PracticeReview = () => {
                                             // Đáp án user chọn mà sai thì tô đỏ
                                             optionClass = "border-red-500 bg-red-50 text-red-800 shadow-sm";
                                             icon = <XCircle className="h-5 w-5 text-red-500 ml-auto" />;
-                                        } else if (isThisOptionUserPicked) {
-                                            // Trường hợp chưa làm nhưng hiển thị default user picked (thừa, nhưng phòng hờ)
-                                            optionClass = "border-blue-200 bg-blue-50";
                                         }
 
                                         return (
-                                            <div key={opt.key} className={cn(
+                                            <div key={opt.label} className={cn(
                                                 "flex items-center space-x-3 rounded-lg border p-3 transition-all",
                                                 optionClass
                                             )}>
@@ -206,7 +210,7 @@ const PracticeReview = () => {
                                                 </div>
                                                 
                                                 <Label className="flex-1 cursor-default font-normal text-base flex items-center">
-                                                    <span className="font-bold mr-2">{opt.key}.</span> {opt.text}
+                                                    <span className="font-bold mr-2">{opt.label}.</span> {opt.content}
                                                     {icon}
                                                 </Label>
                                             </div>

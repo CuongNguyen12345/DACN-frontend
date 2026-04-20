@@ -14,7 +14,8 @@ import PracticeRoom from "../pages/student/Practice/PracticeRoom";
 import PracticeResult from "../pages/student/Practice/PracticeResult";
 import PracticeReview from "../pages/student/Practice/PracticeReview";
 import Profile from "../pages/student/Profile/Profile";
-import Course from "../pages/student/Course/Course";
+import CourseList from "../pages/student/Course/CourseList";
+import CourseSearch from "../pages/student/Course/CourseSearch";
 import Blog from "@/pages/student/Blog/Blog";
 import About from "@/pages/student/About/About";
 import StudyHistory from "@/pages/student/History/StudyHistory";
@@ -70,7 +71,8 @@ function AppRoutes() {
       {/* 2. KHU VỰC DÀNH CHO HỌC SINH (Có Student Header/Footer) */}
       <Route path="/" element={<StudentLayout />}>
         <Route index element={<Home />} />
-        <Route path="course" element={<Course />} />
+        <Route path="course" element={<CourseList />} />
+        <Route path="course/search" element={<CourseSearch />} />
         <Route path="practice" element={<PracticeList />} />
         <Route path="blog" element={<Blog />} />
         <Route path="about" element={<About />} />

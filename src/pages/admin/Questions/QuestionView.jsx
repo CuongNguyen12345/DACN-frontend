@@ -1,8 +1,18 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { 
-  ArrowLeft, Edit, CheckCircle2, Circle, ExternalLink,
-  Tag, Calendar, FileText, Layers, Link as LinkIcon, Loader2,
+import api from "@/services/api";
+import {
+  ArrowLeft,
+  Edit,
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+  Tag,
+  Calendar,
+  FileText,
+  Layers,
+  Link as LinkIcon,
+  Loader2,
   Trash2,
 } from "lucide-react";
 
@@ -14,86 +24,102 @@ import { useAuth } from "@/context/AuthContext";
 
 const QuestionView = () => {
   const navigate = useNavigate();
-  const { id } = useParams(); // Lấy ID từ URL
-  const { basePath } = useAuth();
+  const { id } = useParams();
 
-  const [isLoading, setIsLoading] = useState(true);
   const [question, setQuestion] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Giả lập gọi API lấy chi tiết câu hỏi
   useEffect(() => {
-    setIsLoading(true);
-    
-    // Fake API delay
-    const timer = setTimeout(() => {
-      setQuestion({
-        id: id || "Q-101",
-        content: "Đạo hàm của hàm số $y = \\ln(x)$ là gì?",
-        subject: "Toán",
-        level: "Dễ",
-        status: "Đã duyệt",
-        type: "Trắc nghiệm",
-        createdAt: "2026-03-10",
-        explanation: "Áp dụng công thức đạo hàm cơ bản: (ln x)' = 1/x với điều kiện x > 0.",
-        options: [
-          { id: "A", text: "$y' = \\frac{1}{x}$", isCorrect: true },
-          { id: "B", text: "$y' = x$", isCorrect: false },
-          { id: "C", text: "$y' = e^x$", isCorrect: false },
-          { id: "D", text: "$y' = \\frac{1}{x^2}$", isCorrect: false },
-        ],
-        linkedExams: [
-          { id: "EX-2024-01", title: "Đề kiểm tra 15p Toán Giải Tích", status: "Đang diễn ra", date: "2026-03-12" },
-          { id: "EX-2024-05", title: "Đề thi Giữa kỳ I - Khối 12", status: "Đã đóng", date: "2026-01-15" },
-          { id: "EX-2024-12", title: "Bài tập về nhà tuần 4", status: "Bản nháp", date: "2026-03-20" },
-        ]
-      });
-      setIsLoading(false);
-    }, 800);
+    const fetchQuestion = async () => {
+      try {
+        // id in frontend is like "Q-101", let's extract the actual ID by removing "Q-"
+        const actualId = id.replace("Q-", "");
+        const res = await api.get(`/api/admin/questions/${actualId}`);
+        const data = res.data;
+        data.createdAt = data.createdAt
+          ? String(data.createdAt).substring(0, 10)
+          : "N/A";
 
-    return () => clearTimeout(timer);
-  }, [id]);
+        // Mock linked exams for now since it's not in BE yet
+        data.linkedExams = [
+          {
+            id: "EX-2024-01",
+            title: "Đề kiểm tra 15p Toán Giải Tích",
+            status: "Đang diễn ra",
+            date: "2026-03-12",
+          },
+          {
+            id: "EX-2024-05",
+            title: "Đề thi Giữa kỳ I - Khối 12",
+            status: "Đã đóng",
+            date: "2026-01-15",
+          },
+        ];
 
-  const handleDelete = () => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa câu hỏi ${question.id} không?`)) {
-      // Thực hiện gọi API xóa ở đây
-      console.log("Đã xóa câu hỏi:", question.id);
-      navigate(`/${basePath}/questions`); // Xóa xong thì quay về trang danh sách
+        setQuestion(data);
+      } catch (error) {
+        console.error("Lỗi khi tải chi tiết câu hỏi:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchQuestion();
     }
-  };
+  }, [id]);
 
   const getLevelColor = (level) => {
     switch (level) {
-      case "Dễ": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "Trung bình": return "bg-amber-50 text-amber-700 border-amber-200";
-      case "Khó": return "bg-rose-50 text-rose-700 border-rose-200";
-      default: return "bg-slate-50 text-slate-700";
+      case "Dễ":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Trung bình":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      case "Khó":
+        return "bg-rose-50 text-rose-700 border-rose-200";
+      default:
+        return "bg-slate-50 text-slate-700";
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Đã duyệt": return "bg-blue-50 text-blue-700 border-blue-200";
-      case "Bản nháp": return "bg-slate-100 text-slate-600 border-slate-200";
-      case "Cần sửa lại": return "bg-orange-50 text-orange-700 border-orange-200";
-      default: return "bg-slate-50 text-slate-700";
+      case "Đã duyệt":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "Bản nháp":
+        return "bg-slate-100 text-slate-600 border-slate-200";
+      case "Cần sửa lại":
+        return "bg-orange-50 text-orange-700 border-orange-200";
+      default:
+        return "bg-slate-50 text-slate-700";
     }
   };
 
   const getExamStatusColor = (status) => {
     switch (status) {
-      case "Đang diễn ra": return "bg-emerald-100 text-emerald-700";
-      case "Đã đóng": return "bg-slate-100 text-slate-600";
-      case "Bản nháp": return "bg-amber-100 text-amber-700";
-      default: return "bg-slate-100 text-slate-700";
+      case "Đang diễn ra":
+        return "bg-emerald-100 text-emerald-700";
+      case "Đã đóng":
+        return "bg-slate-100 text-slate-600";
+      case "Bản nháp":
+        return "bg-amber-100 text-amber-700";
+      default:
+        return "bg-slate-100 text-slate-700";
     }
   };
 
-  // MÀN HÌNH LOADING
-  if (isLoading || !question) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-500">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p>Đang tải thông tin câu hỏi...</p>
+      <div className="p-10 text-center text-slate-500">
+        Đang tải chi tiết câu hỏi...
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="p-10 text-center text-red-500">
+        Không tìm thấy câu hỏi này.
       </div>
     );
   }
@@ -104,7 +130,8 @@ const QuestionView = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost" size="icon"
+            variant="ghost"
+            size="icon"
             onClick={() => navigate(`/${basePath}/questions`)}
             className="text-slate-500 hover:text-slate-900 hover:bg-slate-100"
           >
@@ -112,10 +139,16 @@ const QuestionView = () => {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-slate-900">Chi tiết câu hỏi</h2>
-              <Badge variant="outline" className="text-slate-500 bg-white">{question.id}</Badge>
+              <h2 className="text-2xl font-bold text-slate-900">
+                Chi tiết câu hỏi
+              </h2>
+              <Badge variant="outline" className="text-slate-500 bg-white">
+                {question.id}
+              </Badge>
             </div>
-            <p className="text-sm text-slate-500">Xem trước nội dung hiển thị và thông tin liên kết.</p>
+            <p className="text-sm text-slate-500">
+              Xem trước nội dung hiển thị và thông tin liên kết.
+            </p>
           </div>
         </div>
         <Button
@@ -154,11 +187,13 @@ const QuestionView = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {question.options.map((opt) => (
-                  <div 
-                    key={opt.id} 
+                  <div
+                    key={opt.id}
                     className={cn(
                       "flex items-start gap-3 p-4 rounded-xl border transition-all",
-                      opt.isCorrect ? "border-emerald-500 bg-emerald-50/50 shadow-sm" : "border-slate-200 bg-slate-50"
+                      opt.isCorrect
+                        ? "border-emerald-500 bg-emerald-50/50 shadow-sm"
+                        : "border-slate-200 bg-slate-50",
                     )}
                   >
                     <div className="mt-0.5">
@@ -169,7 +204,9 @@ const QuestionView = () => {
                       )}
                     </div>
                     <div>
-                      <span className="font-bold text-slate-700 mr-2">{opt.id}.</span>
+                      <span className="font-bold text-slate-700 mr-2">
+                        {opt.id}.
+                      </span>
                       <span className="text-slate-800">{opt.text}</span>
                     </div>
                   </div>
@@ -178,8 +215,12 @@ const QuestionView = () => {
 
               {question.explanation && (
                 <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                  <h4 className="text-sm font-semibold text-blue-800 mb-2">Lời giải chi tiết:</h4>
-                  <p className="text-sm text-slate-700">{question.explanation}</p>
+                  <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                    Lời giải chi tiết:
+                  </h4>
+                  <p className="text-sm text-slate-700">
+                    {question.explanation}
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -191,7 +232,10 @@ const QuestionView = () => {
                 <LinkIcon className="h-5 w-5 text-indigo-500" />
                 Đề thi sử dụng câu hỏi này
               </CardTitle>
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100">
+              <Badge
+                variant="secondary"
+                className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100"
+              >
                 {question.linkedExams.length} đề thi
               </Badge>
             </CardHeader>
@@ -199,24 +243,42 @@ const QuestionView = () => {
               {question.linkedExams.length > 0 ? (
                 <div className="divide-y divide-slate-100">
                   {question.linkedExams.map((exam) => (
-                    <div key={exam.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors">
+                    <div
+                      key={exam.id}
+                      className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+                    >
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm">
                           <Layers className="h-5 w-5 text-indigo-400" />
                         </div>
                         <div>
-                          <h4 className="font-medium text-slate-900 line-clamp-1">{exam.title}</h4>
+                          <h4 className="font-medium text-slate-900 line-clamp-1">
+                            {exam.title}
+                          </h4>
                           <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                             <span>Mã: {exam.id}</span>
-                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {exam.date}</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" /> {exam.date}
+                            </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className={cn("font-normal border-transparent", getExamStatusColor(exam.status))}>
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "font-normal border-transparent",
+                            getExamStatusColor(exam.status),
+                          )}
+                        >
                           {exam.status}
                         </Badge>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" title="Xem đề thi">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+                          title="Xem đề thi"
+                        >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                       </div>
@@ -244,33 +306,49 @@ const QuestionView = () => {
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                <span className="text-slate-500 text-sm">Trạng thái</span>
-                <Badge variant="outline" className={cn("font-medium border", getStatusColor(question.status))}>
+                <span className="text-slate-500 text-sm">Lớp</span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "font-medium border",
+                    getStatusColor(question.status),
+                  )}
+                >
                   {question.status}
                 </Badge>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="text-slate-500 text-sm">Môn học</span>
-                <span className="font-medium text-slate-900">{question.subject}</span>
+                <span className="font-medium text-slate-900">
+                  {question.subject}
+                </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="text-slate-500 text-sm">Độ khó</span>
-                <Badge className={cn("font-normal border shadow-none", getLevelColor(question.level))}>
+                <Badge
+                  className={cn(
+                    "font-normal border shadow-none",
+                    getLevelColor(question.level),
+                  )}
+                >
                   {question.level}
                 </Badge>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="text-slate-500 text-sm">Loại câu hỏi</span>
-                <span className="font-medium text-slate-900">{question.type}</span>
+                <span className="font-medium text-slate-900">
+                  {question.type}
+                </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-slate-500 text-sm">Ngày tạo</span>
-                <span className="text-sm text-slate-700">{question.createdAt}</span>
+                <span className="text-sm text-slate-700">
+                  {question.createdAt}
+                </span>
               </div>
             </CardContent>
           </Card>
         </div>
-
       </div>
     </div>
   );

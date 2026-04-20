@@ -16,20 +16,54 @@ import { Separator } from "@/components/ui/separator";
 const PracticeResult = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const userAnswers = location.state?.userAnswers || {}; // Thêm dòng này để nhận đáp án
+    
+    // Nhận dữ liệu thực từ PracticeRoom
+    const data = location.state || {};
+    const { 
+        examId, 
+        examTitle, 
+        score = 0, 
+        correct = 0, 
+        total = 0, 
+        timeTaken = "00:00", 
+        userAnswers = {},
+        questions = [] 
+    } = data;
 
-    // Mock Result Data
+    // Nếu không có dữ liệu (truy cập trực tiếp), quay lại trang luyện đề
+    if (!examId) {
+        useEffect(() => {
+            navigate("/practice");
+        }, [navigate]);
+        return null;
+    }
+
+    // Mock analysis based on level instead of topic (since topic might not be in the DTO yet)
+    const levels = ["Dễ", "Trung bình", "Khó"];
+    const analysis = levels.map(lv => {
+        const lvQuestions = questions.filter(q => q.level === lv);
+        if (lvQuestions.length === 0) return null;
+        
+        const lvCorrect = lvQuestions.filter(q => {
+            const userAns = userAnswers[q.id];
+            const correctOpt = q.options.find(o => o.correct);
+            return userAns && correctOpt && userAns === correctOpt.label;
+        }).length;
+
+        return {
+            topic: `Mức độ: ${lv}`,
+            correct: lvCorrect,
+            total: lvQuestions.length,
+            percent: Math.round((lvCorrect / lvQuestions.length) * 100)
+        };
+    }).filter(Boolean);
+
     const result = {
-        score: 8.4,
-        correct: 42,
-        total: 50,
-        timeTaken: "85:12",
-        analysis: [
-            { topic: "Hàm số", correct: 18, total: 20, percent: 90 },
-            { topic: "Mũ & Logarit", correct: 10, total: 10, percent: 100 },
-            { topic: "Nguyên hàm", correct: 8, total: 12, percent: 66 },
-            { topic: "Hình học không gian", correct: 6, total: 8, percent: 75 }
-        ]
+        score,
+        correct,
+        total,
+        timeTaken,
+        analysis
     };
 
     return (
@@ -101,7 +135,7 @@ const PracticeResult = () => {
                             <Button
                                 size="lg"
                                 className="bg-blue-600 hover:bg-blue-700"
-                                onClick={() => navigate("/practice/review/1", { state: { userAnswers } })}
+                                onClick={() => navigate(`/practice/review/${examId}`, { state: data })}
                             >
                                 Xem chi tiết lời giải <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
