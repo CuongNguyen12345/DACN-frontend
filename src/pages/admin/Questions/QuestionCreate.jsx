@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, ChevronRight, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText, Trash2, HelpCircle, PlusCircle } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle2, Circle, Sparkles, ChevronRight, Send, Type, BookOpen, Image as ImageIcon, Loader2, Lightbulb, Upload, Info, FileSpreadsheet, Download, X, FileText, Trash2, HelpCircle, PlusCircle, Paperclip } from "lucide-react";
 import * as XLSX from "xlsx";
 import api from "@/services/api";
 
@@ -201,16 +201,83 @@ const QuestionCreate = () => {
   const [activeTab, setActiveTab] = useState("topic");
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
 
+  // File attachment state for AI chat
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [attachedFileContent, setAttachedFileContent] = useState("");
+  const [isReadingFile, setIsReadingFile] = useState(false);
+
+  // Handle file attachment for AI
+  const handleFileAttach = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      "text/plain",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(txt|pdf|doc|docx)$/i)) {
+      alert("Chỉ hỗ trợ file TXT, PDF, DOC, DOCX!");
+      e.target.value = null;
+      return;
+    }
+    if (file.size > maxSize) {
+      alert("File quá lớn! Tối đa 5MB.");
+      e.target.value = null;
+      return;
+    }
+
+    setAttachedFile(file);
+    setIsReadingFile(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const content = evt.target.result;
+      // Truncate if too long to avoid exceeding token limits
+      const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n...(nội dung bị cắt ngắn)" : content;
+      setAttachedFileContent(truncated);
+      setIsReadingFile(false);
+    };
+    reader.onerror = () => {
+      alert("Không thể đọc file. Vui lòng thử lại!");
+      setAttachedFile(null);
+      setIsReadingFile(false);
+    };
+
+    // Read as text (works for TXT; PDF/DOCX will give raw bytes but we try best-effort)
+    if (file.type === "text/plain" || file.name.match(/\.txt$/i)) {
+      reader.readAsText(file, "UTF-8");
+    } else {
+      // For PDF/DOCX attempt reading as text (limited support)
+      reader.readAsText(file, "UTF-8");
+    }
+
+    e.target.value = null;
+  };
+
+  const handleRemoveAttachedFile = () => {
+    setAttachedFile(null);
+    setAttachedFileContent("");
+  };
+
   const handleGenerate = async () => {
     const userMessage = prompt.trim();
-    if (!userMessage || isAiLoading) return;
+    if ((!userMessage && !attachedFile) || isAiLoading) return;
 
     setIsAiLoading(true);
     setGeneratedQuestions(null);
 
     try {
+      // Build message with optional file content
+      const fileContext = attachedFileContent
+        ? `\n\n--- NỘI DUNG FILE: ${attachedFile?.name} ---\n${attachedFileContent}\n--- KẾT THÚC FILE ---\n`
+        : "";
+
       const response = await api.post("/api/admin/ai/generate-questions", {
-        message: `${userMessage}
+        message: `${userMessage}${fileContext}
       Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array (KHÔNG thêm bất kỳ text nào ngoài JSON):
       [
         {
@@ -679,30 +746,76 @@ const QuestionCreate = () => {
 
               <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                 <div>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Tạo câu hỏi với AI..."
-                    className="w-full h-32 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none resize-none text-gray-700"
-                    disabled={isAiLoading}
-                  />
-                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 px-2">
+                  {/* Textarea with file attachment UI */}
+                  <div className="relative border border-gray-200 rounded-xl focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-400 transition-all bg-white overflow-hidden">
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder={attachedFile ? "Thêm yêu cầu cụ thể (VD: tạo 5 câu hỏi trắc nghiệm từ file)..." : "Nhập chủ đề hoặc đính kèm file để AI tạo câu hỏi..."}
+                      className="w-full h-28 p-4 pb-2 border-none outline-none resize-none text-gray-700 bg-transparent"
+                      disabled={isAiLoading}
+                    />
+
+                    {/* Attached file preview inside box */}
+                    {attachedFile && (
+                      <div className="mx-4 mb-3 flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                        {isReadingFile ? (
+                          <Loader2 className="h-4 w-4 text-indigo-500 animate-spin shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-indigo-600 shrink-0" />
+                        )}
+                        <span className="text-xs font-semibold text-indigo-700 truncate flex-1">
+                          {isReadingFile ? "Đang đọc file..." : attachedFile.name}
+                        </span>
+                        <span className="text-xs text-indigo-400 shrink-0">
+                          {(attachedFile.size / 1024).toFixed(1)} KB
+                        </span>
+                        {!isReadingFile && (
+                          <button
+                            onClick={handleRemoveAttachedFile}
+                            className="text-indigo-400 hover:text-red-500 transition-colors shrink-0"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Bottom toolbar */}
+                    <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 bg-gray-50/50">
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors group" title="Đính kèm file (TXT, PDF, DOC)">
+                        <Paperclip className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                        <span>Đính kèm file</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".txt,.pdf,.doc,.docx"
+                          onChange={handleFileAttach}
+                          disabled={isAiLoading}
+                        />
+                      </label>
+                      <span className="text-xs text-gray-400">{prompt.length}/1000</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 px-1">
                     <span className="flex items-center gap-1">
                       <Lightbulb className="h-4 w-4 text-yellow-500" />
-                      Nhập tên chủ đề để AI tạo câu hỏi về chủ đề đó.
+                      {attachedFile
+                        ? `AI sẽ tạo câu hỏi từ nội dung file "${attachedFile.name}"`
+                        : "Nhập chủ đề hoặc đính kèm file tài liệu để AI tạo câu hỏi phù hợp."}
                     </span>
-                    <span>{prompt.length}/1000</span>
                   </div>
                 </div>
 
                 {!isAiLoading && !generatedQuestions && (
                   <Button
                     onClick={handleGenerate}
-                    disabled={!prompt.trim()}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-semibold rounded-xl shadow-md gap-2 transition-all shadow-indigo-500/20"
+                    disabled={(!prompt.trim() && !attachedFile) || isReadingFile}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-semibold rounded-xl shadow-md gap-2 transition-all shadow-indigo-500/20 disabled:opacity-50"
                   >
                     <Sparkles className="h-5 w-5" />
-                    Tạo câu hỏi với AI
+                    {attachedFile ? `Tạo câu hỏi từ file "${attachedFile.name}"` : "Tạo câu hỏi với AI"}
                   </Button>
                 )}
 
