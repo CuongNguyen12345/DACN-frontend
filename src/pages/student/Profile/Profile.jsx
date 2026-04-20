@@ -36,7 +36,6 @@ import {
 // Các component con của bạn
 import RadarChart from "./components/RadarChart";
 import Achievements from "./components/Achievements";
-import Goals from "./components/Goals";
 
 const Profile = () => {
     // 1. Chuyển Mock Data thành State để UI tự cập nhật khi sửa xong
@@ -192,10 +191,8 @@ const Profile = () => {
                             ))}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="shadow-sm border-none h-full">
-                                <Goals />
-                            </Card>
+                        {/* Phần Bảng thành tích giờ chiếm toàn bộ chiều rộng hàng */}
+                        <div className="w-full">
                             <Achievements />
                         </div>
                     </div>
