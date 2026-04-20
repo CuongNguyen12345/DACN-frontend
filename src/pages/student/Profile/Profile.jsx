@@ -5,7 +5,13 @@ import {
     Clock,
     BookOpen,
     Trophy,
-    Edit
+    Edit,
+    GraduationCap,
+    School,
+    Mail,
+    Phone,
+    MapPin,
+    Calendar
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -37,9 +43,12 @@ const Profile = () => {
     const [user, setUser] = useState({
         name: "Nguyễn Văn Nam",
         grade: "Lớp 12A1",
-        phone: "0901234567", // Thêm vài trường phụ cho form
-        school: "THPT Chuyên",
-        avatar: "https://zos.alipayobjects.com/rmsportal/ODTLcjxAfvqbxHnVXCYX.png",
+        email: "nam.nguyen@student.com",
+        phone: "0901234567",
+        address: "Quận 1, TP. Hồ Chí Minh",
+        school: "THPT Chuyên Lê Hồng Phong",
+        joinedDate: "01/09/2025",
+        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nam",
         streak: 15,
         totalTime: "124h",
         exercises: 450
@@ -81,22 +90,21 @@ const Profile = () => {
                             </div>
 
                             <div className="flex-1 text-center md:text-left space-y-2">
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{user.name}</h1>
-                                <p className="text-gray-500 text-base">{user.grade} - {user.school}</p>
+                                <h1 className="text-2xl md:text-4xl font-bold">{user.name}</h1>
                                 <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
-                                    <Badge variant="secondary" className="px-3 py-1 bg-orange-100 text-orange-700 hover:bg-orange-100 gap-1.5">
-                                        <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.streak} ngày
+                                    <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 border-none text-white gap-1.5 backdrop-blur-sm">
+                                        <Flame className="h-3.5 w-3.5 fill-orange-400 text-orange-400" /> Streak: {user.streak} ngày
                                     </Badge>
-                                    <Badge variant="secondary" className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1.5">
-                                        <Clock className="h-3.5 w-3.5" /> Đã học: {user.totalTime}
+                                    <Badge variant="secondary" className="bg-white/10 hover:bg-white/20 border-none text-white gap-1.5 backdrop-blur-sm">
+                                        <Clock className="h-3.5 w-3.5" /> Tổng học: {user.totalTime}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div className="flex-shrink-0">
                                 {/* Gắn sự kiện mở Popup vào Nút này */}
-                                <Button 
-                                    size="lg" 
+                                <Button
+                                    size="lg"
                                     className="shadow-sm bg-[#3B82F6] hover:bg-[#2563EB] text-white"
                                     onClick={() => {
                                         setFormData(user); // Reset form data
@@ -112,138 +120,136 @@ const Profile = () => {
 
                 {/* Overview Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                    {/* Left Column: Radar & Goals & Achievements */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="shadow-sm">
-                                <CardHeader>
-                                    <CardTitle>Năng lực học tập</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex justify-center pb-2">
-                                    <RadarChart data={radarData} size={280} />
-                                </CardContent>
-                            </Card>
-                            <Card className="shadow-sm">
-                                <Goals />
-                            </Card>
-                        </div>
-
-                        <Achievements />
-                    </div>
-
-                    {/* Right Column: Statistics Grid */}
-                    <div className="lg:col-span-1">
-                        <Card className="shadow-sm">
+                    {/* Left Column: Personal Info & Radar */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* CARD THÔNG TIN CÁ NHÂN - PHẦN THÊM MỚI */}<Card className="shadow-sm border-none">
                             <CardHeader>
-                                <CardTitle>Thống kê tổng quan</CardTitle>
+                                <CardTitle className="text-lg flex items-center gap-2">
+                                    <User className="h-5 w-5 text-blue-600" /> Thông tin cá nhân
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100">
-                                        <div className="flex items-center gap-2 mb-2 text-blue-600">
-                                            <BookOpen className="h-4 w-4" />
-                                            <span className="text-xs font-semibold uppercase">Bài tập</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-gray-900">{user.exercises}</p>
-                                        <p className="text-xs text-muted-foreground">đã hoàn thành</p>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <GraduationCap className="h-4 w-4 text-gray-400" />
+                                        <span className="font-medium text-gray-900">{user.grade}</span>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-green-50/50 border border-green-100">
-                                        <div className="flex items-center gap-2 mb-2 text-green-600">
-                                            <Clock className="h-4 w-4" />
-                                            <span className="text-xs font-semibold uppercase">Giờ học</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-gray-900">12.5h</p>
-                                        <p className="text-xs text-muted-foreground">tuần này</p>
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <School className="h-4 w-4 text-gray-400" />
+                                        <span>{user.school}</span>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-yellow-50/50 border border-yellow-100">
-                                        <div className="flex items-center gap-2 mb-2 text-yellow-600">
-                                            <User className="h-4 w-4" />
-                                            <span className="text-xs font-semibold uppercase">Trung bình</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-gray-900">8.2</p>
-                                        <p className="text-xs text-muted-foreground">điểm số</p>
+                                    <Separator className="my-2" />
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <Mail className="h-4 w-4 text-gray-400" />
+                                        <span>{user.email}</span>
                                     </div>
-                                    <div className="p-4 rounded-xl bg-pink-50/50 border border-pink-100">
-                                        <div className="flex items-center gap-2 mb-2 text-pink-600">
-                                            <Trophy className="h-4 w-4" />
-                                            <span className="text-xs font-semibold uppercase">Xếp hạng</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-gray-900">#5</p>
-                                        <p className="text-xs text-muted-foreground">trong lớp</p>
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <Phone className="h-4 w-4 text-gray-400" />
+                                        <span>{user.phone}</span>
                                     </div>
-                                </div>
-                                <Separator />
-                                <div className="text-center p-2">
-                                    <p className="text-sm text-muted-foreground italic">"Cố gắng duy trì phong độ nhé!"</p>
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <MapPin className="h-4 w-4 text-gray-400" />
+                                        <span>{user.address}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <Calendar className="h-4 w-4 text-gray-400" />
+                                        <span>Tham gia: {user.joinedDate}</span>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Năng lực học tập */}
+                        <Card className="shadow-sm border-none">
+                            <CardHeader>
+                                <CardTitle className="text-lg">Năng lực học tập</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex justify-center pb-6">
+                                <RadarChart data={radarData} size={250} />
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Right Column: Progress & Achievements */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Thống kê nhanh */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[
+                                { label: "Bài tập", val: user.exercises, icon: BookOpen, color: "text-blue-600", bg: "bg-blue-50" },
+                                { label: "Giờ học", val: "12.5h", icon: Clock, color: "text-green-600", bg: "bg-green-50" },
+                                { label: "Trung bình", val: "8.2", icon: User, color: "text-yellow-600", bg: "bg-yellow-50" },
+                                { label: "Xếp hạng", val: "#5", icon: Trophy, color: "text-pink-600", bg: "bg-pink-50" },
+                            ].map((stat, i) => (
+                                <Card key={i} className="border-none shadow-sm">
+                                    <CardContent className="p-4 flex flex-col items-center text-center">
+                                        <div className={cn("p-2 rounded-lg mb-2", stat.bg)}>
+                                            <stat.icon className={cn("h-5 w-5", stat.color)} />
+                                        </div>
+                                        <p className="text-xl font-bold">{stat.val}</p>
+                                        <p className="text-xs text-gray-500 uppercase font-semibold">{stat.label}</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card className="shadow-sm border-none h-full">
+                                <Goals />
+                            </Card>
+                            <Achievements />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* ==========================================
-                DIALOG POPUP CHỈNH SỬA HỒ SƠ
-            ========================================== */}
+            {/* DIALOG CHỈNH SỬA (Mở rộng thêm các trường) */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[500px]">
+                <DialogContent className="sm:max-w-[550px]">
                     <DialogHeader>
-                        <DialogTitle className="text-xl">Chỉnh sửa hồ sơ</DialogTitle>
-                        <DialogDescription>
-                            Cập nhật thông tin cá nhân của bạn. Nhấn lưu để áp dụng thay đổi.
-                        </DialogDescription>
+                        <DialogTitle>Chỉnh sửa hồ sơ cá nhân</DialogTitle>
+                        <DialogDescription>Thay đổi thông tin liên lạc và học tập.</DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="grid gap-4 py-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Họ và tên</Label>
-                            <Input 
-                                id="name" 
-                                value={formData.name} 
-                                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Họ và tên</Label>
+                                <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input id="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                            </div>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="grade">Lớp</Label>
-                                <Input 
-                                    id="grade" 
-                                    value={formData.grade}
-                                    onChange={(e) => setFormData({...formData, grade: e.target.value})}
-                                />
+                                <Input id="grade" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="phone">Số điện thoại</Label>
-                                <Input 
-                                    id="phone" 
-                                    value={formData.phone}
-                                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                />
+                                <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <Label htmlFor="school">Trường học</Label>
-                            <Input 
-                                id="school" 
-                                value={formData.school}
-                                onChange={(e) => setFormData({...formData, school: e.target.value})}
-                            />
+                            <Input id="school" value={formData.school} onChange={(e) => setFormData({ ...formData, school: e.target.value })} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="address">Địa chỉ</Label>
+                            <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
                         </div>
                     </div>
-                    
+
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                            Hủy
-                        </Button>
-                        <Button className="bg-[#3B82F6] hover:bg-[#2563EB]" onClick={handleSaveProfile}>
-                            Lưu thay đổi
-                        </Button>
+                        <Button variant="outline" onClick={() => setIsEditOpen(false)}>Hủy</Button>
+                        <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveProfile}>Lưu thay đổi</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
         </div>
     );
 };
