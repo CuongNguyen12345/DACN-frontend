@@ -12,7 +12,7 @@ const heroContent = {
     },
     secondaryButton: {
         text: "Test năng lực",
-        to: "/practice",
+        to: "/assessment",
     },
     image:
         "https://img.freepik.com/free-vector/online-tutorials-concept_52683-37480.jpg?w=826&t=st=1700000000~exp=1700000000~hmac=abcdef",

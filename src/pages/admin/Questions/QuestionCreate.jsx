@@ -300,6 +300,7 @@ const QuestionCreate = () => {
   const [prompt, setPrompt] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
+  const [aiError, setAiError] = useState("");
 
   // File attachment state for AI chat
   const [attachedFile, setAttachedFile] = useState(null);
@@ -375,9 +376,9 @@ const QuestionCreate = () => {
 
     setIsAiLoading(true);
     setGeneratedQuestions(null);
+    setAiError("");
 
     try {
-      // Build message with optional file content
       const fileContext = attachedFileContent
         ? `\n\n--- NỘI DUNG FILE: ${attachedFile?.name} ---\n${attachedFileContent}\n--- KẾT THÚC FILE ---\n`
         : "";
@@ -421,7 +422,7 @@ const QuestionCreate = () => {
       console.log("Data nhận được từ AI:", data);
       const aiText = data?.result ?? data?.message ?? "[]";
 
-      let parsedQuestions = [];
+      let parsedQuestions = null;
       try {
         let cleanedText = aiText;
         if (typeof aiText === "string") {
@@ -433,18 +434,26 @@ const QuestionCreate = () => {
 
         const arrayMatch = cleanedText.match(/\[[\s\S]*\]/);
         if (arrayMatch) {
-          parsedQuestions = JSON.parse(arrayMatch[0]);
+          const parsed = JSON.parse(arrayMatch[0]);
+          // Chỉ dùng nếu parse ra mảng có phần tử
+          parsedQuestions = Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
         } else {
           const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
           if (jsonMatch) parsedQuestions = [JSON.parse(jsonMatch[0])];
         }
       } catch (e) {
         console.error("Lỗi parse JSON:", e);
+        parsedQuestions = null;
       }
 
-      setGeneratedQuestions(parsedQuestions || []);
-    } catch {
-      alert("Lỗi kết nối AI.");
+      if (!parsedQuestions) {
+        setAiError("AI không trả về câu hỏi hợp lệ. Vui lòng thử lại với prompt rõ ràng hơn.");
+      } else {
+        setGeneratedQuestions(parsedQuestions);
+      }
+    } catch (err) {
+      console.error("Lỗi gọi AI:", err);
+      setAiError("Không thể kết nối AI. Vui lòng kiểm tra kết nối và thử lại.");
     } finally {
       setIsAiLoading(false);
     }
@@ -1045,6 +1054,21 @@ const QuestionCreate = () => {
                     >
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Đang tạo...
+                    </Button>
+                  </div>
+                )}
+
+                {/* ─── Error state ─── */}
+                {!isAiLoading && aiError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col items-center gap-4 text-center">
+                    <div className="text-red-500 text-3xl">⚠️</div>
+                    <p className="text-sm font-medium text-red-700">{aiError}</p>
+                    <Button
+                      onClick={() => { setAiError(""); }}
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50 gap-2"
+                    >
+                      Thử lại
                     </Button>
                   </div>
                 )}

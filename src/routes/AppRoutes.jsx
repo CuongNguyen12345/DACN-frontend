@@ -21,6 +21,9 @@ import About from "@/pages/student/About/About";
 import StudyHistory from "@/pages/student/History/StudyHistory";
 import Leaderboard from "@/pages/student/Ranking/Leaderboard";
 import NotificationsList from "@/pages/student/Notification/NotificationsList";
+import AssessmentSetup from "@/pages/student/Assessment/AssessmentSetup";
+import AssessmentRoom from "@/pages/student/Assessment/AssessmentRoom";
+import AssessmentResult from "@/pages/student/Assessment/AssessmentResult";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -78,7 +81,7 @@ function AppRoutes() {
         <Route path="about" element={<About />} />
 
         {/* Khu user: user + teacher + admin */}
-        <Route>
+        <Route element={<ProtectedRoute />}>
           <Route path="course/learning/:lessonId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
@@ -88,6 +91,11 @@ function AppRoutes() {
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="notification" element={<NotificationsList />} />
         </Route>
+
+        {/* Assessment - Không cần auth nhưng cần layout */}
+        <Route path="assessment" element={<AssessmentSetup />} />
+        <Route path="assessment/room" element={<AssessmentRoom />} />
+        <Route path="assessment/result" element={<AssessmentResult />} />
       </Route>
 
       {/* Dành cho Giáo viên */}
