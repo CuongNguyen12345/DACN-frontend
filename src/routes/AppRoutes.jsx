@@ -33,14 +33,14 @@ import QuestionList from "@/pages/admin/Questions/QuestionList";
 import QuestionEdit from "@/pages/admin/Questions/QuestionEdit";
 import QuestionCreate from "@/pages/admin/Questions/QuestionCreate";
 import QuestionView from "@/pages/admin/Questions/QuestionView";
-import UserList from "@/pages/admin/Users/UserList";
-import UserDetail from "@/pages/admin/Users/UserDetail";
 import Reports from "@/pages/admin/Reports/Reports";
 import Settings from "@/pages/admin/Settings/Settings";
 import QnAManager from "@/pages/admin/QnA/QnAManager";
 import LessonManagement from "@/pages/admin/Lesson/LessonManagement";
 import LessonCreate from "@/pages/admin/Lesson/LessonCreate";
 import LessonEdit from "@/pages/admin/Lesson/LessonEdit";
+import AccountDetail from "@/pages/admin/Account/AccountDetail";
+import AccountManagement from "@/pages/admin/Account/AccountManagement";
 
 const sharedManagerRoutes = [
   { path: "exams", element: <ExamList /> },
@@ -79,7 +79,7 @@ function AppRoutes() {
 
         {/* Khu user: user + teacher + admin */}
         <Route>
-          <Route path="course/learning/:courseId" element={<Learning />} />
+          <Route path="course/learning/:lessonId" element={<Learning />} />
           <Route path="practice/room/:examId" element={<PracticeRoom />} />
           <Route path="practice/result/:examId" element={<PracticeResult />} />
           <Route path="practice/review/:examId" element={<PracticeReview />} />
@@ -115,8 +115,8 @@ function AppRoutes() {
           ))}
 
           {/* Các route CHỈ dành cho Admin */}
-          <Route path="users" element={<UserList />} />
-          <Route path="users/:id" element={<UserDetail />} />
+          <Route path="accounts" element={<AccountManagement />} />
+          <Route path="accounts/:id" element={<AccountDetail />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>

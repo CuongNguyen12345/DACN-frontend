@@ -12,7 +12,7 @@ import { useAuth } from "@/context/AuthContext";
 const AdminLayout = () => {
     const navigate = useNavigate();
     const { basePath, role, logout } = useAuth();
-    const location = useLocation(); 
+    const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const sidebarItems = [
@@ -24,7 +24,7 @@ const AdminLayout = () => {
         { icon: MessageCircleQuestion, label: "Hỏi đáp", path: `${basePath}/qna`, roles: ["admin", "teacher"] },
 
         // Admin
-        { icon: Users, label: "Học viên", path: "/admin/users", roles: ["admin"] }, 
+        { icon: Users, label: "Tài khoản", path: "/admin/accounts", roles: ["admin"] },
         { icon: BarChart3, label: "Báo cáo", path: "/admin/reports", roles: ["admin"] },
         { icon: Settings, label: "Cài đặt", path: "/admin/settings", roles: ["admin"] },
     ];
@@ -55,7 +55,7 @@ const AdminLayout = () => {
                                 const isActive = item.path === basePath
                                     ? location.pathname === basePath || location.pathname === `${basePath}/`
                                     : location.pathname.startsWith(item.path);
-                            
+
                                 return (
                                     <button
                                         key={index}
@@ -71,7 +71,7 @@ const AdminLayout = () => {
                                         <span className={cn("ml-3 text-sm font-medium", !isSidebarOpen && "md:hidden")}>{item.label}</span>
                                     </button>
                                 );
-                        })}
+                            })}
                     </nav>
 
                     {/* Vùng ghim ở đáy */}
@@ -131,7 +131,7 @@ const AdminLayout = () => {
                         <div className="h-6 w-px bg-gray-200 mx-2"></div>
 
                         {role === "admin" ? (
-                            <div 
+                            <div
                                 onClick={() => navigate('/admin/profile')}
                                 className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
                                 title="Hồ sơ cá nhân"
@@ -139,7 +139,7 @@ const AdminLayout = () => {
                                 AD
                             </div>
                         ) : (
-                            <div 
+                            <div
                                 onClick={() => navigate('/teacher/profile')}
                                 className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
                                 title="Hồ sơ cá nhân"
@@ -147,12 +147,12 @@ const AdminLayout = () => {
                                 GV
                             </div>
                         )}
-                        
+
                     </div>
                 </header>
 
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 lg:p-8">
-                    <Outlet /> 
+                    <Outlet />
                 </main>
             </div>
         </div>

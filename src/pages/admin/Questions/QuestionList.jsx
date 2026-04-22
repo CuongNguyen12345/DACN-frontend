@@ -14,6 +14,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 import {
     Dialog,
     DialogContent,
@@ -24,6 +25,7 @@ import {
 
 const QuestionList = () => {
     const navigate = useNavigate();
+    const { basePath } = useAuth();
     // 1. States cho lọc và tìm kiếm
     const [searchTerm, setSearchTerm] = useState("");
     const [levelFilter, setLevelFilter] = useState("all");
@@ -257,7 +259,7 @@ const QuestionList = () => {
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     <Button
-                        onClick={() => navigate(`/${basePath}/questions/create`)}
+                        onClick={() => navigate(`${basePath}/questions/create`)}
                         className="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 gap-2">
                         <Plus className="h-4 w-4" /> Thêm câu hỏi
                     </Button>
@@ -376,7 +378,7 @@ const QuestionList = () => {
                                         {/* Cho phép click vào nội dung để xem chi tiết */}
                                         <div
                                             className="font-medium text-slate-900 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
-                                            onClick={() => navigate(`/admin/questions/view/${q.id}`)}
+                                            onClick={() => navigate(`${basePath}/questions/view/${q.id}`)}
                                         >
                                             {q.content}
                                         </div>
@@ -399,13 +401,13 @@ const QuestionList = () => {
                                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                             {/* NÚT XEM CHI TIẾT MỚI THÊM */}
                                             <Button
-                                                onClick={() => navigate(`/admin/questions/view/${q.id}`)}
+                                                onClick={() => navigate(`${basePath}/questions/view/${q.id}`)}
                                                 variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:bg-slate-100">
                                                 <Eye className="h-4 w-4" />
                                             </Button>
 
                                             <Button
-                                                onClick={() => navigate(`/admin/questions/edit/${q.id}`)}
+                                                onClick={() => navigate(`${basePath}/questions/edit/${q.id}`)}
                                                 variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50">
                                                 <Edit className="h-4 w-4" />
                                             </Button>
@@ -416,7 +418,7 @@ const QuestionList = () => {
                                         </div>
                                     </td>
                                 </tr>
-                            )}
+                            ))}
                         </tbody>
                     </table>
                 </div>

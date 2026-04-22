@@ -15,6 +15,14 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const getRedirectPath = (role) => {
+    switch (role?.toLowerCase()) {
+      case "admin": return "/admin";
+      case "teacher": return "/teacher";
+      default: return "/";
+    }
+  };
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -34,7 +42,7 @@ const Login = () => {
 
       const { token, user } = response.data.result;
       login(token, user);
-      navigate("/");
+      navigate(getRedirectPath(user.role));
     } catch (error) {
       console.error("Lỗi đăng nhập thường:", error);
 
@@ -81,7 +89,7 @@ const Login = () => {
 
       const { token, user: loggedInUser } = response.data.result;
       login(token, loggedInUser);
-      navigate("/");
+      navigate(getRedirectPath(loggedInUser.role));
     } catch (error) {
       console.error("Lỗi đăng nhập bằng Google:", error);
 

@@ -74,13 +74,13 @@ const Learning = () => {
                 // Fetch lesson details
                 const lessonRes = await api.get(`/api/learning/lesson/${lessonId}`);
                 const lessonData = lessonRes.data;
-                
+
                 // Map API response to expected format
                 setActiveLesson({
                     id: lessonData.id,
                     title: lessonData.lessonName,
-                    videoUrl: lessonData.videoUrl?.includes('embed') 
-                        ? lessonData.videoUrl 
+                    videoUrl: lessonData.videoUrl?.includes('embed')
+                        ? lessonData.videoUrl
                         : `https://www.youtube.com/embed/${lessonData.videoUrl}`,
                     content: lessonData.content || "<p>Nội dung đang được cập nhật...</p>",
                     pdfUrl: lessonData.pdfUrl
@@ -102,7 +102,7 @@ const Learning = () => {
                 setChapters(transformedChapters);
 
                 // Tự động mở chương chứa bài học hiện tại
-                const currentChapter = transformedChapters.find(c => 
+                const currentChapter = transformedChapters.find(c =>
                     c.lessons.some(l => l.id === Number(lessonId))
                 );
                 if (currentChapter) {

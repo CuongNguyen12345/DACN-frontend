@@ -46,8 +46,20 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(false);
   };
 
+  const role = user?.role?.toLowerCase() || null;
+
+  const getBasePath = (r) => {
+    switch (r) {
+      case "admin": return "/admin";
+      case "teacher": return "/teacher";
+      default: return "/";
+    }
+  };
+
+  const basePath = getBasePath(role);
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, user, role: user?.role?.toLowerCase() || null, loading, login, logout, fetchProfile }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, role, basePath, loading, login, logout, fetchProfile }}>
       {children}
     </AuthContext.Provider>
   );
