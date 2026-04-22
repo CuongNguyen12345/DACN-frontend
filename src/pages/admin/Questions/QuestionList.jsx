@@ -215,17 +215,30 @@ const QuestionList = () => {
     const handleDelete = async (id) => {
         if (window.confirm("Bạn có chắc muốn xóa câu hỏi này?")) {
             try {
-                // frontend id is like "Q-10"
                 const actualId = id.toString().replace("Q-", "");
                 await api.delete(`/api/admin/questions/${actualId}`);
-
-                // Update internal state
                 setQuestions(prev => prev.filter(q => q.id !== id));
                 setSelectedIds(prev => prev.filter(i => i !== id));
             } catch (error) {
                 console.error("Lỗi xóa câu hỏi:", error);
                 alert("Xóa không thành công!");
             }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!window.confirm(`Bạn có chắc muốn xóa ${selectedIds.length} câu hỏi?`)) return;
+        try {
+            for (const id of selectedIds) {
+                const actualId = id.toString().replace("Q-", "");
+                await api.delete(`/api/admin/questions/${actualId}`);
+            }
+            setQuestions(prev => prev.filter(q => !selectedIds.includes(q.id)));
+            setSelectedIds([]);
+        } catch (error) {
+            console.error("Lỗi xóa hàng loạt:", error);
+            alert("Xóa hàng loạt không thành công!");
         }
     };
 
@@ -350,8 +363,9 @@ const QuestionList = () => {
                                         onCheckedChange={toggleSelectAll}
                                     />
                                 </th>
-                                <th className="px-6 py-4 min-w-[300px]">Nội dung câu hỏi</th>
+                                <th className="px-6 py-4 min-w-[250px]">Nội dung câu hỏi</th>
                                 <th className="px-6 py-4 text-center">Môn học</th>
+                                <th className="px-6 py-4 text-center">Chủ đề</th>
                                 <th className="px-6 py-4 text-center">Lớp</th>
                                 <th className="px-6 py-4 text-center">Độ khó</th>
                                 <th className="px-6 py-4 text-right">Thao tác</th>
@@ -360,11 +374,11 @@ const QuestionList = () => {
                         <tbody className="divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-6 text-slate-500">Đang tải dữ liệu...</td>
+                                    <td colSpan="7" className="text-center py-6 text-slate-500">Đang tải dữ liệu...</td>
                                 </tr>
                             ) : paginatedQuestions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="text-center py-6 text-slate-500">Không tìm thấy dữ liệu.</td>
+                                    <td colSpan="7" className="text-center py-6 text-slate-500">Không tìm thấy dữ liệu.</td>
                                 </tr>
                             ) : paginatedQuestions.map((q) => (
                                 <tr key={q.id} className={cn("hover:bg-slate-50/50 transition-colors group", selectedIds.includes(q.id) && "bg-blue-50/30")}>
@@ -388,6 +402,9 @@ const QuestionList = () => {
                                         <span className="inline-flex items-center gap-1.5 text-slate-700 font-medium">
                                             <Tag className="h-3.5 w-3.5 text-slate-400" /> {q.subject}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="text-xs text-slate-600 font-medium">{q.topicName || "—"}</span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
                                         <span className="text-slate-700 font-medium">{q.status}</span>

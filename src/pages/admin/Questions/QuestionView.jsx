@@ -25,9 +25,22 @@ import { useAuth } from "@/context/AuthContext";
 const QuestionView = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { basePath } = useAuth();
 
   const [question, setQuestion] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc muốn xóa câu hỏi này?")) return;
+    try {
+      const actualId = id.replace("Q-", "");
+      await api.delete(`/api/admin/questions/${actualId}`);
+      alert("Đã xóa câu hỏi thành công!");
+      navigate(`${basePath}/questions`);
+    } catch {
+      alert("Xóa không thành công!");
+    }
+  };
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -321,6 +334,12 @@ const QuestionView = () => {
                 <span className="text-slate-500 text-sm">Môn học</span>
                 <span className="font-medium text-slate-900">
                   {question.subject}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                <span className="text-slate-500 text-sm">Chủ đề</span>
+                <span className="font-medium text-slate-900">
+                  {question.topicName || "—"}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-100">

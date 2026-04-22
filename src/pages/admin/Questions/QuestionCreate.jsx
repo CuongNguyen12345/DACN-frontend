@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -50,7 +50,26 @@ const QuestionCreate = () => {
     difficulty: "Trung Bình",
     explanation: "",
     status: "Lớp 10",
+    topicName: "",
   });
+
+  // Topic state
+  const [topics, setTopics] = useState([]);
+
+  const fetchTopics = useCallback(async (subject, grade) => {
+    try {
+      const res = await api.get("/api/admin/topics", {
+        params: { subject, grade },
+      });
+      setTopics(res.data || []);
+    } catch {
+      setTopics([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTopics(questionData.subject, questionData.status);
+  }, [questionData.subject, questionData.status, fetchTopics]);
 
   // Khởi tạo 4 đáp án trống
   const [options, setOptions] = useState([
@@ -237,7 +256,7 @@ const QuestionCreate = () => {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!questionData.content.trim()) {
       alert("Vui lòng nhập nội dung đề bài!");
       return;
@@ -247,9 +266,32 @@ const QuestionCreate = () => {
       alert("Vui lòng chọn ít nhất một đáp án đúng!");
       return;
     }
-    console.log("Dữ liệu câu hỏi mới tạo:", { ...questionData, options });
-    alert("Tạo câu hỏi mới thành công!");
-    navigate("/admin/questions");
+
+    try {
+      const payload = {
+        subject: questionData.subject,
+        grade: questionData.status,
+        questions: [
+          {
+            content: questionData.content,
+            explanation: questionData.explanation,
+            level: questionData.difficulty,
+            topicName: questionData.topicName || "",
+            options: options.map((opt) => ({
+              content: opt.text,
+              isCorrect: opt.isCorrect,
+            })),
+          },
+        ],
+      };
+
+      await api.post("/api/admin/questions", payload);
+      alert("Tạo câu hỏi mới thành công!");
+      navigate(`${basePath}/questions`);
+    } catch (error) {
+      console.error("Lưu câu hỏi thất bại:", error);
+      alert("Đã xảy ra lỗi khi lưu câu hỏi.");
+    }
   };
 
   // =============================================
@@ -350,34 +392,28 @@ const QuestionCreate = () => {
           "answer": "A",
           "explanation": "Lời giải chi tiết",
           "subject": "Toán | Lý | Hóa | Anh",
+          "topic": "Tên chương cụ thể",
           "class": "10 | 11 | 12",
           "level": "Dễ | Trung Bình | Khó"
         }
       ]
-      Quy tắc xác định độ khó (BẮT BUỘC tuân thủ):
-      1. Trước khi gán "level", phải xác định dạng câu hỏi thuộc loại nào:
-        - Lý thuyết / nhận biết
-        - Áp dụng trực tiếp công thức
-        - Biến đổi công thức (1-2 bước)
-        - Bài toán nhiều bước / kết hợp nhiều kiến thức
-      2. Mapping level theo đúng quy tắc:
-        - "Dễ": Lý thuyết hoặc áp dụng trực tiếp công thức
-        - "Trung Bình": Biến đổi công thức, suy luận 1-2 bước
-        - "Khó": Nhiều bước giải, kết hợp nhiều kiến thức
-      3. Không được gán level ngẫu nhiên. Level phải phù hợp với bản chất câu hỏi.
-      Yêu cầu:
-      - Câu hỏi rõ ràng, chính xác
-      - Đáp án đúng khớp với lời giải
-      - Phân loại subject và class phù hợp
-      - Không thêm bất kỳ văn bản nào ngoài JSON
+      
+      RÀNG BUỘC TOPIC (BẮT BUỘC):
+      Trường "topic" CHỈ ĐƯỢC PHÉP chọn một trong các giá trị sau đây tùy theo môn học:
+      - Nếu môn Toán: [Mệnh đề và Tập hợp, Bất phương trình và Hệ bất phương trình, Hệ thức lượng trong tam giác, Vectơ và các phép toán, Thống kê cơ bản, Hàm số và Đồ thị, Phương pháp tọa độ trong mặt phẳng, Đại số tổ hợp và Xác suất, Lượng giác, Dãy số và Cấp số, Giới hạn và Liên tục, Hình học không gian, Mũ và Lôgarit, Đạo hàm, Khảo sát hàm số, Nguyên hàm và Tích phân, Tọa độ Oxyz]
+      - Nếu môn Lý: [Động học, Động lực học, Năng lượng và Công, Động lượng, Chuyển động tròn, Dao động cơ, Sóng cơ và Sóng điện từ, Điện trường, Dòng điện, Vật lí nhiệt, Từ trường và Cảm ứng điện từ, Vật lí hạt nhân]
+      - Nếu môn Hóa: [Cấu tạo nguyên tử, Liên kết hóa học, Phản ứng Oxi hóa - Khử, Tốc độ phản ứng, Halogen, Cân bằng hóa học, Nitrogen và Sulfur, Đại cương hữu cơ, Hydrocarbon, Dẫn xuất Halogen - Alcohol - Phenol, Carbonyl và Carboxylic acid, Ester - Lipid - Carbohydrate, Polyme, Amine - Amino acid - Protein, Điện hóa học, Đại cương kim loại]
+
+      QUY TẮC XÁC ĐỊNH ĐỘ KHÓ:
+      1. Mapping level theo đúng bản chất:
+        - "Dễ": Nhận biết lý thuyết hoặc áp dụng 1 công thức cơ bản.
+        - "Trung Bình": Thông hiểu, suy luận 1-2 bước hoặc biến đổi công thức.
+        - "Khó": Vận dụng cao, kết hợp nhiều mảng kiến thức.
+
       QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
-      - Không sử dụng LaTeX hoặc ký hiệu dạng \frac, \sqrt, \alpha, $...$
-      - Không dùng dấu backslash (\)
-      - Viết công thức bằng text Unicode:
-        + α thay cho \alpha
-        + √ thay cho \sqrt
-        + 1/3 thay cho \frac{1}{3}
-      - Output phải hiển thị được trực tiếp trên giao diện web không cần render toán,
+      - Tuyệt đối không sử dụng LaTeX ($...$, \frac, \sqrt).
+      - Sử dụng ký tự Unicode trực tiếp: α, β, √, π, ±, x², x³, 1/2, 3/4...
+      - Output phải hiển thị được trực tiếp trên giao diện web không cần thư viện render toán.
       `,
       });
 
@@ -456,6 +492,7 @@ const QuestionCreate = () => {
             content: q.question,
             explanation: q.explanation || "",
             level: q.level || "Dễ",
+            topicName: q.topic || "",
             options: options,
           };
         }),
@@ -1237,6 +1274,28 @@ const QuestionCreate = () => {
                     <SelectItem value="Lớp 10">Lớp 10</SelectItem>
                     <SelectItem value="Lớp 11">Lớp 11</SelectItem>
                     <SelectItem value="Lớp 12">Lớp 12</SelectItem>
+                  </SelectContent>
+                </Select>
+              </SelectGroup>
+
+              <SelectGroup label="Chủ đề" icon="📖">
+                <Select
+                  value={questionData.topicName}
+                  onValueChange={(v) => handleSelectChange("topicName", v)}
+                >
+                  <SelectTrigger className="w-full rounded-xl border-gray-200 focus:ring-blue-500">
+                    <SelectValue placeholder="Chọn chủ đề..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topics.length === 0 ? (
+                      <SelectItem value="none" disabled>Không có chủ đề</SelectItem>
+                    ) : (
+                      topics.map((t) => (
+                        <SelectItem key={t.id} value={t.name}>
+                          {t.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </SelectGroup>

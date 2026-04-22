@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, CheckCircle2, Circle, Loader2 } from "lucide-react";
 
@@ -11,28 +11,47 @@ import {
 } from "@/components/ui/select";
 
 import api from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 const QuestionEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { basePath } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
-  // State lưu trữ dữ liệu câu hỏi
   const [questionData, setQuestionData] = useState({
     content: "",
     subject: "Toán",
     difficulty: "Trung bình",
     explanation: "",
     status: "Lớp 12",
+    topicName: "",
   });
 
-  // State quản lý 4 đáp án
   const [options, setOptions] = useState([
     { id: "A", text: "", isCorrect: false },
     { id: "B", text: "", isCorrect: false },
     { id: "C", text: "", isCorrect: false },
     { id: "D", text: "", isCorrect: false },
   ]);
+
+  // Topic state
+  const [topics, setTopics] = useState([]);
+
+  const fetchTopics = useCallback(async (subject, grade) => {
+    try {
+      const res = await api.get("/api/admin/topics", {
+        params: { subject, grade },
+      });
+      setTopics(res.data || []);
+    } catch {
+      setTopics([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTopics(questionData.subject, questionData.status);
+  }, [questionData.subject, questionData.status, fetchTopics]);
 
   // Gọi API lấy dữ liệu câu hỏi
   useEffect(() => {
@@ -42,7 +61,6 @@ const QuestionEdit = () => {
         const res = await api.get(`/api/admin/questions/${actualId}`);
         const data = res.data;
 
-        // Map data từ BE sang FE state
         let subjectValue = "Toán";
         if (data.subject === "Vật Lý") subjectValue = "Vật Lý";
         else if (data.subject === "Hóa Học") subjectValue = "Hóa Học";
@@ -60,12 +78,12 @@ const QuestionEdit = () => {
           difficulty: difficultyValue,
           explanation: data.explanation || "",
           status: data.status || "Lớp 12",
+          topicName: data.topicName || "",
         });
 
-        // Map options
         if (data.options && data.options.length > 0) {
           const mappedOptions = data.options.map((opt, index) => ({
-            id: String.fromCharCode(65 + index), // A, B, C, D
+            id: String.fromCharCode(65 + index),
             text: opt.text,
             isCorrect: opt.isCorrect,
           }));
@@ -108,9 +126,7 @@ const QuestionEdit = () => {
     );
   };
 
-  // Lưu câu hỏi
   const handleSave = async () => {
-    // Kiểm tra xem đã chọn đáp án đúng chưa
     const hasCorrectAnswer = options.some((opt) => opt.isCorrect);
     if (!hasCorrectAnswer) {
       alert("Vui lòng chọn ít nhất một đáp án đúng!");
@@ -130,32 +146,23 @@ const QuestionEdit = () => {
         level: questionData.difficulty,
         subject: questionData.subject,
         grade: questionData.status,
+        topicName: questionData.topicName || "",
         options: options.map((opt) => ({
           content: opt.text,
           isCorrect: opt.isCorrect,
         })),
       };
 
-      console.log("Gửi Payload cập nhật:", payload);
-
-      const response = await api.put(
-        `/api/admin/questions/${actualId}`,
-        payload,
-      );
-      console.log("Cập nhật thành công:", response.data);
-
+      await api.put(`/api/admin/questions/${actualId}`, payload);
       alert(`Cập nhật câu hỏi #${id} thành công!`);
-      navigate("/admin/questions");
+      navigate(`${basePath}/questions`);
     } catch (error) {
       console.error("Lỗi khi lưu câu hỏi:");
       if (error.response) {
-        console.error("Data:", error.response.data);
-        console.error("Status:", error.response.status);
         alert(
           `Lỗi từ máy chủ: ${error.response.data || "Vui lòng kiểm tra lại dữ liệu."}`,
         );
       } else {
-        console.error("Message:", error.message);
         alert("Đã có lỗi xảy ra khi lưu câu hỏi. Vui lòng thử lại sau.");
       }
     }
@@ -173,7 +180,7 @@ const QuestionEdit = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate(`/${basePath}/questions`)}
+            onClick={() => navigate(`${basePath}/questions`)}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
           >
             <ArrowLeft className="h-5 w-5 text-gray-600" />
@@ -195,7 +202,7 @@ const QuestionEdit = () => {
 
         <div className="flex gap-3">
           <button
-            onClick={() => navigate(`/${basePath}/questions`)}
+            onClick={() => navigate(`${basePath}/questions`)}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 outline-none"
           >
             Hủy
@@ -259,7 +266,6 @@ const QuestionEdit = () => {
                     )}
                   </button>
 
-                  {/* Ký tự A, B, C, D */}
                   <div className="mt-2 font-bold text-gray-700 w-6 text-center">
                     {option.id}.
                   </div>
@@ -363,6 +369,32 @@ const QuestionEdit = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Chủ đề */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Chủ đề
+                </label>
+                <Select
+                  value={questionData.topicName}
+                  onValueChange={(value) => handleSelectChange("topicName", value)}
+                >
+                  <SelectTrigger className="w-full outline-none focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Chọn chủ đề..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {topics.length === 0 ? (
+                      <SelectItem value="none" disabled>Không có chủ đề</SelectItem>
+                    ) : (
+                      topics.map((t) => (
+                        <SelectItem key={t.id} value={t.name}>
+                          {t.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -374,6 +406,7 @@ const QuestionEdit = () => {
             <ul className="text-xs text-blue-700 space-y-1 list-disc pl-4">
               <li>Bạn phải chọn ít nhất 1 đáp án đúng để lưu.</li>
               <li>Lời giải chi tiết sẽ hiển thị sau khi học sinh nộp bài.</li>
+              <li>Chọn đúng chủ đề giúp hệ thống cá nhân hóa bài tập.</li>
             </ul>
           </div>
         </div>
