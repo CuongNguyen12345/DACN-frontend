@@ -6,6 +6,8 @@ import {
     Video,
     UploadCloud,
     BookOpen,
+    Plus,
+    X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,13 +31,49 @@ const LessonCreate = () => {
     // State lưu trữ dữ liệu form
     const [formData, setFormData] = useState({
         title: "",
+        classLevel: "Lớp 10",
         subject: "Toán học",
-        type: "Video", // Video | Lý thuyết | Bài tập
-        duration: "",
         status: "Bản nháp", // Đã xuất bản | Bản nháp | Đang ẩn
         description: "",
         videoUrl: "",
+        chapter: "",
     });
+
+    // State cho việc quản lý Chương
+    const [chapters, setChapters] = useState([
+        "Chương 1: Mệnh đề",
+        "Chương 2: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+        "Chương 3: Hệ thức lượng trong tam giác"
+    ]);
+    const [isAddingChapter, setIsAddingChapter] = useState(false);
+    const [newChapterName, setNewChapterName] = useState("");
+
+    // State cho bài tập luyện tập
+    const [exercises, setExercises] = useState([]);
+    const [isAddingExercise, setIsAddingExercise] = useState(false);
+    const defaultExercise = { title: "", description: "", question: "", optionA: "", optionB: "", optionC: "", optionD: "", correctAnswer: "A" };
+    const [newExercise, setNewExercise] = useState(defaultExercise);
+
+    // Xử lý thêm chương mới
+    const handleAddChapter = () => {
+        if (newChapterName.trim()) {
+            setChapters([...chapters, newChapterName.trim()]);
+            handleSelectChange("chapter", newChapterName.trim());
+        }
+        setIsAddingChapter(false);
+        setNewChapterName("");
+    };
+
+    // Xử lý thêm bài tập mới
+    const handleAddExercise = () => {
+        if (newExercise.title.trim() && newExercise.question.trim()) {
+            setExercises([...exercises, { id: Date.now(), ...newExercise }]);
+            setNewExercise(defaultExercise);
+            setIsAddingExercise(false);
+        } else {
+            alert("Vui lòng nhập tên bài tập và nội dung câu hỏi!");
+        }
+    };
 
     // Hàm cập nhật state khi người dùng nhập text thông thường
     const handleChange = (e) => {
@@ -57,7 +95,11 @@ const LessonCreate = () => {
     // Hàm xử lý submit form
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Dữ liệu bài học mới:", formData);
+        const finalData = {
+            ...formData,
+            exercises
+        };
+        console.log("Dữ liệu bài học mới:", finalData);
         alert("Thêm bài học thành công!");
         navigate(`/${basePath}/lessons`);
     };
@@ -70,9 +112,9 @@ const LessonCreate = () => {
             {/* Header & Nút Back */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => navigate(-1)}
                         className="hover:bg-gray-100"
                     >
@@ -83,7 +125,7 @@ const LessonCreate = () => {
                         <p className="text-gray-500 text-sm mt-1">Tạo nội dung bài giảng và cấu hình hiển thị.</p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                     <Button variant="outline" onClick={() => navigate(-1)}>Hủy</Button>
                     <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">
@@ -130,48 +172,151 @@ const LessonCreate = () => {
                     </Card>
 
                     <Card className="border-none shadow-sm">
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-bold">Nội dung bài giảng</CardTitle>
+                        <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
+                            <CardTitle className="text-lg font-bold">Bài tập luyện tập</CardTitle>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setIsAddingExercise(true)}>
+                                <Plus className="w-4 h-4 mr-1" /> Thêm bài tập
+                            </Button>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            {formData.type === "Video" && (
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-900">Link Video (YouTube/Vimeo)</label>
-                                        <div className="relative">
-                                            <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            {exercises.length === 0 && !isAddingExercise ? (
+                                <div className="text-center py-6 text-gray-500">
+                                    Chưa có bài tập nào. Hãy thêm bài tập để học viên luyện tập kèm theo bài học này.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {exercises.map((ex, index) => (
+                                        <div key={ex.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-md bg-white shadow-sm">
+                                            <div className="flex items-center gap-3">
+                                                <div className="bg-blue-100 text-blue-600 p-2 rounded-md">
+                                                    <BookOpen className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900">{ex.title}</h4>
+                                                    {ex.description && <p className="text-sm text-gray-500">{ex.description}</p>}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={() => setExercises(exercises.filter(e => e.id !== ex.id))}
+                                            >
+                                                Xóa
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {isAddingExercise && (
+                                <div className="p-5 border border-blue-200 bg-blue-50/50 rounded-md space-y-4 mt-4">
+                                    <h4 className="font-medium text-gray-900 text-sm">Thêm bài tập mới</h4>
+                                    <div className="space-y-3">
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-medium text-gray-700">Tên bài tập <span className="text-red-500">*</span></label>
                                             <input
-                                                type="url"
-                                                name="videoUrl"
-                                                value={formData.videoUrl}
-                                                onChange={handleChange}
-                                                placeholder="https://youtube.com/watch?v=..."
-                                                className={`${inputClasses} pl-10`}
+                                                type="text"
+                                                value={newExercise.title}
+                                                onChange={(e) => setNewExercise({ ...newExercise, title: e.target.value })}
+                                                placeholder="VD: Bài tập trắc nghiệm số 1"
+                                                className={inputClasses}
+                                                autoFocus
                                             />
                                         </div>
-                                    </div>
-                                    <div className="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-500 bg-gray-50">
-                                        <UploadCloud className="w-8 h-8 mb-2 text-gray-400" />
-                                        <p className="text-sm">Hoặc tải video trực tiếp lên hệ thống</p>
-                                        <Button type="button" variant="link" className="text-blue-600">Chọn file</Button>
-                                    </div>
-                                </div>
-                            )}
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-medium text-gray-700">Mô tả (tùy chọn)</label>
+                                            <input
+                                                type="text"
+                                                value={newExercise.description}
+                                                onChange={(e) => setNewExercise({ ...newExercise, description: e.target.value })}
+                                                placeholder="VD: 10 câu hỏi, thời gian 15 phút"
+                                                className={inputClasses}
+                                            />
+                                        </div>
 
-                            {formData.type === "Lý thuyết" && (
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-900">Soạn thảo văn bản</label>
-                                    <div className="w-full h-64 border border-gray-200 rounded-md bg-gray-50 flex items-center justify-center text-gray-400">
-                                        <p>[Khu vực Rich Text Editor]</p>
-                                    </div>
-                                </div>
-                            )}
+                                        <div className="space-y-1.5 mt-4">
+                                            <label className="text-sm font-medium text-gray-700">Câu hỏi <span className="text-red-500">*</span></label>
+                                            <textarea
+                                                value={newExercise.question}
+                                                onChange={(e) => setNewExercise({ ...newExercise, question: e.target.value })}
+                                                placeholder="Nhập nội dung câu hỏi..."
+                                                rows="2"
+                                                className={inputClasses}
+                                            />
+                                        </div>
 
-                            {formData.type === "Bài tập" && (
-                                <div className="space-y-2 flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <BookOpen className="w-10 h-10 text-gray-300 mb-3" />
-                                    <p className="text-sm text-gray-600 font-medium">Bạn cần lưu bài học trước khi thêm câu hỏi</p>
-                                    <p className="text-xs text-gray-400 mt-1">Hệ thống sẽ chuyển đến trang ngân hàng câu hỏi sau khi lưu.</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700">Đáp án A</label>
+                                                <input
+                                                    type="text"
+                                                    value={newExercise.optionA}
+                                                    onChange={(e) => setNewExercise({ ...newExercise, optionA: e.target.value })}
+                                                    placeholder="Nhập đáp án A"
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700">Đáp án B</label>
+                                                <input
+                                                    type="text"
+                                                    value={newExercise.optionB}
+                                                    onChange={(e) => setNewExercise({ ...newExercise, optionB: e.target.value })}
+                                                    placeholder="Nhập đáp án B"
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700">Đáp án C</label>
+                                                <input
+                                                    type="text"
+                                                    value={newExercise.optionC}
+                                                    onChange={(e) => setNewExercise({ ...newExercise, optionC: e.target.value })}
+                                                    placeholder="Nhập đáp án C"
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-sm font-medium text-gray-700">Đáp án D</label>
+                                                <input
+                                                    type="text"
+                                                    value={newExercise.optionD}
+                                                    onChange={(e) => setNewExercise({ ...newExercise, optionD: e.target.value })}
+                                                    placeholder="Nhập đáp án D"
+                                                    className={inputClasses}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5 mt-2">
+                                            <label className="text-sm font-medium text-gray-700">Đáp án đúng <span className="text-red-500">*</span></label>
+                                            <Select
+                                                value={newExercise.correctAnswer}
+                                                onValueChange={(value) => setNewExercise({ ...newExercise, correctAnswer: value })}
+                                            >
+                                                <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                                    <SelectValue placeholder="Chọn đáp án đúng" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="A">Đáp án A</SelectItem>
+                                                    <SelectItem value="B">Đáp án B</SelectItem>
+                                                    <SelectItem value="C">Đáp án C</SelectItem>
+                                                    <SelectItem value="D">Đáp án D</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                    </div>
+                                    <div className="flex gap-2 pt-4">
+                                        <Button type="button" onClick={handleAddExercise} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                            Lưu bài tập
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={() => setIsAddingExercise(false)}>
+                                            Hủy
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                         </CardContent>
@@ -188,8 +333,8 @@ const LessonCreate = () => {
                             {/* Shadcn Select: Môn học */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-900">Môn học</label>
-                                <Select 
-                                    value={formData.subject} 
+                                <Select
+                                    value={formData.subject}
                                     onValueChange={(value) => handleSelectChange("subject", value)}
                                 >
                                     <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
@@ -199,85 +344,110 @@ const LessonCreate = () => {
                                         <SelectItem value="Toán học">Toán học</SelectItem>
                                         <SelectItem value="Vật lý">Vật lý</SelectItem>
                                         <SelectItem value="Hóa học">Hóa học</SelectItem>
-                                        <SelectItem value="Sinh học">Sinh học</SelectItem>
                                         <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
-                            {/* Shadcn Select: Định dạng bài */}
+                            {/* Shadcn Select: Lớp */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-900">Định dạng bài</label>
-                                <Select 
-                                    value={formData.type} 
-                                    onValueChange={(value) => handleSelectChange("type", value)}
+                                <label className="text-sm font-medium text-gray-900">Lớp</label>
+                                <Select
+                                    value={formData.classLevel}
+                                    onValueChange={(value) => handleSelectChange("classLevel", value)}
                                 >
                                     <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                        <SelectValue placeholder="Chọn định dạng" />
+                                        <SelectValue placeholder="Chọn lớp" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Video">Video bài giảng</SelectItem>
-                                        <SelectItem value="Lý thuyết">Bài đọc / Lý thuyết</SelectItem>
-                                        <SelectItem value="Bài tập">Bài tập trắc nghiệm</SelectItem>
+                                        <SelectItem value="Lớp 10">Lớp 10</SelectItem>
+                                        <SelectItem value="Lớp 11">Lớp 11</SelectItem>
+                                        <SelectItem value="Lớp 12">Lớp 12</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
+                            {/* Shadcn Select: Chương (Creatable) */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-900">Thời lượng (Dự kiến)</label>
-                                <input
-                                    type="text"
-                                    name="duration"
-                                    value={formData.duration}
-                                    onChange={handleChange}
-                                    placeholder="VD: 15:30 hoặc 20 phút"
-                                    className={inputClasses}
-                                />
+                                <label className="text-sm font-medium text-gray-900">Chương</label>
+                                {!isAddingChapter ? (
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={formData.chapter}
+                                            onValueChange={(value) => handleSelectChange("chapter", value)}
+                                        >
+                                            <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                                <SelectValue placeholder="Chọn chương" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {chapters.map(chapter => (
+                                                    <SelectItem key={chapter} value={chapter}>{chapter}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setIsAddingChapter(true)}
+                                            className="px-3"
+                                            title="Thêm chương mới"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2 p-3 border border-blue-100 bg-blue-50/50 rounded-md">
+                                        <input
+                                            type="text"
+                                            value={newChapterName}
+                                            onChange={(e) => setNewChapterName(e.target.value)}
+                                            placeholder="Nhập tên chương mới"
+                                            className={inputClasses}
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                onClick={handleAddChapter}
+                                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-9"
+                                            >
+                                                Thêm
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setIsAddingChapter(false)}
+                                                className="flex-1 h-9"
+                                            >
+                                                Hủy
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
 
                     <Card className="border-none shadow-sm">
                         <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-bold">Trạng thái xuất bản</CardTitle>
+                            <CardTitle className="text-lg font-bold">Nội dung bài giảng</CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            <div className="space-y-3">
-                                <label className="flex items-center space-x-3 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="status" 
-                                        value="Đã xuất bản"
-                                        checked={formData.status === "Đã xuất bản"}
-                                        onChange={handleChange}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500" 
-                                    />
-                                    <span className="text-sm font-medium text-gray-900">Đã xuất bản (Học viên thấy)</span>
-                                </label>
-                                
-                                <label className="flex items-center space-x-3 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="status" 
-                                        value="Bản nháp"
-                                        checked={formData.status === "Bản nháp"}
-                                        onChange={handleChange}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500" 
-                                    />
-                                    <span className="text-sm font-medium text-gray-900">Lưu nháp (Chưa hoàn thiện)</span>
-                                </label>
-
-                                <label className="flex items-center space-x-3 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="status" 
-                                        value="Đang ẩn"
-                                        checked={formData.status === "Đang ẩn"}
-                                        onChange={handleChange}
-                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500" 
-                                    />
-                                    <span className="text-sm font-medium text-gray-900">Đang ẩn (Tạm thời vô hiệu hóa)</span>
-                                </label>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-900">Link Video (YouTube/Vimeo)</label>
+                                    <div className="relative">
+                                        <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <input
+                                            type="url"
+                                            name="videoUrl"
+                                            value={formData.videoUrl}
+                                            onChange={handleChange}
+                                            placeholder="https://youtube.com/watch?v=..."
+                                            className={`${inputClasses} pl-10`}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
