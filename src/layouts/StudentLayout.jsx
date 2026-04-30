@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "./components/Header";
 import Footer from "./components/Footer";
+import { ChatWidget } from "./components/ChatWidget";
 
 const StudentLayout = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -30,6 +31,8 @@ const StudentLayout = () => {
       {/* Footer */}
       <Footer />
 
+      {/* Chat Widget */}
+      <ChatWidget />
     </div>
   );
 };

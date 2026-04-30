@@ -103,14 +103,19 @@ const ExamCreate = () => {
     );
   };
 
+  const isAllFilteredSelected = filteredBankQuestions.length > 0 && 
+    filteredBankQuestions.every((q) => selectedQuestionIds.includes(q.id));
+
   const toggleSelectAll = () => {
-    if (
-      selectedQuestionIds.length === filteredBankQuestions.length &&
-      filteredBankQuestions.length > 0
-    ) {
-      setSelectedQuestionIds([]);
+    if (isAllFilteredSelected) {
+      const filteredIds = new Set(filteredBankQuestions.map((q) => q.id));
+      setSelectedQuestionIds((prev) => prev.filter((id) => !filteredIds.has(id)));
     } else {
-      setSelectedQuestionIds(filteredBankQuestions.map((q) => q.id));
+      const filteredIds = filteredBankQuestions.map((q) => q.id);
+      setSelectedQuestionIds((prev) => {
+        const newSelection = new Set([...prev, ...filteredIds]);
+        return Array.from(newSelection);
+      });
     }
   };
 
@@ -356,11 +361,7 @@ const ExamCreate = () => {
                           <tr>
                             <th className="px-4 py-3 w-10">
                               <Checkbox
-                                checked={
-                                  selectedQuestionIds.length ===
-                                    filteredBankQuestions.length &&
-                                  filteredBankQuestions.length > 0
-                                }
+                                checked={isAllFilteredSelected}
                                 onCheckedChange={toggleSelectAll}
                               />
                             </th>

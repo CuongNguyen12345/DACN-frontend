@@ -18,6 +18,7 @@ import {
   HelpCircle,
   PlusCircle,
   Paperclip,
+  Pencil,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import api from "@/services/api";
@@ -301,6 +302,32 @@ const QuestionCreate = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState(null);
   const [aiError, setAiError] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+
+  const startEditAIQuestion = (index) => {
+    setEditingIndex(index);
+    // Deep copy to prevent mutating the original until saved
+    setEditForm(JSON.parse(JSON.stringify(generatedQuestions[index])));
+  };
+
+  const saveEditAIQuestion = () => {
+    const updated = [...generatedQuestions];
+    updated[editingIndex] = editForm;
+    setGeneratedQuestions(updated);
+    setEditingIndex(null);
+    setEditForm(null);
+  };
+
+  const cancelEditAIQuestion = () => {
+    setEditingIndex(null);
+    setEditForm(null);
+  };
+
+  const removeAIQuestion = (index) => {
+    const updated = generatedQuestions.filter((_, i) => i !== index);
+    setGeneratedQuestions(updated);
+  };
 
   // File attachment state for AI chat
   const [attachedFile, setAttachedFile] = useState(null);
@@ -436,7 +463,8 @@ const QuestionCreate = () => {
         if (arrayMatch) {
           const parsed = JSON.parse(arrayMatch[0]);
           // Chỉ dùng nếu parse ra mảng có phần tử
-          parsedQuestions = Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+          parsedQuestions =
+            Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
         } else {
           const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
           if (jsonMatch) parsedQuestions = [JSON.parse(jsonMatch[0])];
@@ -447,7 +475,9 @@ const QuestionCreate = () => {
       }
 
       if (!parsedQuestions) {
-        setAiError("AI không trả về câu hỏi hợp lệ. Vui lòng thử lại với prompt rõ ràng hơn.");
+        setAiError(
+          "AI không trả về câu hỏi hợp lệ. Vui lòng thử lại với prompt rõ ràng hơn.",
+        );
       } else {
         setGeneratedQuestions(parsedQuestions);
       }
@@ -1062,9 +1092,13 @@ const QuestionCreate = () => {
                 {!isAiLoading && aiError && (
                   <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col items-center gap-4 text-center">
                     <div className="text-red-500 text-3xl">⚠️</div>
-                    <p className="text-sm font-medium text-red-700">{aiError}</p>
+                    <p className="text-sm font-medium text-red-700">
+                      {aiError}
+                    </p>
                     <Button
-                      onClick={() => { setAiError(""); }}
+                      onClick={() => {
+                        setAiError("");
+                      }}
                       variant="outline"
                       className="border-red-300 text-red-600 hover:bg-red-50 gap-2"
                     >
@@ -1083,55 +1117,258 @@ const QuestionCreate = () => {
                       {generatedQuestions.map((q, index) => (
                         <div
                           key={index}
-                          className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4"
+                          className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4 relative"
                         >
-                          <div className="flex gap-3">
-                            <Circle className="h-5 w-5 text-gray-300 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="font-bold text-gray-900">
-                                {q.question}
-                              </p>
-                              <div className="flex gap-2 mt-2">
-                                <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                  {q.subject || questionData.subject} - Lớp{" "}
-                                  {q.class ||
-                                    questionData.status.replace("Lớp ", "")}
-                                </span>
-                                <span className="text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-full">
-                                  {q.level || "Dễ"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-2 pl-8">
-                            {["A", "B", "C", "D"].map((letter) => (
-                              <div
-                                key={letter}
-                                className={`flex items-center gap-2 p-2.5 rounded-lg text-sm border transition-colors ${letter === q.answer ? "bg-green-50 border-green-200 text-green-700 font-medium" : "bg-gray-50 border-gray-100 text-gray-600"}`}
-                              >
-                                <div
-                                  className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${letter === q.answer ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"}`}
-                                >
-                                  {letter}
+                          {editingIndex === index ? (
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-bold text-gray-800">
+                                  Chỉnh sửa câu hỏi
+                                </h4>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={cancelEditAIQuestion}
+                                    className="h-8 px-3"
+                                  >
+                                    Hủy
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={saveEditAIQuestion}
+                                    className="h-8 px-3 bg-indigo-600 hover:bg-indigo-700 text-white"
+                                  >
+                                    Lưu
+                                  </Button>
                                 </div>
-                                <span>{q.options?.[letter]}</span>
-                                {letter === q.answer && (
-                                  <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
-                                )}
                               </div>
-                            ))}
-                          </div>
 
-                          {q.explanation && (
-                            <div className="pl-8 pt-2">
-                              <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-sm text-blue-800">
-                                <span className="font-bold">
-                                  ✨ Giải thích:
-                                </span>{" "}
-                                {q.explanation}
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                                    Nội dung câu hỏi
+                                  </label>
+                                  <textarea
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[60px]"
+                                    value={editForm.question}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        question: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">
+                                      Môn học
+                                    </label>
+                                    <Select
+                                      value={
+                                        editForm.subject || questionData.subject
+                                      }
+                                      onValueChange={(v) =>
+                                        setEditForm({ ...editForm, subject: v })
+                                      }
+                                    >
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {[
+                                          "Toán",
+                                          "Vật Lý",
+                                          "Hóa Học",
+                                          "Tiếng Anh",
+                                        ].map((s) => (
+                                          <SelectItem key={s} value={s}>
+                                            {s}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">
+                                      Lớp
+                                    </label>
+                                    <Select
+                                      value={
+                                        editForm.class ||
+                                        questionData.status.replace("Lớp ", "")
+                                      }
+                                      onValueChange={(v) =>
+                                        setEditForm({ ...editForm, class: v })
+                                      }
+                                    >
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {["10", "11", "12"].map((c) => (
+                                          <SelectItem key={c} value={c}>
+                                            {c}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">
+                                      Độ khó
+                                    </label>
+                                    <Select
+                                      value={editForm.level || "Dễ"}
+                                      onValueChange={(v) =>
+                                        setEditForm({ ...editForm, level: v })
+                                      }
+                                    >
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {["Dễ", "Trung Bình", "Khó"].map(
+                                          (l) => (
+                                            <SelectItem key={l} value={l}>
+                                              {l}
+                                            </SelectItem>
+                                          ),
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                                    Đáp án
+                                  </label>
+                                  <div className="grid grid-cols-1 gap-2">
+                                    {["A", "B", "C", "D"].map((letter) => (
+                                      <div
+                                        key={letter}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <button
+                                          onClick={() =>
+                                            setEditForm({
+                                              ...editForm,
+                                              answer: letter,
+                                            })
+                                          }
+                                          className={`w-8 h-8 rounded flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${editForm.answer === letter ? "bg-green-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                                        >
+                                          {letter}
+                                        </button>
+                                        <input
+                                          type="text"
+                                          className="flex-1 px-3 py-1.5 border border-gray-200 rounded text-sm focus:border-indigo-400 outline-none"
+                                          value={
+                                            editForm.options?.[letter] || ""
+                                          }
+                                          onChange={(e) =>
+                                            setEditForm({
+                                              ...editForm,
+                                              options: {
+                                                ...editForm.options,
+                                                [letter]: e.target.value,
+                                              },
+                                            })
+                                          }
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                                    Giải thích
+                                  </label>
+                                  <textarea
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none min-h-[50px]"
+                                    value={editForm.explanation || ""}
+                                    onChange={(e) =>
+                                      setEditForm({
+                                        ...editForm,
+                                        explanation: e.target.value,
+                                      })
+                                    }
+                                  />
+                                </div>
                               </div>
                             </div>
+                          ) : (
+                            <>
+                              <div className="absolute top-4 right-4 flex gap-2">
+                                <button
+                                  onClick={() => startEditAIQuestion(index)}
+                                  className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors flex items-center gap-1"
+                                  title="Chỉnh sửa"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  <span className="text-xs font-bold">Sửa</span>
+                                </button>
+                                <button
+                                  onClick={() => removeAIQuestion(index)}
+                                  className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors flex items-center gap-1"
+                                  title="Xóa"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <div className="flex gap-3 pr-24">
+                                <Circle className="h-5 w-5 text-gray-300 shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <p className="font-bold text-gray-900">
+                                    {q.question}
+                                  </p>
+                                  <div className="flex gap-2 mt-2">
+                                    <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                      {q.subject || questionData.subject} - Lớp{" "}
+                                      {q.class ||
+                                        questionData.status.replace("Lớp ", "")}
+                                    </span>
+                                    <span className="text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-full">
+                                      {q.level || "Dễ"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-2 pl-8">
+                                {["A", "B", "C", "D"].map((letter) => (
+                                  <div
+                                    key={letter}
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg text-sm border transition-colors ${letter === q.answer ? "bg-green-50 border-green-200 text-green-700 font-medium" : "bg-gray-50 border-gray-100 text-gray-600"}`}
+                                  >
+                                    <div
+                                      className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold ${letter === q.answer ? "bg-green-500 text-white" : "bg-gray-200 text-gray-600"}`}
+                                    >
+                                      {letter}
+                                    </div>
+                                    <span>{q.options?.[letter]}</span>
+                                    {letter === q.answer && (
+                                      <CheckCircle2 className="h-4 w-4 text-green-500 ml-auto" />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {q.explanation && (
+                                <div className="pl-8 pt-2">
+                                  <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100 text-sm text-blue-800">
+                                    <span className="font-bold">
+                                      ✨ Giải thích:
+                                    </span>{" "}
+                                    {q.explanation}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       ))}
@@ -1312,7 +1549,9 @@ const QuestionCreate = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {topics.length === 0 ? (
-                      <SelectItem value="none" disabled>Không có chủ đề</SelectItem>
+                      <SelectItem value="none" disabled>
+                        Không có chủ đề
+                      </SelectItem>
                     ) : (
                       topics.map((t) => (
                         <SelectItem key={t.id} value={t.name}>

@@ -45,7 +45,28 @@ const PracticeRoom = () => {
             const data = res.data;
             setExam(data);
             setQuestions(data.questions || []);
-            setTimeLeft(data.duration * 60);
+            
+            // Khôi phục answers từ localStorage
+            const savedAnswers = localStorage.getItem(`exam_answers_${examId}`);
+            if (savedAnswers) {
+                try {
+                    setAnswers(JSON.parse(savedAnswers));
+                } catch (e) {
+                    console.error("Lỗi parse answers:", e);
+                }
+            }
+
+            // Khôi phục thời gian từ localStorage
+            const savedEndTime = localStorage.getItem(`exam_endTime_${examId}`);
+            if (savedEndTime) {
+                const remaining = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
+                // Nếu đã hết giờ trong lúc offline, gán là 1 giây để useEffect tự động kích hoạt nộp bài
+                setTimeLeft(remaining > 0 ? remaining : 1); 
+            } else {
+                const newEndTime = Date.now() + data.duration * 60 * 1000;
+                localStorage.setItem(`exam_endTime_${examId}`, newEndTime.toString());
+                setTimeLeft(data.duration * 60);
+            }
         } catch (error) {
             console.error("Lỗi tải thông tin đề thi:", error);
             alert("Không thể tải thông tin đề thi.");
@@ -82,7 +103,9 @@ const PracticeRoom = () => {
     };
 
     const handleAnswerSelect = (questionId, optionKey) => {
-        setAnswers({ ...answers, [questionId]: optionKey });
+        const newAnswers = { ...answers, [questionId]: optionKey };
+        setAnswers(newAnswers);
+        localStorage.setItem(`exam_answers_${examId}`, JSON.stringify(newAnswers));
     };
 
     const calculateUnanswered = () => {
@@ -90,6 +113,10 @@ const PracticeRoom = () => {
     };
 
     const handleFinish = async () => {
+        // Xóa dữ liệu lưu tạm khi nộp bài
+        localStorage.removeItem(`exam_endTime_${examId}`);
+        localStorage.removeItem(`exam_answers_${examId}`);
+
         // Gọi API cập nhật số lượt làm bài
         try {
             await api.post(`/api/exam/${examId}/submit`);
@@ -169,7 +196,7 @@ const PracticeRoom = () => {
     return (
         <div className="flex flex-col min-h-screen bg-gray-50/30">
             {/* Header */}
-            <header className="sticky top-16 z-40 bg-white border-b shadow-sm px-4 md:px-8 py-3 flex justify-between items-center">
+            <header className="sticky top-20 z-40 bg-white border-b shadow-sm px-4 md:px-8 py-3 flex justify-between items-center">
                 <h1 className="font-bold text-lg md:text-xl truncate max-w-[50%]" title={exam?.title}>
                     {exam?.title || "Đang tải..."}
                 </h1>
@@ -262,8 +289,8 @@ const PracticeRoom = () => {
                 </div>
 
                 {/* Desktop Question Palette */}
-                <div className="hidden lg:block w-80 shrink-0">
-                    <div className="sticky top-28 bg-white rounded-xl border shadow-sm p-4 max-h-[calc(100vh-140px)] flex flex-col">
+                <div className="hidden lg:block w-80 shrink-0 sticky top-[160px] self-start z-10">
+                    <div className="bg-white rounded-xl border shadow-sm p-4 max-h-[calc(100vh-180px)] flex flex-col">
                         <QuestionPalette />
                     </div>
                 </div>
