@@ -269,19 +269,6 @@ const AssessmentRoom = () => {
                   <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50 border-blue-200">
                     Câu {q.orderNumber}
                   </Badge>
-                  {q.topicName && (
-                    <span className="text-xs text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
-                      {q.topicName}
-                    </span>
-                  )}
-                  <span className={cn(
-                    "text-xs px-2 py-0.5 rounded-full font-medium",
-                    q.level === "Dễ" && "bg-emerald-50 text-emerald-600",
-                    q.level === "Trung bình" && "bg-amber-50 text-amber-600",
-                    q.level === "Khó" && "bg-rose-50 text-rose-600",
-                  )}>
-                    {q.level}
-                  </span>
                 </div>
                 {answers[q.id] && (
                   <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />

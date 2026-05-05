@@ -45,6 +45,8 @@ import LessonEdit from "@/pages/admin/Lesson/LessonEdit";
 import AccountDetail from "@/pages/admin/Account/AccountDetail";
 import AccountManagement from "@/pages/admin/Account/AccountManagement";
 
+import AccountCreate from "@/pages/admin/Account/AccountCreate";
+
 const sharedManagerRoutes = [
   { path: "exams", element: <ExamList /> },
   { path: "exams/create", element: <ExamCreate /> },
@@ -124,6 +126,7 @@ function AppRoutes() {
 
           {/* Các route CHỈ dành cho Admin */}
           <Route path="accounts" element={<AccountManagement />} />
+          <Route path="accounts/create-teacher" element={<AccountCreate />} />
           <Route path="accounts/:id" element={<AccountDetail />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />

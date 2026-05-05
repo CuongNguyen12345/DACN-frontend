@@ -271,6 +271,19 @@ const AssessmentResult = () => {
                             );
                           })}
                         </div>
+
+                        {/* Lời giải chi tiết */}
+                        {q.explanation && (
+                          <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-4">
+                            <p className="text-xs font-semibold text-blue-700 mb-1.5 flex items-center gap-1.5">
+                              <BookOpen className="h-3.5 w-3.5" />
+                              Lời giải chi tiết
+                            </p>
+                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                              {q.explanation}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -23,6 +23,7 @@ import {
 import * as XLSX from "xlsx";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
 // Import components từ shadcn/ui
 import {
   Select,
@@ -43,14 +44,15 @@ import { Button } from "@/components/ui/button";
 const QuestionCreate = () => {
   const navigate = useNavigate();
   const { basePath } = useAuth();
+  const scope = useTeacherScope();
 
-  // Khởi tạo State trống cho câu hỏi mới
+  // Khởi tạo State trống cho câu hỏi mới — nếu teacher thì pre-fill môn/lớp
   const [questionData, setQuestionData] = useState({
     content: "",
-    subject: "Toán",
+    subject: scope.allowedSubject ?? "Toán",
     difficulty: "Trung Bình",
     explanation: "",
-    status: "Lớp 10",
+    status: scope.allowedGrades[0] ?? "Lớp 10",
     topicName: "",
   });
 
@@ -1488,21 +1490,26 @@ const QuestionCreate = () => {
 
             <div className="space-y-4">
               <SelectGroup label="Môn học" icon="📚">
-                <Select
-                  value={questionData.subject}
-                  onValueChange={(v) => handleSelectChange("subject", v)}
-                >
-                  <SelectTrigger className="w-full rounded-xl border-gray-200 focus:ring-blue-500">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Toán", "Vật Lý", "Hóa Học", "Tiếng Anh"].map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {scope.isTeacher ? (
+                  // Teacher: hiển thị môn cố định, không đổi được
+                  <div className="px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-medium text-gray-700">
+                    {scope.allowedSubject}
+                  </div>
+                ) : (
+                  <Select
+                    value={questionData.subject}
+                    onValueChange={(v) => handleSelectChange("subject", v)}
+                  >
+                    <SelectTrigger className="w-full rounded-xl border-gray-200 focus:ring-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Toán", "Vật Lý", "Hóa Học", "Tiếng Anh"].map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </SelectGroup>
 
               <SelectGroup label="Độ khó" icon="⚡">
@@ -1532,9 +1539,10 @@ const QuestionCreate = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Lớp 10">Lớp 10</SelectItem>
-                    <SelectItem value="Lớp 11">Lớp 11</SelectItem>
-                    <SelectItem value="Lớp 12">Lớp 12</SelectItem>
+                    {/* Teacher chỉ thấy lớp được phân công */}
+                    {["Lớp 10", "Lớp 11", "Lớp 12"].filter(g => scope.canUseGrade(g)).map(g => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </SelectGroup>

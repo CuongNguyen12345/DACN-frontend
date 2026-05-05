@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import {
@@ -14,6 +14,7 @@ import {
     Maximize2,
     Minimize2,
     ChevronDown,
+    Lock,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -52,6 +53,34 @@ const formatStudyTime = (seconds) => {
     return `${secs}s`;
 };
 
+const formatVideoDuration = (seconds) => {
+    if (!seconds || seconds <= 0) return null;
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+        return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+};
+
+const extractYoutubeId = (url) => {
+    if (!url) return null;
+    // Handle embed URLs: https://www.youtube.com/embed/VIDEO_ID
+    const embedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+    if (embedMatch) return embedMatch[1];
+    // Handle watch URLs: https://www.youtube.com/watch?v=VIDEO_ID
+    const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (watchMatch) return watchMatch[1];
+    // Handle short URLs: https://youtu.be/VIDEO_ID
+    const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (shortMatch) return shortMatch[1];
+    // Might be just the video ID itself
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+    return null;
+};
+
 const Learning = () => {
     const { lessonId } = useParams();
     const navigate = useNavigate();
@@ -61,10 +90,27 @@ const Learning = () => {
     const [loading, setLoading] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
-    const [studySeconds, setStudySeconds] = useState(0);
-    const [isPageVisible, setIsPageVisible] = useState(!document.hidden);
-    const [lessonStudyMap, setLessonStudyMap] = useState({});
+    const [videoDurations, setVideoDurations] = useState({});
     const [expandedChapters, setExpandedChapters] = useState([]);
+    const ytPlayersRef = useRef({});
+    const ytContainerRef = useRef(null);
+    const mainPlayerRef = useRef(null);
+    const mainPlayerContainerId = 'yt-main-player';
+    const [completedLessons, setCompletedLessons] = useState([]);
+
+    // Hàm đánh dấu bài học hoàn thành — ghi lên server
+    const markLessonCompleted = useCallback((id) => {
+        setCompletedLessons(prev => {
+            if (prev.includes(id)) return prev;
+            return [...prev, id];
+        });
+        const token = localStorage.getItem("token");
+        if (token) {
+            api.post(`/api/learning/progress/complete?lessonId=${id}`).catch(err =>
+                console.error("Không thể lưu tiến độ:", err)
+            );
+        }
+    }, []);
 
     // Fetch chapters and active lesson data
     useEffect(() => {
@@ -96,7 +142,6 @@ const Learning = () => {
                         title: l.lessonName,
                         duration: "0:00", // Cần bổ sung thời lượng nếu có từ DB
                         videoUrl: l.videoUrl,
-                        isCompleted: false // Cần bổ sung trạng thái hoàn thành từ DB
                     }))
                 }));
                 setChapters(transformedChapters);
@@ -121,10 +166,178 @@ const Learning = () => {
         }
     }, [lessonId]);
 
-    const activeLessonRef = useRef(null);
+    // Tải tiến độ học tập từ server khi chapters load
     useEffect(() => {
-        activeLessonRef.current = activeLesson;
-    }, [activeLesson]);
+        if (chapters.length === 0) return;
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const allLessonIds = chapters.flatMap(c => c.lessons.map(l => l.id));
+        if (allLessonIds.length === 0) return;
+
+        api.get(`/api/learning/progress?lessonIds=${allLessonIds.join(",")}`)
+            .then(res => setCompletedLessons(res.data))
+            .catch(err => console.error("Không thể tải tiến độ:", err));
+    }, [chapters]);
+
+    // Tạo/cập nhật YouTube Player chính cho bài học hiện tại
+    useEffect(() => {
+        if (!activeLesson) return;
+
+        const videoId = extractYoutubeId(activeLesson.videoUrl);
+        if (!videoId) return;
+
+        const loadYTApi = () => {
+            return new Promise((resolve) => {
+                if (window.YT && window.YT.Player) {
+                    resolve();
+                    return;
+                }
+                if (!document.getElementById('yt-iframe-api')) {
+                    const tag = document.createElement('script');
+                    tag.id = 'yt-iframe-api';
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    document.head.appendChild(tag);
+                }
+                const prev = window.onYouTubeIframeAPIReady;
+                window.onYouTubeIframeAPIReady = () => {
+                    prev?.();
+                    resolve();
+                };
+            });
+        };
+
+        let cancelled = false;
+
+        loadYTApi().then(() => {
+            if (cancelled) return;
+
+            // Hủy player cũ nếu có
+            if (mainPlayerRef.current) {
+                try { mainPlayerRef.current.destroy(); } catch { /* ignore */ }
+                mainPlayerRef.current = null;
+            }
+
+            // Đảm bảo container tồn tại
+            const container = document.getElementById(mainPlayerContainerId);
+            if (!container) return;
+
+            mainPlayerRef.current = new window.YT.Player(mainPlayerContainerId, {
+                videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 0,
+                    modestbranding: 1,
+                    rel: 0,
+                },
+                events: {
+                    onStateChange: (event) => {
+                        // YT.PlayerState.ENDED = 0
+                        if (event.data === 0) {
+                            markLessonCompleted(activeLesson.id);
+                        }
+                    },
+                },
+            });
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeLesson?.id, markLessonCompleted]);
+
+    // Fetch video durations via YouTube IFrame API
+    useEffect(() => {
+        if (chapters.length === 0) return;
+
+        const allLessons = chapters.flatMap(c => c.lessons);
+        const lessonsNeedDuration = allLessons.filter(
+            l => l.videoUrl && !videoDurations[l.id]
+        );
+        if (lessonsNeedDuration.length === 0) return;
+
+        const loadYTApi = () => {
+            return new Promise((resolve) => {
+                if (window.YT && window.YT.Player) {
+                    resolve();
+                    return;
+                }
+                if (!document.getElementById('yt-iframe-api')) {
+                    const tag = document.createElement('script');
+                    tag.id = 'yt-iframe-api';
+                    tag.src = 'https://www.youtube.com/iframe_api';
+                    document.head.appendChild(tag);
+                }
+                const prev = window.onYouTubeIframeAPIReady;
+                window.onYouTubeIframeAPIReady = () => {
+                    prev?.();
+                    resolve();
+                };
+            });
+        };
+
+        let cancelled = false;
+
+        loadYTApi().then(() => {
+            if (cancelled) return;
+
+            // Create a container for hidden players if not exists
+            if (!ytContainerRef.current) {
+                const container = document.createElement('div');
+                container.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;';
+                document.body.appendChild(container);
+                ytContainerRef.current = container;
+            }
+
+            lessonsNeedDuration.forEach((lesson) => {
+                const videoId = extractYoutubeId(lesson.videoUrl);
+                if (!videoId || ytPlayersRef.current[lesson.id]) return;
+
+                const div = document.createElement('div');
+                div.id = `yt-duration-${lesson.id}`;
+                ytContainerRef.current.appendChild(div);
+
+                ytPlayersRef.current[lesson.id] = new window.YT.Player(div.id, {
+                    videoId,
+                    width: 1,
+                    height: 1,
+                    playerVars: { autoplay: 0, controls: 0 },
+                    events: {
+                        onReady: (event) => {
+                            const dur = event.target.getDuration();
+                            if (dur > 0) {
+                                setVideoDurations(prev => ({ ...prev, [lesson.id]: dur }));
+                            }
+                            // Clean up this player
+                            setTimeout(() => {
+                                event.target.destroy();
+                                delete ytPlayersRef.current[lesson.id];
+                            }, 100);
+                        },
+                    },
+                });
+            });
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [chapters]);
+
+    // Cleanup YT container on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(ytPlayersRef.current).forEach(p => {
+                try { p.destroy(); } catch { /* ignore */ }
+            });
+            ytPlayersRef.current = {};
+            if (ytContainerRef.current) {
+                ytContainerRef.current.remove();
+                ytContainerRef.current = null;
+            }
+        };
+    }, []);
 
     const toggleChapter = (chapterId) => {
         setExpandedChapters((prev) =>
@@ -134,66 +347,35 @@ const Learning = () => {
         );
     };
 
-    const studySecondsRef = useRef(studySeconds);
+    // Cleanup main player on unmount
     useEffect(() => {
-        studySecondsRef.current = studySeconds;
-    }, [studySeconds]);
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            setIsPageVisible(!document.hidden);
-        };
-
-        document.addEventListener("visibilitychange", handleVisibilityChange);
         return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!activeLesson) return;
-
-        const savedSeconds = lessonStudyMap[activeLesson.id] || 0;
-        setStudySeconds(savedSeconds);
-    }, [lessonId, !!activeLesson]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            if (isPageVisible && activeLesson) {
-                setStudySeconds((prev) => prev + 1);
+            if (mainPlayerRef.current) {
+                try { mainPlayerRef.current.destroy(); } catch { /* ignore */ }
+                mainPlayerRef.current = null;
             }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [isPageVisible, !!activeLesson]);
-
-    useEffect(() => {
-        const handleBeforeUnload = () => {
-            const currentLesson = activeLessonRef.current;
-            const currentSeconds = studySecondsRef.current;
-
-            if (!currentLesson) return;
-
-            console.log("Lưu tiến độ học trước khi rời trang:", {
-                lessonId: currentLesson.id,
-                watchedSeconds: currentSeconds,
-            });
-        };
-
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
         };
     }, []);
+
+    const chaptersWithLock = useMemo(() => {
+        let previousCompleted = true; // First lesson is unlocked
+        return chapters.map(chapter => ({
+            ...chapter,
+            lessons: chapter.lessons.map(lesson => {
+                const isCompleted = completedLessons.includes(lesson.id);
+                const isLocked = !previousCompleted;
+                previousCompleted = isCompleted;
+                
+                return {
+                    ...lesson,
+                    isCompleted,
+                    isLocked
+                };
+            })
+        }));
+    }, [chapters, completedLessons]);
 
     const handleLessonChange = (lesson) => {
-        if (activeLesson) {
-            setLessonStudyMap((prev) => ({
-                ...prev,
-                [activeLesson.id]: studySeconds,
-            }));
-        }
-
         navigate(`/course/learning/${lesson.id}`);
     };
 
@@ -223,8 +405,6 @@ const Learning = () => {
             </div>
         );
     }
-
-    const isCompletedByTime = studySeconds >= 60;
 
     return (
         <TooltipProvider>
@@ -282,21 +462,7 @@ const Learning = () => {
                                     {activeLesson.title}
                                 </h1>
 
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <Badge variant="secondary">
-                                        Đã học: {formatStudyTime(studySeconds)}
-                                    </Badge>
 
-                                    <Badge variant={isPageVisible ? "default" : "outline"}>
-                                        {isPageVisible ? "Đang học" : "Tạm dừng do chuyển tab"}
-                                    </Badge>
-
-                                    {isCompletedByTime && (
-                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                                            Đủ điều kiện hoàn thành
-                                        </Badge>
-                                    )}
-                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 flex-wrap">
@@ -379,13 +545,10 @@ const Learning = () => {
                                         : "aspect-video"
                                 )}
                             >
-                                <iframe
+                                <div
+                                    id={mainPlayerContainerId}
                                     key={activeLesson.id}
                                     className="w-full h-full absolute inset-0"
-                                    src={activeLesson.videoUrl}
-                                    title={activeLesson.title}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
                                 />
 
                                 {focusMode && (
@@ -467,9 +630,9 @@ const Learning = () => {
                                     <CardContent className="p-0 flex-1 overflow-hidden">
                                         <ScrollArea className="h-[calc(100vh-250px)]">
                                             <div className="flex flex-col border-b border-gray-100">
-                                                {chapters.map((chapter) => {
+                                                {chaptersWithLock.map((chapter) => {
                                                     const isExpanded = expandedChapters.includes(chapter.id);
-                                                    const completedLessons = chapter.lessons.filter(l => l.isCompleted).length;
+                                                    const completedLessonsCount = chapter.lessons.filter(l => l.isCompleted).length;
                                                     return (
                                                         <div key={chapter.id} className="border-t border-gray-100">
                                                             <div
@@ -481,7 +644,7 @@ const Learning = () => {
                                                                         {chapter.title}
                                                                     </h3>
                                                                     <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                                        {completedLessons}/{chapter.lessons.length} bài học
+                                                                        {completedLessonsCount}/{chapter.lessons.length} bài học
                                                                     </span>
                                                                 </div>
                                                                 <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
@@ -492,10 +655,17 @@ const Learning = () => {
                                                                     {chapter.lessons.map((item) => (
                                                                         <div
                                                                             key={item.id}
-                                                                            onClick={() => handleLessonChange(item)}
+                                                                            onClick={() => {
+                                                                                if (!item.isLocked) {
+                                                                                    handleLessonChange(item);
+                                                                                }
+                                                                            }}
                                                                             className={cn(
-                                                                                "p-4 cursor-pointer hover:bg-gray-50 transition-colors flex gap-3 items-start group relative pl-5",
-                                                                                activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80"
+                                                                                "p-4 flex gap-3 items-start relative pl-5 transition-colors",
+                                                                                activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80",
+                                                                                item.isLocked 
+                                                                                    ? "opacity-60 cursor-not-allowed bg-gray-50/80" 
+                                                                                    : "cursor-pointer hover:bg-gray-50 group"
                                                                             )}
                                                                         >
                                                                             {activeLesson.id === item.id && (
@@ -503,7 +673,9 @@ const Learning = () => {
                                                                             )}
 
                                                                             <div className="mt-1">
-                                                                                {item.isCompleted ? (
+                                                                                {item.isLocked ? (
+                                                                                    <Lock className="h-5 w-5 text-gray-400" />
+                                                                                ) : item.isCompleted ? (
                                                                                     <CheckCircle2 className="h-5 w-5 text-green-500" />
                                                                                 ) : (
                                                                                     <PlayCircle
@@ -525,21 +697,11 @@ const Learning = () => {
                                                                                 >
                                                                                     {item.title}
                                                                                 </h4>
-                                                                                <div className="flex items-center justify-between">
+                                                                                {formatVideoDuration(videoDurations[item.id]) && (
                                                                                     <span className="text-xs text-muted-foreground">
-                                                                                        {item.duration}
+                                                                                        {formatVideoDuration(videoDurations[item.id])}
                                                                                     </span>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                                                                            {formatStudyTime(lessonStudyMap[item.id] || 0)}
-                                                                                        </Badge>
-                                                                                        {activeLesson.id === item.id && (
-                                                                                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 hover:bg-blue-100">
-                                                                                                Đang học
-                                                                                            </Badge>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </div>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     ))}
@@ -557,6 +719,7 @@ const Learning = () => {
                     </div>
                 </div>
             </div>
+
         </TooltipProvider>
     );
 };

@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
 import {
     Dialog,
     DialogContent,
@@ -26,11 +27,15 @@ import {
 const QuestionList = () => {
     const navigate = useNavigate();
     const { basePath } = useAuth();
-    // 1. States cho lọc và tìm kiếm
+    const scope = useTeacherScope();
+
+    // 1. States cho lọc và tìm kiếm — teacher bị khóa theo scope
     const [searchTerm, setSearchTerm] = useState("");
     const [levelFilter, setLevelFilter] = useState("all");
-    const [subjectFilter, setSubjectFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all"); // THÊM STATE LỌC TRẠNG THÁI
+    const [subjectFilter, setSubjectFilter] = useState(
+        scope.allowedSubject ?? "all"
+    );
+    const [statusFilter, setStatusFilter] = useState("all");
 
     // 2. States cho chọn nhiều (Bulk Action)
     const [selectedIds, setSelectedIds] = useState([]);
@@ -47,8 +52,8 @@ const QuestionList = () => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isInstructionOpen, setIsInstructionOpen] = useState(false);
     const [importSettings, setImportSettings] = useState({
-        subject: "Toán",
-        grade: "Lớp 10",
+        subject: scope.allowedSubject ?? "Toán",
+        grade: scope.allowedGrades[0] ?? "Lớp 10",
     });
     const [batchQuestions, setBatchQuestions] = useState([
         { id: Date.now(), content: "", a: "", b: "", c: "", d: "", correct: "A", explanation: "" }
@@ -313,20 +318,23 @@ const QuestionList = () => {
                         />
                     </div>
                     <div className="flex flex-wrap md:flex-nowrap gap-3">
-                        <Select value={subjectFilter} onValueChange={(val) => { setSubjectFilter(val); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-full md:w-[140px] bg-white">
-                                <SelectValue placeholder="Môn học" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">Tất cả môn</SelectItem>
-                                <SelectItem value="Toán">Toán học</SelectItem>
-                                <SelectItem value="Vật Lý">Vật Lý</SelectItem>
-                                <SelectItem value="Hóa Học">Hóa Học</SelectItem>
-                                <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        {/* Môn học — ẩn nếu teacher chỉ có 1 môn */}
+                        {!scope.isTeacher && (
+                            <Select value={subjectFilter} onValueChange={(val) => { setSubjectFilter(val); setCurrentPage(1); }}>
+                                <SelectTrigger className="w-full md:w-[140px] bg-white">
+                                    <SelectValue placeholder="Môn học" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Tất cả môn</SelectItem>
+                                    <SelectItem value="Toán">Toán học</SelectItem>
+                                    <SelectItem value="Vật Lý">Vật Lý</SelectItem>
+                                    <SelectItem value="Hóa Học">Hóa Học</SelectItem>
+                                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
 
-                        {/* LỌC ĐỘ KHÓ */}
+                        {/* Độ khó */}
                         <Select value={levelFilter} onValueChange={setLevelFilter}>
                             <SelectTrigger className="w-[130px]"><SelectValue placeholder="Độ khó" /></SelectTrigger>
                             <SelectContent>
@@ -337,14 +345,14 @@ const QuestionList = () => {
                             </SelectContent>
                         </Select>
 
-                        {/* THÊM LỌC LỚP */}
+                        {/* Lớp — teacher chỉ thấy lớp được phân công */}
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tất cả lớp</SelectItem>
-                                <SelectItem value="Lớp 10">Lớp 10</SelectItem>
-                                <SelectItem value="Lớp 11">Lớp 11</SelectItem>
-                                <SelectItem value="Lớp 12">Lớp 12</SelectItem>
+                                {!scope.isTeacher && <SelectItem value="all">Tất cả lớp</SelectItem>}
+                                {(["Lớp 10", "Lớp 11", "Lớp 12"]).filter(g => scope.canUseGrade(g)).map(g => (
+                                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

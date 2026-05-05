@@ -76,9 +76,9 @@ const Overview = () => {
                     <CardHeader className="flex flex-row items-center justify-between pb-2 border-b">
                         <CardTitle className="text-lg font-bold">Hoạt động thi gần đây</CardTitle>
                         {/* Link tới trang Báo cáo chi tiết */}
-                        <Button 
-                            onClick={() => navigate('/admin/reports')} 
-                            variant="link" 
+                        <Button
+                            onClick={() => navigate('/admin/reports')}
+                            variant="link"
                             className="text-blue-600 text-sm"
                         >
                             Xem tất cả
@@ -130,18 +130,18 @@ const Overview = () => {
                     </CardHeader>
                     <CardContent className="p-4 space-y-3">
                         {/* Link tới trang Tạo/Nhập đề thi */}
-                        <Button 
-                            onClick={() => navigate(`${basePath}/exams/create`)} 
-                            variant="outline" 
+                        <Button
+                            onClick={() => navigate(`${basePath}/exams/create`)}
+                            variant="outline"
                             className="w-full justify-start h-12"
                         >
                             <FileText className="mr-3 h-5 w-5 text-blue-500" /> Nhập đề thi từ Word/PDF
                         </Button>
-                        
+
                         {/* Link tới trang Ngân hàng câu hỏi hoặc Danh sách đề */}
-                        <Button 
-                            onClick={() => navigate(`${basePath}/exams`)} 
-                            variant="outline" 
+                        <Button
+                            onClick={() => navigate(`${basePath}/exams`)}
+                            variant="outline"
                             className="w-full justify-start h-12"
                         >
                             <Database className="mr-3 h-5 w-5 text-emerald-500" /> Thêm câu hỏi vào ngân hàng
@@ -149,22 +149,22 @@ const Overview = () => {
 
                         {role === "admin" && (
                             <>
-                            {/* Link tới trang Quản lý Học viên */}
-                                <Button 
-                                    onClick={() => navigate('/admin/users')} 
-                                    variant="outline" 
+                                {/* Link tới trang Quản lý Học viên */}
+                                <Button
+                                    onClick={() => navigate('/admin/accounts')}
+                                    variant="outline"
                                     className="w-full justify-start h-12"
                                 >
                                     <Users className="mr-3 h-5 w-5 text-purple-500" /> Quản lý tài khoản học sinh
                                 </Button>
-                        
+
                                 {/* Link tới trang Cài đặt (Tab thông báo) */}
-                                <Button 
-                                    onClick={() => navigate('/admin/settings')} 
-                                    variant="outline" 
+                                <Button
+                                    onClick={() => navigate('/admin/settings')}
+                                    variant="outline"
                                     className="w-full justify-start h-12 border-dashed border-gray-300"
                                 >
-                                    <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt 
+                                    <Settings className="mr-3 h-5 w-5 text-gray-400" /> Cài đặt
                                 </Button>
                             </>
                         )}
