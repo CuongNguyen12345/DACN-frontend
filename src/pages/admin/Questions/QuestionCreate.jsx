@@ -334,6 +334,7 @@ const QuestionCreate = () => {
   // File attachment state for AI chat
   const [attachedFile, setAttachedFile] = useState(null);
   const [attachedFileContent, setAttachedFileContent] = useState("");
+  const [attachedImageBase64, setAttachedImageBase64] = useState(null);
   const [isReadingFile, setIsReadingFile] = useState(false);
 
   // Handle file attachment for AI
@@ -346,14 +347,18 @@ const QuestionCreate = () => {
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
     ];
     const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (
       !allowedTypes.includes(file.type) &&
-      !file.name.match(/\.(txt|pdf|doc|docx)$/i)
+      !file.name.match(/\.(txt|pdf|doc|docx|png|jpg|jpeg|webp)$/i)
     ) {
-      alert("Chỉ hỗ trợ file TXT, PDF, DOC, DOCX!");
+      alert("Chỉ hỗ trợ file TXT, PDF, DOC, DOCX hoặc ẢNH (PNG/JPG/WEBP)!");
       e.target.value = null;
       return;
     }
@@ -365,29 +370,37 @@ const QuestionCreate = () => {
 
     setAttachedFile(file);
     setIsReadingFile(true);
+    setAttachedImageBase64(null);
+    setAttachedFileContent("");
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const content = evt.target.result;
-      // Truncate if too long to avoid exceeding token limits
-      const truncated =
-        content.length > 8000
-          ? content.slice(0, 8000) + "\n...(nội dung bị cắt ngắn)"
-          : content;
-      setAttachedFileContent(truncated);
-      setIsReadingFile(false);
-    };
-    reader.onerror = () => {
-      alert("Không thể đọc file. Vui lòng thử lại!");
-      setAttachedFile(null);
-      setIsReadingFile(false);
-    };
-
-    // Read as text (works for TXT; PDF/DOCX will give raw bytes but we try best-effort)
-    if (file.type === "text/plain" || file.name.match(/\.txt$/i)) {
-      reader.readAsText(file, "UTF-8");
+    if (file.type.startsWith("image/") || file.name.match(/\.(png|jpg|jpeg|webp)$/i)) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        setAttachedImageBase64(evt.target.result);
+        setIsReadingFile(false);
+      };
+      reader.onerror = () => {
+        alert("Không thể đọc ảnh. Vui lòng thử lại!");
+        setAttachedFile(null);
+        setIsReadingFile(false);
+      };
+      reader.readAsDataURL(file);
     } else {
-      // For PDF/DOCX attempt reading as text (limited support)
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const content = evt.target.result;
+        const truncated =
+          content.length > 8000
+            ? content.slice(0, 8000) + "\n...(nội dung bị cắt ngắn)"
+            : content;
+        setAttachedFileContent(truncated);
+        setIsReadingFile(false);
+      };
+      reader.onerror = () => {
+        alert("Không thể đọc file. Vui lòng thử lại!");
+        setAttachedFile(null);
+        setIsReadingFile(false);
+      };
       reader.readAsText(file, "UTF-8");
     }
 
@@ -397,6 +410,7 @@ const QuestionCreate = () => {
   const handleRemoveAttachedFile = () => {
     setAttachedFile(null);
     setAttachedFileContent("");
+    setAttachedImageBase64(null);
   };
 
   const handleGenerate = async () => {
@@ -446,6 +460,7 @@ const QuestionCreate = () => {
       - Sử dụng ký tự Unicode trực tiếp: α, β, √, π, ±, x², x³, 1/2, 3/4...
       - Output phải hiển thị được trực tiếp trên giao diện web không cần thư viện render toán.
       `,
+        base64Image: attachedImageBase64
       });
 
       const data = response.data;
@@ -1141,14 +1156,14 @@ const QuestionCreate = () => {
                     <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 bg-gray-50/50">
                       <label
                         className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 cursor-pointer transition-colors group"
-                        title="Đính kèm file (TXT, PDF, DOC)"
+                        title="Đính kèm file (TXT, PDF, DOC, Ảnh)"
                       >
                         <Paperclip className="h-4 w-4 group-hover:rotate-12 transition-transform" />
                         <span>Đính kèm file</span>
                         <input
                           type="file"
                           className="hidden"
-                          accept=".txt,.pdf,.doc,.docx"
+                          accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
                           onChange={handleFileAttach}
                           disabled={isAiLoading}
                         />
