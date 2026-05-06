@@ -95,6 +95,8 @@ const Learning = () => {
     const ytPlayersRef = useRef({});
     const ytContainerRef = useRef(null);
     const mainPlayerRef = useRef(null);
+    const saveTimeIntervalRef = useRef(null);
+    const lastSavedTimeRef = useRef(0);
     const mainPlayerContainerId = 'yt-main-player';
     const [completedLessons, setCompletedLessons] = useState([]);
 
@@ -209,7 +211,21 @@ const Learning = () => {
 
         let cancelled = false;
 
-        loadYTApi().then(() => {
+        loadYTApi().then(async () => {
+            if (cancelled) return;
+
+            // Lấy thời gian xem trước đó từ server
+            let startSeconds = 0;
+            try {
+                const token = localStorage.getItem("token");
+                if (token) {
+                    const res = await api.get(`/api/learning/progress/time?lessonId=${activeLesson.id}`);
+                    startSeconds = res.data || 0;
+                }
+            } catch (err) {
+                console.error("Lỗi lấy thời gian xem:", err);
+            }
+
             if (cancelled) return;
 
             // Hủy player cũ nếu có
@@ -230,6 +246,7 @@ const Learning = () => {
                     autoplay: 0,
                     modestbranding: 1,
                     rel: 0,
+                    start: Math.floor(startSeconds),
                 },
                 events: {
                     onStateChange: (event) => {
@@ -240,10 +257,36 @@ const Learning = () => {
                     },
                 },
             });
+
+            // Thiết lập interval lưu thời gian xem mỗi 10 giây
+            if (saveTimeIntervalRef.current) clearInterval(saveTimeIntervalRef.current);
+            saveTimeIntervalRef.current = setInterval(() => {
+                if (mainPlayerRef.current && mainPlayerRef.current.getCurrentTime) {
+                    const currentTime = Math.floor(mainPlayerRef.current.getCurrentTime());
+                    if (currentTime > 0 && Math.abs(currentTime - lastSavedTimeRef.current) > 5) {
+                         const token = localStorage.getItem("token");
+                         if (token) {
+                             api.post(`/api/learning/progress/time?lessonId=${activeLesson.id}&time=${currentTime}`)
+                                .then(() => { lastSavedTimeRef.current = currentTime; })
+                                .catch(() => {});
+                         }
+                    }
+                }
+            }, 10000);
         });
 
         return () => {
             cancelled = true;
+            if (saveTimeIntervalRef.current) clearInterval(saveTimeIntervalRef.current);
+            
+            // Cố gắng lưu lần cuối khi unmount/đổi bài
+            if (mainPlayerRef.current && mainPlayerRef.current.getCurrentTime) {
+                const currentTime = Math.floor(mainPlayerRef.current.getCurrentTime());
+                const token = localStorage.getItem("token");
+                if (token && currentTime > 0) {
+                    api.post(`/api/learning/progress/time?lessonId=${activeLesson.id}&time=${currentTime}`).catch(() => {});
+                }
+            }
         };
     }, [activeLesson?.id, markLessonCompleted]);
 
@@ -623,96 +666,188 @@ const Learning = () => {
                         {!focusMode && (
                             <div className="lg:col-span-1 h-full">
                                 <Card className="h-full flex flex-col border-none shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
-                                    <CardHeader className="border-b bg-white/50 px-6 py-4">
-                                        <CardTitle className="text-lg">Danh sách bài học</CardTitle>
-                                    </CardHeader>
+                                    <Tabs defaultValue="lessons" className="w-full h-full flex flex-col">
+                                        <div className="px-4 pt-4 border-b pb-4">
+                                            <TabsList className="w-full grid grid-cols-2 p-1 bg-gray-100/50 rounded-lg">
+                                                <TabsTrigger value="lessons" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2">
+                                                    Bài học
+                                                </TabsTrigger>
+                                                <TabsTrigger value="exercises" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2">
+                                                    Bài tập
+                                                </TabsTrigger>
+                                            </TabsList>
+                                        </div>
 
-                                    <CardContent className="p-0 flex-1 overflow-hidden">
-                                        <ScrollArea className="h-[calc(100vh-250px)]">
-                                            <div className="flex flex-col border-b border-gray-100">
-                                                {chaptersWithLock.map((chapter) => {
-                                                    const isExpanded = expandedChapters.includes(chapter.id);
-                                                    const completedLessonsCount = chapter.lessons.filter(l => l.isCompleted).length;
-                                                    return (
-                                                        <div key={chapter.id} className="border-t border-gray-100">
-                                                            <div
-                                                                className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50/50 group"
-                                                                onClick={() => toggleChapter(chapter.id)}
-                                                            >
-                                                                <div className="flex flex-col">
-                                                                    <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
-                                                                        {chapter.title}
-                                                                    </h3>
-                                                                    <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                                        {completedLessonsCount}/{chapter.lessons.length} bài học
-                                                                    </span>
-                                                                </div>
-                                                                <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
-                                                            </div>
-
-                                                            {isExpanded && (
-                                                                <div className="flex flex-col divide-y divide-gray-50 bg-white">
-                                                                    {chapter.lessons.map((item) => (
-                                                                        <div
-                                                                            key={item.id}
-                                                                            onClick={() => {
-                                                                                if (!item.isLocked) {
-                                                                                    handleLessonChange(item);
-                                                                                }
-                                                                            }}
-                                                                            className={cn(
-                                                                                "p-4 flex gap-3 items-start relative pl-5 transition-colors",
-                                                                                activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80",
-                                                                                item.isLocked 
-                                                                                    ? "opacity-60 cursor-not-allowed bg-gray-50/80" 
-                                                                                    : "cursor-pointer hover:bg-gray-50 group"
-                                                                            )}
-                                                                        >
-                                                                            {activeLesson.id === item.id && (
-                                                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
-                                                                            )}
-
-                                                                            <div className="mt-1">
-                                                                                {item.isLocked ? (
-                                                                                    <Lock className="h-5 w-5 text-gray-400" />
-                                                                                ) : item.isCompleted ? (
-                                                                                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                                                                                ) : (
-                                                                                    <PlayCircle
-                                                                                        className={cn(
-                                                                                            "h-5 w-5",
-                                                                                            activeLesson.id === item.id
-                                                                                                ? "text-blue-600"
-                                                                                                : "text-gray-300 group-hover:text-gray-400"
-                                                                                        )}
-                                                                                    />
-                                                                                )}
-                                                                            </div>
-
-                                                                            <div className="flex-1 space-y-1">
-                                                                                <h4 className={cn(
-                                                                                    "text-sm font-medium leading-snug",
-                                                                                    activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
-                                                                                )}
-                                                                                >
-                                                                                    {item.title}
-                                                                                </h4>
-                                                                                {formatVideoDuration(videoDurations[item.id]) && (
-                                                                                    <span className="text-xs text-muted-foreground">
-                                                                                        {formatVideoDuration(videoDurations[item.id])}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
+                                        <CardContent className="p-0 flex-1 overflow-hidden">
+                                            <TabsContent value="lessons" className="h-full m-0">
+                                                <ScrollArea className="h-[calc(100vh-220px)]">
+                                                    <div className="flex flex-col border-b border-gray-100">
+                                                        {chaptersWithLock.map((chapter) => {
+                                                            const isExpanded = expandedChapters.includes(chapter.id);
+                                                            const completedLessonsCount = chapter.lessons.filter(l => l.isCompleted).length;
+                                                            return (
+                                                                <div key={chapter.id} className="border-t border-gray-100">
+                                                                    <div
+                                                                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50/50 group"
+                                                                        onClick={() => toggleChapter(chapter.id)}
+                                                                    >
+                                                                        <div className="flex flex-col">
+                                                                            <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
+                                                                                {chapter.title}
+                                                                            </h3>
+                                                                            <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                                                                {completedLessonsCount}/{chapter.lessons.length} bài học
+                                                                            </span>
                                                                         </div>
-                                                                    ))}
+                                                                        <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
+                                                                    </div>
+
+                                                                    {isExpanded && (
+                                                                        <div className="flex flex-col divide-y divide-gray-50 bg-white">
+                                                                            {chapter.lessons.map((item) => (
+                                                                                <div
+                                                                                    key={item.id}
+                                                                                    onClick={() => {
+                                                                                        if (!item.isLocked) {
+                                                                                            handleLessonChange(item);
+                                                                                        }
+                                                                                    }}
+                                                                                    className={cn(
+                                                                                        "p-4 flex gap-3 items-start relative pl-5 transition-colors",
+                                                                                        activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80",
+                                                                                        item.isLocked 
+                                                                                            ? "opacity-60 cursor-not-allowed bg-gray-50/80" 
+                                                                                            : "cursor-pointer hover:bg-gray-50 group"
+                                                                                    )}
+                                                                                >
+                                                                                    {activeLesson.id === item.id && (
+                                                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
+                                                                                    )}
+
+                                                                                    <div className="mt-1">
+                                                                                        {item.isLocked ? (
+                                                                                            <Lock className="h-5 w-5 text-gray-400" />
+                                                                                        ) : item.isCompleted ? (
+                                                                                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                                                                                        ) : (
+                                                                                            <PlayCircle
+                                                                                                className={cn(
+                                                                                                    "h-5 w-5",
+                                                                                                    activeLesson.id === item.id
+                                                                                                        ? "text-blue-600"
+                                                                                                        : "text-gray-300 group-hover:text-gray-400"
+                                                                                                )}
+                                                                                            />
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    <div className="flex-1 space-y-1">
+                                                                                        <h4 className={cn(
+                                                                                            "text-sm font-medium leading-snug",
+                                                                                            activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
+                                                                                        )}
+                                                                                        >
+                                                                                            {item.title}
+                                                                                        </h4>
+                                                                                        {formatVideoDuration(videoDurations[item.id]) && (
+                                                                                            <span className="text-xs text-muted-foreground">
+                                                                                                {formatVideoDuration(videoDurations[item.id])}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </ScrollArea>
-                                    </CardContent>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </ScrollArea>
+                                            </TabsContent>
+                                            
+                                            <TabsContent value="exercises" className="h-full m-0">
+                                                <ScrollArea className="h-[calc(100vh-220px)]">
+                                                    <div className="flex flex-col border-b border-gray-100">
+                                                        {chaptersWithLock.map((chapter) => {
+                                                            const isExpanded = expandedChapters.includes(`ex_${chapter.id}`);
+                                                            return (
+                                                                <div key={`ex_${chapter.id}`} className="border-t border-gray-100">
+                                                                    <div
+                                                                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50/50 group"
+                                                                        onClick={() => {
+                                                                            setExpandedChapters(prev => 
+                                                                                prev.includes(`ex_${chapter.id}`)
+                                                                                    ? prev.filter(id => id !== `ex_${chapter.id}`)
+                                                                                    : [...prev, `ex_${chapter.id}`]
+                                                                            )
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex flex-col">
+                                                                            <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-700 transition-colors">
+                                                                                {chapter.title}
+                                                                            </h3>
+                                                                            <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                                                                {chapter.lessons.length} bài tập
+                                                                            </span>
+                                                                        </div>
+                                                                        <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
+                                                                    </div>
+
+                                                                    {isExpanded && (
+                                                                        <div className="flex flex-col divide-y divide-gray-50 bg-white">
+                                                                            {chapter.lessons.map((item) => (
+                                                                                <div
+                                                                                    key={`ex_item_${item.id}`}
+                                                                                    className={cn(
+                                                                                        "p-4 flex gap-3 items-start relative pl-5 transition-colors cursor-pointer hover:bg-gray-50 group",
+                                                                                        activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80"
+                                                                                    )}
+                                                                                    onClick={() => {
+                                                                                        // Chuyển sang bài tập (có thể navigate hoặc đổi tab)
+                                                                                        if (!item.isLocked) {
+                                                                                            handleLessonChange(item);
+                                                                                        }
+                                                                                    }}
+                                                                                >
+                                                                                    {activeLesson.id === item.id && (
+                                                                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
+                                                                                    )}
+
+                                                                                    <div className="mt-1">
+                                                                                        {item.isLocked ? (
+                                                                                            <Lock className="h-5 w-5 text-gray-400" />
+                                                                                        ) : (
+                                                                                            <FlaskConical className={cn(
+                                                                                                "h-5 w-5",
+                                                                                                activeLesson.id === item.id ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
+                                                                                            )} />
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    <div className="flex-1 space-y-1">
+                                                                                        <h4 className={cn(
+                                                                                            "text-sm font-medium leading-snug",
+                                                                                            activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
+                                                                                        )}>
+                                                                                            Bài tập: {item.title}
+                                                                                        </h4>
+                                                                                        <span className="text-xs text-muted-foreground inline-flex items-center">
+                                                                                            Bấm để làm bài
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </ScrollArea>
+                                            </TabsContent>
+                                        </CardContent>
+                                    </Tabs>
                                 </Card>
                             </div>
                         )}

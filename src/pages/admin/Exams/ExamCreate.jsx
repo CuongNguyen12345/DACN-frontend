@@ -61,6 +61,19 @@ const ExamCreate = () => {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [topicFilter, setTopicFilter] = useState("all");
+  const [topics, setTopics] = useState([]);
+
+  useEffect(() => {
+    if (subjectFilter !== "all" && classFilter !== "all") {
+      api.get("/api/admin/topics", { params: { subject: subjectFilter, grade: classFilter } })
+        .then((res) => setTopics(res.data || []))
+        .catch(() => setTopics([]));
+    } else {
+      setTopics([]);
+      setTopicFilter("all");
+    }
+  }, [subjectFilter, classFilter]);
 
   const fetchBankQuestions = async () => {
     setIsBankLoading(true);
@@ -93,9 +106,10 @@ const ExamCreate = () => {
         subjectFilter === "all" || q.subject === subjectFilter;
       const matchClass = classFilter === "all" || q.status === classFilter;
       const matchLevel = levelFilter === "all" || q.level === levelFilter;
-      return matchSearch && matchSubject && matchClass && matchLevel;
+      const matchTopic = topicFilter === "all" || q.topicName === topicFilter;
+      return matchSearch && matchSubject && matchClass && matchLevel && matchTopic;
     });
-  }, [bankQuestions, searchTerm, subjectFilter, classFilter, levelFilter]);
+  }, [bankQuestions, searchTerm, subjectFilter, classFilter, levelFilter, topicFilter]);
 
   const toggleSelectOne = (id) => {
     setSelectedQuestionIds((prev) =>
@@ -334,6 +348,21 @@ const ExamCreate = () => {
                             <SelectItem value="Lớp 10">Lớp 10</SelectItem>
                             <SelectItem value="Lớp 11">Lớp 11</SelectItem>
                             <SelectItem value="Lớp 12">Lớp 12</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={topicFilter}
+                          onValueChange={setTopicFilter}
+                          disabled={subjectFilter === "all" || classFilter === "all"}
+                        >
+                          <SelectTrigger className="w-[140px] bg-white">
+                            <SelectValue placeholder="Chủ đề" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả chủ đề</SelectItem>
+                            {topics.map(t => (
+                              <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <Select

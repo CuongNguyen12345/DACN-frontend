@@ -36,6 +36,20 @@ const QuestionList = () => {
         scope.allowedSubject ?? "all"
     );
     const [statusFilter, setStatusFilter] = useState("all");
+    const [topicFilter, setTopicFilter] = useState("all");
+    const [topics, setTopics] = useState([]);
+
+    // Lấy danh sách chủ đề khi chọn cả môn và lớp
+    useEffect(() => {
+        if (subjectFilter !== "all" && statusFilter !== "all") {
+            api.get("/api/admin/topics", { params: { subject: subjectFilter, grade: statusFilter } })
+                .then(res => setTopics(res.data || []))
+                .catch(() => setTopics([]));
+        } else {
+            setTopics([]);
+            setTopicFilter("all");
+        }
+    }, [subjectFilter, statusFilter]);
 
     // 2. States cho chọn nhiều (Bulk Action)
     const [selectedIds, setSelectedIds] = useState([]);
@@ -175,6 +189,7 @@ const QuestionList = () => {
             if (subjectFilter !== "all") params.subject = subjectFilter;
             if (levelFilter !== "all") params.level = levelFilter;
             if (statusFilter !== "all") params.grade = statusFilter;
+            if (topicFilter !== "all") params.topicName = topicFilter;
 
             const res = await api.get("/api/admin/questions", { params });
 
@@ -191,7 +206,7 @@ const QuestionList = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearchTerm, subjectFilter, levelFilter, statusFilter]);
+    }, [debouncedSearchTerm, subjectFilter, levelFilter, statusFilter, topicFilter]);
 
     useEffect(() => {
         fetchQuestions();
@@ -334,6 +349,32 @@ const QuestionList = () => {
                             </Select>
                         )}
 
+                        {/* Lớp — teacher chỉ thấy lớp được phân công */}
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
+                            <SelectContent>
+                                {!scope.isTeacher && <SelectItem value="all">Tất cả lớp</SelectItem>}
+                                {(["Lớp 10", "Lớp 11", "Lớp 12"]).filter(g => scope.canUseGrade(g)).map(g => (
+                                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Chủ đề */}
+                        <Select
+                            value={topicFilter}
+                            onValueChange={(val) => { setTopicFilter(val); setCurrentPage(1); }}
+                            disabled={subjectFilter === "all" || statusFilter === "all"}
+                        >
+                            <SelectTrigger className="w-[160px] bg-white"><SelectValue placeholder="Chủ đề" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tất cả chủ đề</SelectItem>
+                                {topics.map(t => (
+                                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
                         {/* Độ khó */}
                         <Select value={levelFilter} onValueChange={setLevelFilter}>
                             <SelectTrigger className="w-[130px]"><SelectValue placeholder="Độ khó" /></SelectTrigger>
@@ -345,16 +386,9 @@ const QuestionList = () => {
                             </SelectContent>
                         </Select>
 
-                        {/* Lớp — teacher chỉ thấy lớp được phân công */}
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                            <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
-                            <SelectContent>
-                                {!scope.isTeacher && <SelectItem value="all">Tất cả lớp</SelectItem>}
-                                {(["Lớp 10", "Lớp 11", "Lớp 12"]).filter(g => scope.canUseGrade(g)).map(g => (
-                                    <SelectItem key={g} value={g}>{g}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+
+
+
                     </div>
                 </CardContent>
             </Card>
