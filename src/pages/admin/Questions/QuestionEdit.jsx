@@ -72,13 +72,19 @@ const QuestionEdit = () => {
         else if (data.level === "Dễ") difficultyValue = "Dễ";
         else if (data.level === "Khó") difficultyValue = "Khó";
 
+        const gradeValue = data.status || "Lớp 12";
+        const topicValue = data.topicName || "";
+
+        // Fetch topics FIRST, then set question data so the Select has items ready
+        await fetchTopics(subjectValue, gradeValue);
+
         setQuestionData({
           content: data.content || "",
           subject: subjectValue,
           difficulty: difficultyValue,
           explanation: data.explanation || "",
-          status: data.status || "Lớp 12",
-          topicName: data.topicName || "",
+          status: gradeValue,
+          topicName: topicValue,
         });
 
         if (data.options && data.options.length > 0) {
@@ -100,7 +106,7 @@ const QuestionEdit = () => {
     if (id) {
       fetchQuestion();
     }
-  }, [id]);
+  }, [id, fetchTopics]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -383,14 +389,22 @@ const QuestionEdit = () => {
                     <SelectValue placeholder="Chọn chủ đề..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {topics.length === 0 ? (
+                    {topics.length === 0 && !questionData.topicName ? (
                       <SelectItem value="none" disabled>Không có chủ đề</SelectItem>
                     ) : (
-                      topics.map((t) => (
-                        <SelectItem key={t.id} value={t.name}>
-                          {t.name}
-                        </SelectItem>
-                      ))
+                      <>
+                        {/* If current topic isn't in the list, show it as an option */}
+                        {questionData.topicName && !topics.some(t => t.name === questionData.topicName) && (
+                          <SelectItem value={questionData.topicName}>
+                            {questionData.topicName}
+                          </SelectItem>
+                        )}
+                        {topics.map((t) => (
+                          <SelectItem key={t.id} value={t.name}>
+                            {t.name}
+                          </SelectItem>
+                        ))}
+                      </>
                     )}
                   </SelectContent>
                 </Select>

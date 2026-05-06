@@ -414,7 +414,8 @@ const QuestionCreate = () => {
 
       const response = await api.post("/api/admin/ai/generate-questions", {
         message: `${userMessage}${fileContext}
-      Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array (KHÔNG thêm bất kỳ text nào ngoài JSON):
+      BẮT BUỘC: Chỉ trả về MỘT mảng JSON duy nhất. KHÔNG trả về markdown, KHÔNG giải thích.
+      Hãy tạo các câu hỏi trắc nghiệm và trả về dưới dạng JSON array:
       [
         {
           "question": "Nội dung câu hỏi",
@@ -429,10 +430,10 @@ const QuestionCreate = () => {
       ]
       
       RÀNG BUỘC TOPIC (BẮT BUỘC):
-      Trường "topic" CHỈ ĐƯỢC PHÉP chọn một trong các giá trị sau đây tùy theo môn học:
-      - Nếu môn Toán: [Mệnh đề và Tập hợp, Bất phương trình và Hệ bất phương trình, Hệ thức lượng trong tam giác, Vectơ và các phép toán, Thống kê cơ bản, Hàm số và Đồ thị, Phương pháp tọa độ trong mặt phẳng, Đại số tổ hợp và Xác suất, Lượng giác, Dãy số và Cấp số, Giới hạn và Liên tục, Hình học không gian, Mũ và Lôgarit, Đạo hàm, Khảo sát hàm số, Nguyên hàm và Tích phân, Tọa độ Oxyz]
-      - Nếu môn Lý: [Động học, Động lực học, Năng lượng và Công, Động lượng, Chuyển động tròn, Dao động cơ, Sóng cơ và Sóng điện từ, Điện trường, Dòng điện, Vật lí nhiệt, Từ trường và Cảm ứng điện từ, Vật lí hạt nhân]
-      - Nếu môn Hóa: [Cấu tạo nguyên tử, Liên kết hóa học, Phản ứng Oxi hóa - Khử, Tốc độ phản ứng, Halogen, Cân bằng hóa học, Nitrogen và Sulfur, Đại cương hữu cơ, Hydrocarbon, Dẫn xuất Halogen - Alcohol - Phenol, Carbonyl và Carboxylic acid, Ester - Lipid - Carbohydrate, Polyme, Amine - Amino acid - Protein, Điện hóa học, Đại cương kim loại]
+      Trường "topic" CHỈ ĐƯỢC PHÉP chọn CHÍNH XÁC một trong các giá trị sau (lấy từ cơ sở dữ liệu):
+      [${topics.map(t => t.name).join(", ")}]
+      Nếu danh sách trống, hãy để trường "topic" là chuỗi rỗng "".
+      QUAN TRỌNG: Phân loại topic dựa trên NỘI DUNG CÂU HỎI chứ không phải tiêu đề chung. Ví dụ: câu hỏi về "hàm số", "đồ thị hàm số", "khảo sát sự biến thiên" → chọn topic liên quan đến hàm số/khảo sát hàm số.
 
       QUY TẮC XÁC ĐỊNH ĐỘ KHÓ:
       1. Mapping level theo đúng bản chất:
@@ -441,7 +442,7 @@ const QuestionCreate = () => {
         - "Khó": Vận dụng cao, kết hợp nhiều mảng kiến thức.
 
       QUY TẮC ĐỊNH DẠNG (BẮT BUỘC):
-      - Tuyệt đối không sử dụng LaTeX ($...$, \frac, \sqrt).
+      - Tuyệt đối không sử dụng LaTeX ($...$, \\frac, \\sqrt).
       - Sử dụng ký tự Unicode trực tiếp: α, β, √, π, ±, x², x³, 1/2, 3/4...
       - Output phải hiển thị được trực tiếp trên giao diện web không cần thư viện render toán.
       `,
@@ -453,30 +454,164 @@ const QuestionCreate = () => {
 
       let parsedQuestions = null;
       try {
-        let cleanedText = aiText;
-        if (typeof aiText === "string") {
-          cleanedText = aiText
-            .replace(/```json/g, "")
-            .replace(/```/g, "")
-            .trim();
+        let cleanedText = typeof aiText === "string" ? aiText : "";
+        cleanedText = cleanedText
+          .replace(/```json/g, "")
+          .replace(/```/g, "")
+          .trim();
+
+        // Strategy 1: Parse trực tiếp nếu AI trả về JSON thuần
+        if (cleanedText) {
+          try {
+            const direct = JSON.parse(cleanedText);
+            if (Array.isArray(direct) && direct.length > 0) {
+              parsedQuestions = direct;
+            }
+          } catch (e) { /* not pure JSON, continue */ }
         }
 
-        const arrayMatch = cleanedText.match(/\[[\s\S]*\]/);
-        if (arrayMatch) {
-          const parsed = JSON.parse(arrayMatch[0]);
-          // Chỉ dùng nếu parse ra mảng có phần tử
-          parsedQuestions =
-            Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
-        } else {
-          const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) parsedQuestions = [JSON.parse(jsonMatch[0])];
+        // Strategy 2: Tìm JSON array of objects bằng pattern "[ {"
+        // Pattern này bỏ qua các dấu ngoặc trong text suy nghĩ như [m, m+2], [-2, 3] v.v.
+        if (!parsedQuestions && cleanedText) {
+          const arrayStartRegex = /\[\s*\{/g;
+          let match;
+          while ((match = arrayStartRegex.exec(cleanedText)) !== null) {
+            const startPos = match.index;
+            // Thử từ ] cuối cùng rồi thu nhỏ dần
+            let endPos = cleanedText.lastIndexOf(']');
+            while (endPos > startPos) {
+              try {
+                const candidate = cleanedText.substring(startPos, endPos + 1);
+                const parsed = JSON.parse(candidate);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  parsedQuestions = parsed;
+                  break;
+                }
+              } catch (e) { /* shrink */ }
+              endPos = cleanedText.lastIndexOf(']', endPos - 1);
+            }
+            if (parsedQuestions) break;
+          }
+        }
+
+        // Strategy 3: Tìm single JSON object có field "question"
+        if (!parsedQuestions && cleanedText) {
+          const objStartRegex = /\{\s*"question"/g;
+          let match;
+          while ((match = objStartRegex.exec(cleanedText)) !== null) {
+            const startPos = match.index;
+            let endPos = cleanedText.lastIndexOf('}');
+            while (endPos > startPos) {
+              try {
+                const candidate = cleanedText.substring(startPos, endPos + 1);
+                const parsed = JSON.parse(candidate);
+                if (parsed && parsed.question) {
+                  parsedQuestions = [parsed];
+                  break;
+                }
+              } catch (e) { /* shrink */ }
+              endPos = cleanedText.lastIndexOf('}', endPos - 1);
+            }
+            if (parsedQuestions) break;
+          }
+        }
+
+        // Strategy 4: Input không phải string
+        if (!parsedQuestions) {
+          if (Array.isArray(aiText) && aiText.length > 0) {
+            parsedQuestions = aiText;
+          } else if (typeof aiText === "object" && aiText !== null) {
+            parsedQuestions = [aiText];
+          }
         }
       } catch (e) {
         console.error("Lỗi parse JSON:", e);
         parsedQuestions = null;
       }
 
-      if (!parsedQuestions) {
+      // Normalize: đảm bảo mỗi câu hỏi có đúng field name mà UI cần
+      if (parsedQuestions && parsedQuestions.length > 0) {
+        parsedQuestions = parsedQuestions.map((q) => {
+          const normalized = { ...q };
+
+          // Normalize question field
+          if (!normalized.question && normalized.content) {
+            normalized.question = normalized.content;
+          }
+          if (!normalized.question && normalized.text) {
+            normalized.question = normalized.text;
+          }
+
+          // Normalize options: chuyển từ array → object {A, B, C, D}
+          if (normalized.options) {
+            if (Array.isArray(normalized.options)) {
+              const optObj = {};
+              const letters = ["A", "B", "C", "D"];
+              normalized.options.forEach((opt, i) => {
+                if (i < letters.length) {
+                  if (typeof opt === "string") {
+                    optObj[letters[i]] = opt;
+                  } else if (opt && typeof opt === "object") {
+                    optObj[letters[i]] = opt.content || opt.text || opt.value || String(opt);
+                    // Nếu option có trường isCorrect, cập nhật answer
+                    if (opt.isCorrect || opt.is_correct || opt.correct) {
+                      normalized.answer = letters[i];
+                    }
+                  }
+                }
+              });
+              normalized.options = optObj;
+            } else if (typeof normalized.options === "object") {
+              // Có thể dùng key dạng số: {1: "...", 2: "..."} hoặc {a: "...", b: "..."}
+              const keys = Object.keys(normalized.options);
+              const letters = ["A", "B", "C", "D"];
+              const hasLetterKeys = keys.some(k => letters.includes(k.toUpperCase()));
+              if (!hasLetterKeys && keys.length > 0) {
+                const optObj = {};
+                keys.forEach((k, i) => {
+                  if (i < letters.length) {
+                    optObj[letters[i]] = normalized.options[k];
+                  }
+                });
+                normalized.options = optObj;
+              } else {
+                // Đảm bảo keys là uppercase
+                const optObj = {};
+                keys.forEach(k => {
+                  optObj[k.toUpperCase()] = normalized.options[k];
+                });
+                normalized.options = optObj;
+              }
+            }
+          }
+
+          // Normalize answer field
+          if (!normalized.answer && normalized.correct_answer) {
+            normalized.answer = normalized.correct_answer;
+          }
+          if (!normalized.answer && normalized.correctAnswer) {
+            normalized.answer = normalized.correctAnswer;
+          }
+          if (normalized.answer) {
+            normalized.answer = String(normalized.answer).toUpperCase().trim();
+          }
+
+          // Normalize level/difficulty
+          if (!normalized.level && normalized.difficulty) {
+            normalized.level = normalized.difficulty;
+          }
+
+          // Normalize class
+          if (!normalized.class && normalized.grade) {
+            normalized.class = String(normalized.grade).replace("Lớp ", "").trim();
+          }
+
+          console.log("Câu hỏi sau normalize:", normalized);
+          return normalized;
+        });
+      }
+
+      if (!parsedQuestions || parsedQuestions.length === 0) {
         setAiError(
           "AI không trả về câu hỏi hợp lệ. Vui lòng thử lại với prompt rõ ràng hơn.",
         );

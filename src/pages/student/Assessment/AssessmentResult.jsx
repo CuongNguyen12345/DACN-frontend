@@ -4,7 +4,7 @@ import api from "@/services/api";
 import {
   Trophy, Target, BookOpen, Clock, ChevronDown, ChevronUp,
   CheckCircle2, XCircle, Sparkles, ArrowRight, RotateCcw, Loader2,
-  AlertTriangle, TrendingUp
+  AlertTriangle, TrendingUp, Map
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -302,6 +302,14 @@ const AssessmentResult = () => {
           >
             <RotateCcw className="h-4 w-4" />
             Kiểm tra lại
+          </Button>
+          <Button
+            onClick={() => navigate("/roadmap")}
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 gap-2 h-12 rounded-xl"
+          >
+            <Map className="h-4 w-4" />
+            Xem lộ trình của tôi
+            <ArrowRight className="h-4 w-4" />
           </Button>
           <Button
             onClick={() => navigate("/practice")}

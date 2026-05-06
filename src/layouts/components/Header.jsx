@@ -13,7 +13,8 @@ import {
   Bell,
   History,
   Trophy,
-} from "lucide-react"; // Đã thêm icon Bell
+  Map,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
   DropdownMenu,
@@ -95,6 +96,7 @@ export const Header = ({ navigate, userAvatar }) => {
   const navItems = [
     { key: "home", label: "Học bài", path: "/course" },
     { key: "practice", label: "Luyện đề", path: "/practice" },
+    { key: "roadmap", label: "Lộ trình", path: "/roadmap" },
     { key: "blog", label: "Blog", path: "/blog" },
     { key: "about", label: "Về chúng tôi", path: "/about" },
   ];

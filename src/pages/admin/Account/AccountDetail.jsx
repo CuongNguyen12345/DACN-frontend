@@ -9,66 +9,73 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import api from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 const AccountDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { basePath } = useAuth();
     const [activeTab, setActiveTab] = useState("overview");
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Xác định vai trò dựa trên ID (Giả lập logic)
-    const isTeacher = id?.toUpperCase().startsWith("GV");
-
     useEffect(() => {
-        setIsLoading(true);
+        const fetchAccountDetail = async () => {
+            setIsLoading(true);
+            try {
+                const res = await api.get(`/api/admin/accounts/${id}`);
+                const data = res.data;
 
-        // Giả lập gọi API có độ trễ (800ms)
-        const timer = setTimeout(() => {
-            setUserData({
-                id: id || (isTeacher ? "GV001" : "HV001"),
-                name: isTeacher ? "Phạm Trần Toán" : "Nguyễn Văn An",
-                email: isTeacher ? "toan.pt@edu.vn" : "nguyenvana@gmail.com",
-                phone: isTeacher ? "0988777666" : "0901234567",
-                address: "Thủ Dầu Một, Bình Dương",
-                role: isTeacher ? "Giáo viên" : "Học viên",
-                unit: isTeacher ? "Tổ Toán học" : "Lớp 12A1",
-                status: "Hoạt động",
-                joinedAt: isTeacher ? "10/08/2024" : "01/09/2025",
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${id || (isTeacher ? "GV001" : "HV001")}`,
-                stats: isTeacher ? {
-                    lectures: 12,
-                    examsCreated: 25,
-                    totalStudents: 150
-                } : {
-                    totalExams: 15,
-                    avgScore: 8.5,
-                    completedCourses: 5
-                },
-                recentActivities: isTeacher ? [
-                    { id: 1, action: "Tạo đề thi mới", target: "Đề thi giữa kỳ Toán 12", date: "09:00 - 12/03/2026", status: "Hoàn thành" },
-                    { id: 2, action: "Chấm điểm", target: "Bài kiểm tra 15p Lớp 12A1", date: "14:30 - 11/03/2026", status: "Thành công" },
-                    { id: 3, action: "Đăng nhập", target: "Trình duyệt Chrome (MacOS)", date: "08:15 - 11/03/2026", status: "Thành công" },
-                ] : [
-                    { id: 1, action: "Nộp bài thi", target: "Toán Học Giữa Kỳ 1", date: "10:30 - 12/03/2026", status: "Hoàn thành" },
-                    { id: 2, action: "Đăng nhập", target: "Trình duyệt Chrome (Windows)", date: "08:15 - 12/03/2026", status: "Thành công" },
-                    { id: 3, action: "Xem kết quả", target: "Bài kiểm tra 15p Vật Lý", date: "14:20 - 10/03/2026", status: "Thành công" },
-                ],
-                relatedRecords: isTeacher ? [
-                    { id: "E201", title: "Đề thi thử THPT Quốc gia môn Toán", subject: "Toán", targetGroup: "Khối 12", date: "10/03/2026", docStatus: "Đã xuất bản" },
-                    { id: "E202", title: "Kiểm tra 15 phút Giải tích chương 2", subject: "Toán", targetGroup: "12A1, 12A2", date: "08/03/2026", docStatus: "Bản nháp" },
-                    { id: "E203", title: "Đề cương ôn tập Học kỳ 1", subject: "Toán", targetGroup: "Khối 12", date: "01/03/2026", docStatus: "Đã xuất bản" },
-                ] : [
-                    { id: "E101", title: "Đề thi thử THPT Quốc gia môn Toán", subject: "Toán", score: 8.5, date: "10/03/2026", timeSpent: "85 phút" },
-                    { id: "E102", title: "Kiểm tra 15 phút Vật Lý chương 2", subject: "Vật Lý", score: 9.0, date: "08/03/2026", timeSpent: "12 phút" },
-                    { id: "E103", title: "Thi giữa kỳ Hóa Học lớp 12", subject: "Hóa Học", score: 7.5, date: "01/03/2026", timeSpent: "40 phút" },
-                ]
-            });
-            setIsLoading(false);
-        }, 800);
+                const isTeacher = data.role?.toUpperCase() === "TEACHER";
 
-        return () => clearTimeout(timer);
-    }, [id, isTeacher]);
+                setUserData({
+                    id: data.id,
+                    name: data.userName || "Chưa cập nhật",
+                    email: data.email || "",
+                    phone: data.phoneNumber || "Chưa cập nhật",
+                    address: "Chưa cập nhật",
+                    role: isTeacher ? "Giáo viên" : "Học viên",
+                    unit: data.unit || "Chưa cập nhật",
+                    status: data.status || "Hoạt động",
+                    joinedAt: data.createdDate
+                        ? new Date(data.createdDate).toLocaleDateString("vi-VN")
+                        : "N/A",
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.id}`,
+                    isTeacher,
+                    stats: isTeacher
+                        ? {
+                            lectures: data.completedLessons || 0,
+                            examsCreated: data.totalExams || 0,
+                            totalStudents: 0,
+                        }
+                        : {
+                            totalExams: data.totalExams || 0,
+                            avgScore: data.avgScore || 0,
+                            completedCourses: data.completedLessons || 0,
+                        },
+                    recentActivities: [],
+                    relatedRecords: data.examRecords?.map((r) => ({
+                        id: r.examId,
+                        title: r.title,
+                        subject: r.subject,
+                        score: r.score,
+                        date: r.submittedAt
+                            ? new Date(r.submittedAt).toLocaleDateString("vi-VN")
+                            : "",
+                        timeSpent: "",
+                    })) || [],
+                });
+            } catch (error) {
+                console.error("Lỗi khi tải chi tiết tài khoản:", error);
+                setUserData(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (id) fetchAccountDetail();
+    }, [id]);
 
     const getRoleBadge = (role) => {
         return role === "Giáo viên"
@@ -76,7 +83,6 @@ const AccountDetail = () => {
             : "bg-blue-50 text-blue-700 border-none shadow-none";
     };
 
-    // MÀN HÌNH LOADING
     if (isLoading || !userData) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-500">
@@ -86,13 +92,15 @@ const AccountDetail = () => {
         );
     }
 
+    const { isTeacher } = userData;
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-10">
             {/* Header & Actions */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate(`${basePath}/accounts`)}
                         className="p-2 hover:bg-gray-100 rounded-full transition-colors outline-none"
                         title="Quay lại"
                     >
@@ -225,7 +233,7 @@ const AccountDetail = () => {
                                             <CheckCircle2 className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-gray-500 font-medium">Khóa học</p>
+                                            <p className="text-sm text-gray-500 font-medium">Bài học hoàn thành</p>
                                             <p className="text-2xl font-bold text-gray-900">{userData.stats.completedCourses}</p>
                                         </div>
                                     </CardContent>
@@ -260,66 +268,80 @@ const AccountDetail = () => {
                         <CardContent className="p-0">
                             {/* Tab: Lịch sử hoạt động */}
                             {activeTab === "overview" && (
-                                <div className="divide-y divide-gray-100">
-                                    {userData.recentActivities.map((activity) => (
-                                        <div key={activity.id} className="p-6 flex items-start sm:items-center gap-4 hover:bg-gray-50/50 transition-colors">
-                                            <div className="p-2 bg-gray-100 rounded-full text-gray-500 mt-1 sm:mt-0">
-                                                <Activity className="h-4 w-4" />
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {activity.action} <span className="font-normal text-gray-500">tại</span> {activity.target}
-                                                </p>
-                                                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                                                    <Clock className="h-3 w-3" /> {activity.date}
-                                                </p>
-                                            </div>
-                                            <Badge variant="outline" className="text-xs bg-white text-gray-600">
-                                                {activity.status}
-                                            </Badge>
+                                <div>
+                                    {userData.recentActivities.length === 0 ? (
+                                        <div className="p-12 text-center text-gray-400">
+                                            <Activity className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                                            <p className="font-medium">Chưa có hoạt động nào</p>
+                                            <p className="text-sm mt-1">Lịch sử hoạt động sẽ được hiển thị tại đây.</p>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="divide-y divide-gray-100">
+                                            {userData.recentActivities.map((activity) => (
+                                                <div key={activity.id} className="p-6 flex items-start sm:items-center gap-4 hover:bg-gray-50/50 transition-colors">
+                                                    <div className="p-2 bg-gray-100 rounded-full text-gray-500 mt-1 sm:mt-0">
+                                                        <Activity className="h-4 w-4" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {activity.action} <span className="font-normal text-gray-500">tại</span> {activity.target}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                                            <Clock className="h-3 w-3" /> {activity.date}
+                                                        </p>
+                                                    </div>
+                                                    <Badge variant="outline" className="text-xs bg-white text-gray-600">
+                                                        {activity.status}
+                                                    </Badge>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* Tab: Dữ liệu liên quan (Kết quả bài thi HOẶC Đề thi đã tạo) */}
+                            {/* Tab: Kết quả bài thi */}
                             {activeTab === "related" && (
-                                <div className="divide-y divide-gray-100">
-                                    {userData.relatedRecords.map((record) => (
-                                        <div key={record.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <h4 className="text-sm font-bold text-gray-900">{record.title}</h4>
-                                                    <Badge variant="secondary" className="text-[10px] bg-slate-100">{record.subject}</Badge>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-xs text-gray-500">
-                                                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {record.date}</span>
-                                                    {isTeacher ? (
-                                                        <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {record.targetGroup}</span>
-                                                    ) : (
-                                                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {record.timeSpent}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                {isTeacher ? (
-                                                    <Badge variant={record.docStatus === "Đã xuất bản" ? "default" : "secondary"} className={record.docStatus === "Đã xuất bản" ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
-                                                        {record.docStatus}
-                                                    </Badge>
-                                                ) : (
-                                                    <div className="text-right">
-                                                        <div className="text-xs text-gray-500 mb-1">Điểm số</div>
-                                                        <div className={cn("text-lg font-bold",
-                                                            record.score >= 8 ? "text-emerald-600" :
-                                                                record.score >= 5 ? "text-blue-600" : "text-red-600"
-                                                        )}>
-                                                            {record.score} / 10
+                                <div>
+                                    {userData.relatedRecords.length === 0 ? (
+                                        <div className="p-12 text-center text-gray-400">
+                                            <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                                            <p className="font-medium">Chưa có dữ liệu</p>
+                                            <p className="text-sm mt-1">
+                                                {isTeacher ? "Đề thi và bài giảng sẽ hiển thị tại đây." : "Kết quả bài thi sẽ hiển thị tại đây."}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-100">
+                                            {userData.relatedRecords.map((record) => (
+                                                <div key={record.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-sm font-bold text-gray-900">{record.title}</h4>
+                                                            <Badge variant="secondary" className="text-[10px] bg-slate-100">{record.subject}</Badge>
+                                                        </div>
+                                                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {record.date}</span>
+                                                            {record.timeSpent && (
+                                                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {record.timeSpent}</span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
+                                                    {!isTeacher && (
+                                                        <div className="text-right">
+                                                            <div className="text-xs text-gray-500 mb-1">Điểm số</div>
+                                                            <div className={cn("text-lg font-bold",
+                                                                record.score >= 8 ? "text-emerald-600" :
+                                                                    record.score >= 5 ? "text-blue-600" : "text-red-600"
+                                                            )}>
+                                                                {record.score} / 10
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             )}
                         </CardContent>

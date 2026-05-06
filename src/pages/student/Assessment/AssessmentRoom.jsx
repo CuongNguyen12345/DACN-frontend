@@ -83,7 +83,7 @@ const AssessmentRoom = () => {
   const answered = Object.keys(answers).length;
   const unanswered = questions.length - answered;
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     clearInterval(timerRef.current);
 
     // Tính kết quả
@@ -125,6 +125,27 @@ const AssessmentRoom = () => {
       userAnswers: answers,
     };
     localStorage.setItem("assessment_result", JSON.stringify(resultData));
+
+    // Sync mastery lên backend (fire-and-forget, không chặn navigate)
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const questionResults = questions.map((q) => {
+          const userAnswer = answers[q.id];
+          const correctOpt = q.options.find((o) => o.correct);
+          return {
+            topicId: q.topicId ?? null,
+            correct: userAnswer && correctOpt && userAnswer === correctOpt.label,
+          };
+        }).filter((r) => r.topicId != null);
+
+        await api.post("/api/roadmap/sync-assessment", { questionResults });
+      }
+    } catch (e) {
+      // Không chặn navigate nếu sync lỗi
+      console.warn("Sync mastery thất bại:", e);
+    }
+
     navigate("/assessment/result");
   };
 

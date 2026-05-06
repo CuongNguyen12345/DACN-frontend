@@ -24,6 +24,7 @@ import NotificationsList from "@/pages/student/Notification/NotificationsList";
 import AssessmentSetup from "@/pages/student/Assessment/AssessmentSetup";
 import AssessmentRoom from "@/pages/student/Assessment/AssessmentRoom";
 import AssessmentResult from "@/pages/student/Assessment/AssessmentResult";
+import Roadmap from "@/pages/student/Assessment/Roadmap";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -98,6 +99,7 @@ function AppRoutes() {
         <Route path="assessment" element={<AssessmentSetup />} />
         <Route path="assessment/room" element={<AssessmentRoom />} />
         <Route path="assessment/result" element={<AssessmentResult />} />
+        <Route path="roadmap" element={<Roadmap />} />
       </Route>
 
       {/* Dành cho Giáo viên */}
