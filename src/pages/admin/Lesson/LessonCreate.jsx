@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
 
 const LessonCreate = () => {
     const navigate = useNavigate();
@@ -93,15 +94,32 @@ const LessonCreate = () => {
     };
 
     // Hàm xử lý submit form
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const finalData = {
-            ...formData,
-            exercises
-        };
-        console.log("Dữ liệu bài học mới:", finalData);
-        alert("Thêm bài học thành công!");
-        navigate(`/${basePath}/lessons`);
+        
+        try {
+            // Chuẩn bị dữ liệu gửi lên API
+            const requestData = {
+                chapterId: 1, // HARDCODE tạm thời vì chưa có UI chọn Chapter
+                lessonName: formData.title,
+                content: formData.description,
+                videoUrl: formData.videoUrl || null,
+                pdfUrl: null, // Giao diện chưa hỗ trợ PDF
+                duration: formData.duration,
+                status: formData.status,
+                type: formData.type
+            };
+
+            console.log("Đang gửi dữ liệu bài học mới:", requestData);
+            
+            await api.post("/api/admin/lessons", requestData);
+            
+            alert("Thêm bài học thành công!");
+            navigate(`/${basePath}/lessons`);
+        } catch (error) {
+            console.error("Lỗi khi thêm bài học:", error);
+            alert("Thêm bài học thất bại! Vui lòng thử lại.");
+        }
     };
 
     // Class CSS dùng chung cho các input text/textarea

@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
 
 // Import Select từ shadcn
 import {
@@ -43,20 +44,37 @@ const LessonManagement = () => {
     const itemsPerPage = 5;
 
     // State Dữ liệu Bài học
-    const [lessons, setLessons] = useState([
-        { id: "L01", title: "Khái niệm đạo hàm", subject: "Toán 12", type: "Video", duration: "15:30", status: "Đã xuất bản" },
-        { id: "L02", title: "Cực trị của hàm số", subject: "Toán 12", type: "Lý thuyết", duration: "10 phút đọc", status: "Bản nháp" },
-        { id: "L03", title: "Dao động điều hòa", subject: "Vật lý 12", type: "Video", duration: "20:00", status: "Đã xuất bản" },
-        { id: "L04", title: "Cấu trúc DNA", subject: "Sinh học 12", type: "Bài tập", duration: "20 câu hỏi", status: "Đã xuất bản" },
-        { id: "L05", title: "Phản ứng Oxi hóa khử", subject: "Hóa học 12", type: "Video", duration: "18:45", status: "Đang ẩn" },
-        { id: "L06", title: "Tích phân cơ bản", subject: "Toán 12", type: "Video", duration: "25:00", status: "Đã xuất bản" },
-        { id: "L07", title: "Sóng cơ học", subject: "Vật lý 12", type: "Lý thuyết", duration: "15 phút đọc", status: "Bản nháp" },
-        { id: "L08", title: "Quy luật di truyền Menden", subject: "Sinh học 12", type: "Bài tập", duration: "30 câu hỏi", status: "Đã xuất bản" },
-        { id: "L09", title: "Kim loại kiềm", subject: "Hóa học 12", type: "Lý thuyết", duration: "12 phút đọc", status: "Đã xuất bản" },
-        { id: "L10", title: "Hình học không gian", subject: "Toán 11", type: "Video", duration: "40:00", status: "Đang ẩn" },
-        { id: "L11", title: "Giao thoa ánh sáng", subject: "Vật lý 12", type: "Video", duration: "22:15", status: "Đã xuất bản" },
-        { id: "L12", title: "Đột biến gen", subject: "Sinh học 12", type: "Lý thuyết", duration: "20 phút đọc", status: "Bản nháp" },
-    ]);
+    const [lessons, setLessons] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Lấy dữ liệu từ Backend
+    useEffect(() => {
+        const fetchLessons = async () => {
+            setIsLoading(true);
+            try {
+                const response = await api.get("/api/admin/lessons");
+                
+                // Map dữ liệu từ backend
+                const formattedLessons = response.data.map(lesson => ({
+                    id: lesson.id,
+                    title: lesson.lessonName,
+                    subject: lesson.subject || "Chưa phân loại",
+                    type: lesson.type || (lesson.videoUrl ? "Video" : "Lý thuyết"),
+                    duration: lesson.duration || "--",
+                    status: lesson.status || "Đã xuất bản",
+                    date: "Vừa cập nhật"
+                }));
+                
+                setLessons(formattedLessons);
+            } catch (error) {
+                console.error("Lỗi khi tải danh sách bài học:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchLessons();
+    }, []);
 
     // Tạo danh sách môn học duy nhất cho Dropdown lọc
     const uniqueSubjects = ["all", ...new Set(lessons.map(lesson => lesson.subject))];
@@ -81,19 +99,26 @@ const LessonManagement = () => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentLessons = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
 
-    // XỬ LÝ CHỨC NĂNG XÓA (Giống ExamList)
-    const handleDelete = (id, title) => {
+    // XỬ LÝ CHỨC NĂNG XÓA
+    const handleDelete = async (id, title) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa bài học "${title}" không? Thao tác này không thể hoàn tác.`)) {
-            const updatedLessons = lessons.filter(lesson => lesson.id !== id);
-            setLessons(updatedLessons);
-            
-            // Xử lý lùi trang nếu trang hiện tại bị trống sau khi xóa phần tử cuối cùng của trang
-            const newTotalPages = Math.ceil(updatedLessons.length / itemsPerPage);
-            if (currentPage > newTotalPages && newTotalPages > 0) {
-                setCurrentPage(newTotalPages);
+            try {
+                await api.delete(`/api/admin/lessons/${id}`);
+                
+                const updatedLessons = lessons.filter(lesson => lesson.id !== id);
+                setLessons(updatedLessons);
+                
+                // Xử lý lùi trang nếu trang hiện tại bị trống sau khi xóa
+                const newTotalPages = Math.ceil(updatedLessons.length / itemsPerPage);
+                if (currentPage > newTotalPages && newTotalPages > 0) {
+                    setCurrentPage(newTotalPages);
+                }
+                
+                alert("Xóa bài học thành công!");
+            } catch (error) {
+                console.error("Lỗi khi xóa bài học:", error);
+                alert("Xóa bài học thất bại!");
             }
-            
-            console.log(`Đã xóa bài học: ${id}`);
         }
     };
 
