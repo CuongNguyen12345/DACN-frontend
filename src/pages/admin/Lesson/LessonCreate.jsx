@@ -34,20 +34,34 @@ const LessonCreate = () => {
         title: "",
         classLevel: "Lớp 10",
         subject: "Toán học",
-        status: "Bản nháp", // Đã xuất bản | Bản nháp | Đang ẩn
         description: "",
         videoUrl: "",
-        chapter: "",
+        chapterId: "",
     });
 
     // State cho việc quản lý Chương
-    const [chapters, setChapters] = useState([
-        "Chương 1: Mệnh đề",
-        "Chương 2: Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
-        "Chương 3: Hệ thức lượng trong tam giác"
-    ]);
+    const [chapters, setChapters] = useState([]);
     const [isAddingChapter, setIsAddingChapter] = useState(false);
     const [newChapterName, setNewChapterName] = useState("");
+
+    // Fetch chapters khi môn học hoặc lớp thay đổi
+    React.useEffect(() => {
+        const fetchChapters = async () => {
+            try {
+                const response = await api.get(`/api/admin/chapters?subject=${formData.subject}&grade=${formData.classLevel}`);
+                setChapters(response.data);
+                if (response.data.length > 0) {
+                    setFormData(prev => ({ ...prev, chapterId: response.data[0].id.toString() }));
+                } else {
+                    setFormData(prev => ({ ...prev, chapterId: "" }));
+                }
+            } catch (error) {
+                console.error("Lỗi khi tải chương:", error);
+                setChapters([]);
+            }
+        };
+        fetchChapters();
+    }, [formData.subject, formData.classLevel]);
 
     // State cho bài tập luyện tập
     const [exercises, setExercises] = useState([]);
@@ -56,13 +70,27 @@ const LessonCreate = () => {
     const [newExercise, setNewExercise] = useState(defaultExercise);
 
     // Xử lý thêm chương mới
-    const handleAddChapter = () => {
-        if (newChapterName.trim()) {
-            setChapters([...chapters, newChapterName.trim()]);
-            handleSelectChange("chapter", newChapterName.trim());
+    const handleAddChapter = async () => {
+        if (!newChapterName.trim()) return;
+        
+        try {
+            const response = await api.post("/api/admin/chapters", {
+                subjectName: formData.subject,
+                grade: formData.classLevel,
+                chapterName: newChapterName.trim(),
+                orderNumber: chapters.length + 1
+            });
+            
+            const newChapter = response.data;
+            setChapters([...chapters, newChapter]);
+            setFormData(prev => ({ ...prev, chapterId: newChapter.id.toString() }));
+            setIsAddingChapter(false);
+            setNewChapterName("");
+            alert("Thêm chương mới thành công!");
+        } catch (error) {
+            console.error("Lỗi khi thêm chương:", error);
+            alert("Không thể thêm chương mới. Vui lòng thử lại.");
         }
-        setIsAddingChapter(false);
-        setNewChapterName("");
     };
 
     // Xử lý thêm bài tập mới
@@ -97,17 +125,19 @@ const LessonCreate = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
+        if (!formData.chapterId) {
+            alert("Vui lòng chọn hoặc thêm chương trước khi lưu!");
+            return;
+        }
+
         try {
             // Chuẩn bị dữ liệu gửi lên API
             const requestData = {
-                chapterId: 1, // HARDCODE tạm thời vì chưa có UI chọn Chapter
+                chapterId: parseInt(formData.chapterId),
                 lessonName: formData.title,
                 content: formData.description,
                 videoUrl: formData.videoUrl || null,
-                pdfUrl: null, // Giao diện chưa hỗ trợ PDF
-                duration: formData.duration,
-                status: formData.status,
-                type: formData.type
+                pdfUrl: null
             };
 
             console.log("Đang gửi dữ liệu bài học mới:", requestData);
@@ -391,15 +421,15 @@ const LessonCreate = () => {
                                 {!isAddingChapter ? (
                                     <div className="flex gap-2">
                                         <Select
-                                            value={formData.chapter}
-                                            onValueChange={(value) => handleSelectChange("chapter", value)}
+                                            value={formData.chapterId}
+                                            onValueChange={(value) => handleSelectChange("chapterId", value)}
                                         >
                                             <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
                                                 <SelectValue placeholder="Chọn chương" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {chapters.map(chapter => (
-                                                    <SelectItem key={chapter} value={chapter}>{chapter}</SelectItem>
+                                                    <SelectItem key={chapter.id} value={chapter.id.toString()}>{chapter.chapterName}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

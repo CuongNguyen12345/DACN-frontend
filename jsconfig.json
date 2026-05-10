@@ -1,11 +1,11 @@
 {
-    "compilerOptions": {
-        "moduleResolution": "bundler",
-        "paths": {
-            "@/*": [
-                "./src/*"
-            ]
-        },
-        "ignoreDeprecations": "6.0"
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
     }
+  }
 }

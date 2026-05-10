@@ -34,11 +34,13 @@ import {
 const LessonManagement = () => {
     const navigate = useNavigate();
     const { basePath } = useAuth();
-    
+
     // States cho Tìm kiếm và Lọc
     const [searchTerm, setSearchTerm] = useState("");
     const [filterSubject, setFilterSubject] = useState("all");
-    
+    const [filterGrade, setFilterGrade] = useState("all");
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
     // State cho phân trang
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -47,24 +49,36 @@ const LessonManagement = () => {
     const [lessons, setLessons] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Debounce searchTerm
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
     // Lấy dữ liệu từ Backend
     useEffect(() => {
         const fetchLessons = async () => {
             setIsLoading(true);
             try {
-                const response = await api.get("/api/admin/lessons");
-                
+                const params = new URLSearchParams();
+                if (debouncedSearchTerm) params.append("keyword", debouncedSearchTerm);
+                if (filterSubject !== "all") params.append("subject", filterSubject);
+                if (filterGrade !== "all") params.append("grade", filterGrade);
+
+                const response = await api.get(`/api/admin/lessons?${params.toString()}`);
+
                 // Map dữ liệu từ backend
                 const formattedLessons = response.data.map(lesson => ({
                     id: lesson.id,
                     title: lesson.lessonName,
                     subject: lesson.subject || "Chưa phân loại",
-                    type: lesson.type || (lesson.videoUrl ? "Video" : "Lý thuyết"),
-                    duration: lesson.duration || "--",
-                    status: lesson.status || "Đã xuất bản",
+                    grade: lesson.grade || "Chưa rõ",
+                    chapter: lesson.chapterName || "--",
                     date: "Vừa cập nhật"
                 }));
-                
+
                 setLessons(formattedLessons);
             } catch (error) {
                 console.error("Lỗi khi tải danh sách bài học:", error);
@@ -74,46 +88,34 @@ const LessonManagement = () => {
         };
 
         fetchLessons();
-    }, []);
-
-    // Tạo danh sách môn học duy nhất cho Dropdown lọc
-    const uniqueSubjects = ["all", ...new Set(lessons.map(lesson => lesson.subject))];
-
-    // Logic Lọc & Tìm kiếm kết hợp
-    const filteredLessons = lessons.filter(lesson => {
-        const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              lesson.subject.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesSubject = filterSubject === "all" || lesson.subject === filterSubject;
-        
-        return matchesSearch && matchesSubject;
-    });
+    }, [debouncedSearchTerm, filterSubject, filterGrade]);
 
     // Reset về trang 1 mỗi khi đổi điều kiện tìm kiếm hoặc lọc
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterSubject]);
+    }, [searchTerm, filterSubject, filterGrade]);
 
     // Phân trang
-    const totalPages = Math.ceil(filteredLessons.length / itemsPerPage);
+    const totalPages = Math.ceil(lessons.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentLessons = filteredLessons.slice(indexOfFirstItem, indexOfLastItem);
+    const currentLessons = lessons.slice(indexOfFirstItem, indexOfLastItem);
 
     // XỬ LÝ CHỨC NĂNG XÓA
     const handleDelete = async (id, title) => {
         if (window.confirm(`Bạn có chắc chắn muốn xóa bài học "${title}" không? Thao tác này không thể hoàn tác.`)) {
             try {
                 await api.delete(`/api/admin/lessons/${id}`);
-                
+
                 const updatedLessons = lessons.filter(lesson => lesson.id !== id);
                 setLessons(updatedLessons);
-                
+
                 // Xử lý lùi trang nếu trang hiện tại bị trống sau khi xóa
                 const newTotalPages = Math.ceil(updatedLessons.length / itemsPerPage);
                 if (currentPage > newTotalPages && newTotalPages > 0) {
                     setCurrentPage(newTotalPages);
                 }
-                
+
                 alert("Xóa bài học thành công!");
             } catch (error) {
                 console.error("Lỗi khi xóa bài học:", error);
@@ -139,7 +141,7 @@ const LessonManagement = () => {
                     <h2 className="text-2xl font-bold text-gray-900">Quản lý Bài học</h2>
                     <p className="text-gray-500 text-sm mt-1">Quản lý, thêm mới và chỉnh sửa nội dung bài giảng.</p>
                 </div>
-                <Button 
+                <Button
                     onClick={() => navigate(`/${basePath}/lessons/create`)}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
@@ -160,7 +162,24 @@ const LessonManagement = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    
+
+                    <div className="w-full sm:w-40">
+                        <Select value={filterGrade} onValueChange={setFilterGrade}>
+                            <SelectTrigger className="w-full bg-white">
+                                <div className="flex items-center">
+                                    <BookOpen className="w-4 h-4 mr-2 text-gray-500" />
+                                    <SelectValue placeholder="Chọn lớp" />
+                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tất cả lớp</SelectItem>
+                                <SelectItem value="10">Lớp 10</SelectItem>
+                                <SelectItem value="11">Lớp 11</SelectItem>
+                                <SelectItem value="12">Lớp 12</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="w-full sm:w-48">
                         <Select value={filterSubject} onValueChange={setFilterSubject}>
                             <SelectTrigger className="w-full bg-white">
@@ -171,11 +190,11 @@ const LessonManagement = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Tất cả môn học</SelectItem>
-                                {uniqueSubjects.filter(sub => sub !== "all").map(subject => (
-                                    <SelectItem key={subject} value={subject}>
-                                        {subject}
-                                    </SelectItem>
-                                ))}
+                                <SelectItem value="Toán học">Toán học</SelectItem>
+                                <SelectItem value="Vật lý">Vật lý</SelectItem>
+                                <SelectItem value="Hóa học">Hóa học</SelectItem>
+                                <SelectItem value="Sinh học">Sinh học</SelectItem>
+                                <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -191,8 +210,7 @@ const LessonManagement = () => {
                                 <th className="px-6 py-4 font-medium">Mã bài</th>
                                 <th className="px-6 py-4 font-medium">Tên bài học</th>
                                 <th className="px-6 py-4 font-medium">Môn học</th>
-                                <th className="px-6 py-4 font-medium">Định dạng</th>
-                                <th className="px-6 py-4 font-medium text-center">Trạng thái</th>
+                                <th className="px-6 py-4 font-medium">Chương</th>
                                 <th className="px-6 py-4 font-medium text-right">Thao tác</th>
                             </tr>
                         </thead>
@@ -203,31 +221,21 @@ const LessonManagement = () => {
                                         <td className="px-6 py-4 text-gray-900 font-medium">{lesson.id}</td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900 line-clamp-1">{lesson.title}</div>
-                                            <div className="text-xs text-gray-500">{lesson.duration}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
-                                            <Badge variant="outline" className="bg-gray-50">
-                                                {lesson.subject}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center text-gray-700 font-medium text-xs">
-                                                {renderTypeIcon(lesson.type)}
-                                                {lesson.type}
+                                            <div className="flex flex-col gap-1">
+                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 w-fit">
+                                                    {lesson.subject}
+                                                </Badge>
+                                                <span className="text-[10px] font-medium text-gray-400 ml-1">
+                                                    {lesson.grade}
+                                                </span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <Badge 
-                                                variant="secondary" 
-                                                className={cn(
-                                                    "font-normal",
-                                                    lesson.status === "Đã xuất bản" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : 
-                                                    lesson.status === "Bản nháp" ? "bg-slate-100 text-slate-700 hover:bg-slate-200" : 
-                                                    "bg-gray-100 text-gray-700"
-                                                )}
-                                            >
-                                                {lesson.status}
-                                            </Badge>
+                                        <td className="px-6 py-4">
+                                            <div className="text-gray-700 font-medium line-clamp-1 max-w-[200px]">
+                                                {lesson.chapter}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -237,10 +245,10 @@ const LessonManagement = () => {
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
-                                                <Button 
+                                                <Button
                                                     onClick={() => handleDelete(lesson.id, lesson.title)}
-                                                    variant="ghost" 
-                                                    size="icon" 
+                                                    variant="ghost"
+                                                    size="icon"
                                                     className="h-8 w-8 text-red-600 hover:bg-red-50"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -251,7 +259,7 @@ const LessonManagement = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
                                         Không tìm thấy bài học nào phù hợp.
                                     </td>
                                 </tr>
@@ -267,20 +275,20 @@ const LessonManagement = () => {
                             Trang {currentPage} trên {totalPages}
                         </span>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 className="h-8 px-2"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
-                            
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 className="h-8 px-2"
                             >
