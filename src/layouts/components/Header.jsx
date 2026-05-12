@@ -38,9 +38,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useNotifications } from "@/context/NotificationContext";
 
 export const Header = ({ navigate, userAvatar }) => {
   const { isLoggedIn, logout, role } = useAuth();
+  const {
+    notifications: appNotifications,
+    unreadCount: appUnreadCount,
+    markAsRead: markNotificationAsRead,
+    markAllAsRead,
+    formatRelativeTime,
+  } = useNotifications();
 
   // Lấy thông tin URL hiện tại
   const location = useLocation();
@@ -64,34 +72,6 @@ export const Header = ({ navigate, userAvatar }) => {
     const { name, value } = e.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
   };
-
-  // Mock Data cho Thông báo (Sau này bạn thay bằng API)
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Hệ thống",
-      message: "Chào mừng bạn đến với Edu4All!",
-      time: "Vừa xong",
-      unread: true,
-    },
-    {
-      id: 2,
-      title: "Bài tập mới",
-      message: "Giáo viên vừa giao bài tập môn Toán.",
-      time: "2 giờ trước",
-      unread: true,
-    },
-    {
-      id: 3,
-      title: "Nhắc nhở",
-      message: "Đề thi thử THPT Quốc gia môn Lý sắp đóng.",
-      time: "1 ngày trước",
-      unread: false,
-    },
-  ]);
-
-  // Đếm số lượng thông báo chưa đọc
-  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const navItems = [
     { key: "home", label: "Học bài", path: "/course" },
@@ -133,13 +113,6 @@ export const Header = ({ navigate, userAvatar }) => {
     } finally {
       setPasswordLoading(false);
     }
-  };
-
-  // Hàm đánh dấu đã đọc thông báo
-  const markAsRead = (id) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-    );
   };
 
   return (
@@ -195,7 +168,7 @@ export const Header = ({ navigate, userAvatar }) => {
                   <div className="relative p-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
                     <Bell className="h-6 w-6 text-gray-600" />
                     {/* Chấm đỏ báo có thông báo mới */}
-                    {unreadCount > 0 && (
+                    {appUnreadCount > 0 && (
                       <span className="absolute top-1 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                     )}
                   </div>
@@ -204,26 +177,29 @@ export const Header = ({ navigate, userAvatar }) => {
                 <DropdownMenuContent align="end" className="w-80 mt-2 p-0">
                   <div className="p-3 border-b flex justify-between items-center bg-gray-50 rounded-t-md">
                     <span className="font-bold text-gray-800">Thông báo</span>
-                    {unreadCount > 0 && (
-                      <span className="text-xs text-blue-600 cursor-pointer hover:underline" onClick={() => setNotifications(notifications.map(n => ({ ...n, unread: false })))}>
+                    {appUnreadCount > 0 && (
+                      <span className="text-xs text-blue-600 cursor-pointer hover:underline" onClick={markAllAsRead}>
                         Đánh dấu đã đọc
                       </span>
                     )}
                   </div>
                   <div className="max-h-[350px] overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((notif) => (
+                    {appNotifications.length > 0 ? (
+                      appNotifications.map((notif) => (
                         <div
                           key={notif.id}
-                          className={`p-3 border-b last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${notif.unread ? "bg-blue-50/50" : ""}`}
-                          onClick={() => markAsRead(notif.id)}
+                          className={`p-3 border-b last:border-0 cursor-pointer hover:bg-gray-50 transition-colors ${!notif.isRead ? "bg-blue-50/50" : ""}`}
+                          onClick={() => {
+                            markNotificationAsRead(notif.id);
+                            if (notif.actionUrl) navigate(notif.actionUrl);
+                          }}
                         >
                           <div className="flex justify-between items-start mb-1">
-                            <span className={`text-sm font-semibold ${notif.unread ? "text-blue-700" : "text-gray-800"}`}>
+                            <span className={`text-sm font-semibold ${!notif.isRead ? "text-blue-700" : "text-gray-800"}`}>
                               {notif.title}
                             </span>
                             <span className="text-xs text-gray-400 whitespace-nowrap ml-2">
-                              {notif.time}
+                              {formatRelativeTime(notif.createdAt)}
                             </span>
                           </div>
                           <p className="text-sm text-gray-600 line-clamp-2">

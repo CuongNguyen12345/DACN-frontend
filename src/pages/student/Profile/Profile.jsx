@@ -28,9 +28,8 @@ import {
 } from "@/components/ui/dialog";
 
 // Các component con của bạn
-import RadarChart from "./components/RadarChart";
 import Achievements from "./components/Achievements";
-import Goals from "./components/Goals";
+import StudyCalendar from "./components/StudyCalendar";
 
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
@@ -77,15 +76,6 @@ const Profile = () => {
         }
     };
 
-    const radarData = [
-        { subject: "Toán", value: 85 },
-        { subject: "Lý", value: 70 },
-        { subject: "Hóa", value: 60 },
-        { subject: "Sinh", value: 50 },
-        { subject: "Anh", value: 75 },
-        { subject: "Văn", value: 65 }
-    ];
-
     return (
         <div className="min-h-screen bg-gray-50/50 py-8 px-4 md:px-8">
             <div className="max-w-[1200px] mx-auto space-y-6">
@@ -109,7 +99,7 @@ const Profile = () => {
                                 </p>
                                 <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-3">
                                      <Badge variant="secondary" className="px-3 py-1 bg-orange-100 text-orange-700 hover:bg-orange-100 gap-1.5">
-                                         <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.streak || 0} ngày
+                                         <Flame className="h-3.5 w-3.5 fill-current" /> Streak: {user.currentStreak ?? user.streak ?? user.streakhientai ?? 0} ngày
                                      </Badge>
                                      <Badge variant="secondary" className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1.5">
                                          <Clock className="h-3.5 w-3.5" /> Đã học: {user.totalTime || "0h"}
@@ -133,21 +123,9 @@ const Profile = () => {
 
                 {/* Overview Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                    {/* Left Column: Radar & Goals & Achievements */}
+                    {/* Left Column: Study Calendar & Achievements */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Card className="shadow-sm">
-                                <CardHeader>
-                                    <CardTitle>Năng lực học tập</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex justify-center pb-2">
-                                    <RadarChart data={radarData} size={280} />
-                                </CardContent>
-                            </Card>
-                            <Card className="shadow-sm">
-                                <Goals />
-                            </Card>
-                        </div>
+                        <StudyCalendar user={user} />
 
                         <Achievements />
                     </div>

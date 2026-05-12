@@ -3,24 +3,24 @@ import { useAuth } from "@/context/AuthContext";
 
 const SUBJECT_DB_TO_FE = {
   "Toán": "Toán",
-  "Lý":   "Vật Lý",
-  "Hóa":  "Hóa Học",
-  "Anh":  "Tiếng Anh",
+  "Lý": "Vật Lý",
+  "Hóa": "Hóa Học",
+  "Anh": "Tiếng Anh",
 };
 
-/**
- * Returns teacher's allowed subject + grades derived from profile.
- * For admin, returns null (no restriction).
- *
- * @returns {{
- *   isTeacher: boolean,
- *   allowedSubject: string | null,       // FE format, e.g. "Vật Lý"
- *   allowedSubjectDb: string | null,     // DB format, e.g. "Lý"
- *   allowedGrades: string[],             // ["Lớp 10", "Lớp 11"]
- *   canUseSubject: (s: string) => boolean,
- *   canUseGrade: (g: string) => boolean,
- * }}
- */
+const normalizeGradeLabel = (grade) => {
+  const value = String(grade || "").trim();
+  if (!value) return "";
+
+  const gradeNumber = value
+    .replace(/^lớp\s*/i, "")
+    .replace(/^lop\s*/i, "")
+    .replace(/^class\s*/i, "")
+    .trim();
+
+  return `Lớp ${gradeNumber}`;
+};
+
 export function useTeacherScope() {
   const { user, role } = useAuth();
 
@@ -38,17 +38,13 @@ export function useTeacherScope() {
       };
     }
 
-    // schoolName stores DB subject ("Lý", "Hóa", "Toán", "Anh")
     const dbSubject = user.schoolName ?? null;
     const feSubject = dbSubject ? (SUBJECT_DB_TO_FE[dbSubject] ?? dbSubject) : null;
-
-    // grade stores comma-separated grade numbers, e.g. "10,11"
     const allowedGrades = user.grade
       ? user.grade
           .split(",")
-          .map((g) => g.trim())
+          .map(normalizeGradeLabel)
           .filter(Boolean)
-          .map((g) => (g.startsWith("Lớp ") ? g : `Lớp ${g}`))
       : [];
 
     return {
@@ -56,8 +52,8 @@ export function useTeacherScope() {
       allowedSubject: feSubject,
       allowedSubjectDb: dbSubject,
       allowedGrades,
-      canUseSubject: (s) => !feSubject || s === feSubject,
-      canUseGrade: (g) => allowedGrades.length === 0 || allowedGrades.includes(g),
+      canUseSubject: (subject) => !dbSubject || subject === dbSubject || subject === feSubject,
+      canUseGrade: (grade) => allowedGrades.length === 0 || allowedGrades.includes(normalizeGradeLabel(grade)),
     };
   }, [user, role]);
 }

@@ -25,12 +25,14 @@ const Login = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setLoginError("");
 
     if (!email || !password) {
-      alert("Vui lòng nhập đầy đủ email và mật khẩu");
+      setLoginError("Email hoặc mật khẩu bị sai");
       return;
     }
 
@@ -46,14 +48,7 @@ const Login = () => {
     } catch (error) {
       console.error("Lỗi đăng nhập thường:", error);
 
-      if (error.response) {
-        alert(
-          error.response.data?.message ||
-          "Đăng nhập thất bại. Kiểm tra lại thông tin.",
-        );
-      } else {
-        alert("Có lỗi xảy ra khi kết nối máy chủ");
-      }
+      setLoginError("Email hoặc mật khẩu bị sai");
     }
   };
 
@@ -163,7 +158,10 @@ const Login = () => {
                   type="email"
                   placeholder="vidu@gmail.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setLoginError("");
+                  }}
                   className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                 />
               </div>
@@ -180,11 +178,20 @@ const Login = () => {
                   type="password"
                   placeholder="Nhập mật khẩu"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setLoginError("");
+                  }}
                   className="h-12 bg-white border-gray-200 focus:ring-2 focus:ring-[#0F4C81]"
                 />
               </div>
             </div>
+
+            {loginError && (
+              <p className="text-sm font-medium text-red-600" role="alert">
+                {loginError}
+              </p>
+            )}
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">

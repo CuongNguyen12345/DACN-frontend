@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Bell, Check, CheckCircle2, Clock, 
   Info, AlertTriangle, MessageCircle, FileText, GraduationCap 
@@ -7,75 +8,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-// Mock Data
-const initialNotifications = [
-  {
-    id: 1,
-    type: "exam",
-    title: "Kết quả bài thi",
-    message: "Tuyệt vời! Bạn đã đạt 9.5 điểm trong bài thi Toán học Giữa kỳ.",
-    time: "10 phút trước",
-    isRead: false,
-  },
-  {
-    id: 2,
-    type: "course",
-    title: "Bài giảng mới",
-    message: "Giáo viên vừa tải lên tài liệu mới cho khóa học Vật lý 12.",
-    time: "2 giờ trước",
-    isRead: false,
-  },
-  {
-    id: 3,
-    type: "system",
-    title: "Bảo trì hệ thống",
-    message: "Hệ thống sẽ tiến hành bảo trì định kỳ từ 2h00 - 4h00 sáng mai.",
-    time: "5 giờ trước",
-    isRead: true,
-  },
-  {
-    id: 4,
-    type: "alert",
-    title: "Sắp hết hạn nộp bài",
-    message: "Chú ý: Bài tập Hóa học của bạn sẽ hết hạn trong 12 giờ tới.",
-    time: "1 ngày trước",
-    isRead: true,
-  },
-  {
-    id: 5,
-    type: "qna",
-    title: "Có phản hồi mới",
-    message: "Giáo viên đã trả lời câu hỏi của bạn trong mục Hỏi đáp.",
-    time: "2 ngày trước",
-    isRead: true,
-  },
-];
+import { useNotifications } from "@/context/NotificationContext";
 
 const NotificationsList = () => {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const navigate = useNavigate();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    formatRelativeTime,
+  } = useNotifications();
   const [filter, setFilter] = useState("all"); // 'all' hoặc 'unread'
-
-  // Đếm số thông báo chưa đọc
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // Lọc danh sách thông báo để hiển thị
   const displayedNotifications = notifications.filter((n) => {
     if (filter === "unread") return !n.isRead;
     return true;
   });
-
-  // Xử lý đánh dấu 1 thông báo là đã đọc
-  const markAsRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-  };
-
-  // Xử lý đánh dấu tất cả là đã đọc
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-  };
 
   // Chọn icon và màu sắc dựa trên loại thông báo
   const getNotificationStyle = (type) => {
@@ -88,6 +38,8 @@ const NotificationsList = () => {
         return { icon: AlertTriangle, bg: "bg-red-100", color: "text-red-600" };
       case "qna":
         return { icon: MessageCircle, bg: "bg-purple-100", color: "text-purple-600" };
+      case "streak":
+        return { icon: AlertTriangle, bg: "bg-amber-100", color: "text-amber-600" };
       case "system":
       default:
         return { icon: Info, bg: "bg-slate-100", color: "text-slate-600" };
@@ -179,7 +131,10 @@ const NotificationsList = () => {
                       "p-4 sm:p-6 transition-all hover:bg-slate-50 flex gap-4 cursor-pointer",
                       !notification.isRead ? "bg-blue-50/30" : "opacity-75"
                     )}
-                    onClick={() => !notification.isRead && markAsRead(notification.id)}
+                    onClick={() => {
+                      if (!notification.isRead) markAsRead(notification.id);
+                      if (notification.actionUrl) navigate(notification.actionUrl);
+                    }}
                   >
                     {/* Icon */}
                     <div className="shrink-0 pt-1">
@@ -206,7 +161,7 @@ const NotificationsList = () => {
                       </p>
                       <div className="flex items-center gap-1.5 text-xs text-slate-400 pt-1">
                         <Clock className="h-3.5 w-3.5" />
-                        <span>{notification.time}</span>
+                        <span>{formatRelativeTime(notification.createdAt)}</span>
                       </div>
                     </div>
                   </div>

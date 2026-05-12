@@ -9,11 +9,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
 import api from "@/services/api";
 import { wsService } from "@/services/websocket";
 
+const toGradeLabel = (grade) => {
+    if (!grade) return "";
+    const trimmedGrade = String(grade).trim();
+    const gradeNumber = trimmedGrade
+        .replace(/^lớp\s*/i, "")
+        .replace(/^lop\s*/i, "")
+        .replace(/^class\s*/i, "")
+        .trim();
+    return `Lớp ${gradeNumber}`;
+};
+
 const QnAManager = () => {
     const { role, user } = useAuth();
+    const teacherScope = useTeacherScope();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [subjectFilter, setSubjectFilter] = useState("all");
@@ -24,6 +37,25 @@ const QnAManager = () => {
     const [requests, setRequests] = useState([]);
     const [requestMessages, setRequestMessages] = useState({}); // { requestId: [messages] }
     const messagesEndRef = useRef({});
+
+    const teacherCanViewRequest = useMemo(() => {
+        return (request) => {
+            if (role !== "teacher") return true;
+
+            const subjectName = request.subjectName || "";
+            const matchesSubject =
+                !teacherScope.allowedSubjectDb ||
+                subjectName === teacherScope.allowedSubjectDb ||
+                subjectName === teacherScope.allowedSubject;
+
+            const gradeLabel = toGradeLabel(request.gradeLevel);
+            const matchesGrade =
+                teacherScope.allowedGrades.length === 0 ||
+                teacherScope.allowedGrades.includes(gradeLabel);
+
+            return matchesSubject && matchesGrade;
+        };
+    }, [role, teacherScope.allowedGrades, teacherScope.allowedSubject, teacherScope.allowedSubjectDb]);
 
     // Fetch requests based on role
     useEffect(() => {
@@ -44,10 +76,10 @@ const QnAManager = () => {
             }
         };
 
-        if (role) {
+        if (role && (role !== "teacher" || user?.id)) {
             fetchRequests();
         }
-    }, [role]);
+    }, [role, user?.id]);
 
     // WebSocket subscription for new requests and messages
     useEffect(() => {
@@ -58,6 +90,10 @@ const QnAManager = () => {
             
             // Listen for new messages globally for this role
             wsService.subscribe(topic, (newMessage) => {
+                if (role === "teacher" && !teacherCanViewRequest(newMessage)) {
+                    return;
+                }
+
                 // Check if request exists, if not, we should probably re-fetch requests
                 setRequests(prev => {
                     const existing = prev.find(r => r.id === newMessage.requestId);
@@ -68,12 +104,14 @@ const QnAManager = () => {
                             userName: newMessage.senderName,
                             status: "OPEN",
                             createdAt: newMessage.createdAt,
-                            subjectName: "",
-                            lessonName: "",
+                            subjectName: newMessage.subjectName || "",
+                            gradeLevel: newMessage.gradeLevel || "",
+                            lessonName: newMessage.lessonName || "",
                         }, ...prev];
                     } else {
                         // Determine new status based on senderRole
-                        const isStudent = newMessage.senderRole !== "admin" && newMessage.senderRole !== "teacher";
+                        const senderRole = (newMessage.senderRole || "").toLowerCase();
+                        const isStudent = senderRole !== "admin" && senderRole !== "teacher";
                         const newStatus = isStudent ? "OPEN" : "CLOSED";
                         
                         // Update status if it changed
@@ -97,18 +135,23 @@ const QnAManager = () => {
             if (role === "admin") wsService.unsubscribe("/topic/support/admin");
             if (role === "teacher") wsService.unsubscribe("/topic/support/teacher");
         };
-    }, [user, role]);
+    }, [user, role, teacherCanViewRequest]);
 
 
     const uniqueGrades = useMemo(() => {
-        const grades = new Set(requests.map(q => q.gradeLevel).filter(Boolean));
+        const scopedGrades = role === "teacher" ? teacherScope.allowedGrades : [];
+        const requestGrades = requests.map(q => toGradeLabel(q.gradeLevel)).filter(Boolean);
+        const grades = new Set([...scopedGrades, ...requestGrades]);
         return Array.from(grades);
-    }, [requests]);
+    }, [requests, role, teacherScope.allowedGrades]);
 
     const uniqueSubjects = useMemo(() => {
-        const subjects = new Set(requests.map(q => q.subjectName).filter(Boolean));
+        const scopedSubjects = role === "teacher"
+            ? [teacherScope.allowedSubjectDb, teacherScope.allowedSubject].filter(Boolean)
+            : [];
+        const subjects = new Set([...scopedSubjects, ...requests.map(q => q.subjectName).filter(Boolean)]);
         return Array.from(subjects);
-    }, [requests]);
+    }, [requests, role, teacherScope.allowedSubject, teacherScope.allowedSubjectDb]);
 
     const uniqueLessons = useMemo(() => {
         const lessons = new Set(requests.map(q => q.lessonName).filter(Boolean));
@@ -125,7 +168,7 @@ const QnAManager = () => {
             
             if (role === "teacher") {
                 const matchesSubject = subjectFilter === "all" || q.subjectName === subjectFilter;
-                const matchesGrade = gradeFilter === "all" || q.gradeLevel === gradeFilter;
+                const matchesGrade = gradeFilter === "all" || toGradeLabel(q.gradeLevel) === gradeFilter;
                 const matchesLesson = lessonFilter === "all" || q.lessonName === lessonFilter;
                 return matchesSearch && matchesStatus && matchesSubject && matchesGrade && matchesLesson;
             }
@@ -317,7 +360,8 @@ const QnAManager = () => {
                                     {replies.length > 0 && (
                                         <div className="ml-8 border-l-2 border-gray-200 pl-4 py-2 space-y-3 mb-4 max-h-[300px] overflow-y-auto">
                                             {replies.map(reply => {
-                                                const isAdmin = reply.senderRole === "admin" || reply.senderRole === "teacher";
+                                                const senderRole = (reply.senderRole || "").toLowerCase();
+                                                const isAdmin = senderRole === "admin" || senderRole === "teacher";
                                                 return (
                                                     <div key={reply.id} className="flex flex-col gap-1">
                                                         <div className="flex items-center gap-2">

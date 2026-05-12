@@ -97,11 +97,17 @@ const Learning = () => {
     const mainPlayerRef = useRef(null);
     const saveTimeIntervalRef = useRef(null);
     const lastSavedTimeRef = useRef(0);
+    const completedRequestKeysRef = useRef(new Set());
     const mainPlayerContainerId = 'yt-main-player';
     const [completedLessons, setCompletedLessons] = useState([]);
 
     // Hàm đánh dấu bài học hoàn thành — ghi lên server
     const markLessonCompleted = useCallback((id) => {
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const requestKey = `${id}-${todayKey}`;
+        if (completedRequestKeysRef.current.has(requestKey)) return;
+        completedRequestKeysRef.current.add(requestKey);
+
         setCompletedLessons(prev => {
             if (prev.includes(id)) return prev;
             return [...prev, id];
@@ -127,6 +133,9 @@ const Learning = () => {
                 setActiveLesson({
                     id: lessonData.id,
                     title: lessonData.lessonName,
+                    subjectId: lessonData.subjectId,
+                    subjectName: lessonData.subjectName,
+                    gradeLevel: lessonData.gradeLevel,
                     videoUrl: lessonData.videoUrl?.includes('embed')
                         ? lessonData.videoUrl
                         : `https://www.youtube.com/embed/${lessonData.videoUrl}`,
@@ -263,6 +272,12 @@ const Learning = () => {
             saveTimeIntervalRef.current = setInterval(() => {
                 if (mainPlayerRef.current && mainPlayerRef.current.getCurrentTime) {
                     const currentTime = Math.floor(mainPlayerRef.current.getCurrentTime());
+                    const duration = mainPlayerRef.current.getDuration?.() || 0;
+
+                    if (duration > 0 && currentTime / duration >= 0.9) {
+                        markLessonCompleted(activeLesson.id);
+                    }
+
                     if (currentTime > 0 && Math.abs(currentTime - lastSavedTimeRef.current) > 5) {
                          const token = localStorage.getItem("token");
                          if (token) {
@@ -651,7 +666,11 @@ const Learning = () => {
                                             </TabsContent>
 
                                             <TabsContent value="qna" className="m-0 h-[500px]">
-                                                <QnATab lessonId={activeLesson.id} />
+                                                <QnATab
+                                                    lessonId={activeLesson.id}
+                                                    subjectId={activeLesson.subjectId}
+                                                    lessonName={activeLesson.title}
+                                                />
                                             </TabsContent>
 
                                             <TabsContent value="quiz" className="m-0 min-h-[400px]">
