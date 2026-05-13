@@ -6,6 +6,7 @@ import {
     Video,
     UploadCloud,
     BookOpen,
+    Plus,
     Loader2
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select";
 
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
 
 const LessonEdit = () => {
     const navigate = useNavigate();
@@ -30,31 +32,35 @@ const LessonEdit = () => {
     const [formData, setFormData] = useState({
         title: "",
         subject: "Toán học",
-        type: "Video",
-        duration: "",
-        status: "Bản nháp",
+        classLevel: "Lớp 10",
         description: "",
         videoUrl: "",
+        chapterId: "",
     });
 
+    const [chapters, setChapters] = useState([]);
+    const [isAddingChapter, setIsAddingChapter] = useState(false);
+    const [newChapterName, setNewChapterName] = useState("");
+
+    // Fetch bài học hiện tại
     useEffect(() => {
         const fetchLessonData = async () => {
             setIsLoading(true);
             try {
-                // Giả lập call API
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = await api.get(`/api/admin/lessons/${id}`);
+                const lesson = response.data;
                 
                 setFormData({
-                    title: "Khảo sát sự biến thiên và vẽ đồ thị hàm số",
-                    subject: "Toán học",
-                    type: "Video",
-                    duration: "45 phút",
-                    status: "Đã xuất bản",
-                    description: "Hướng dẫn chi tiết các bước khảo sát hàm số bậc 3, bậc 4 và hàm phân thức.",
-                    videoUrl: "https://youtube.com/watch?v=demo123",
+                    title: lesson.lessonName,
+                    subject: lesson.subject || "Toán học",
+                    classLevel: lesson.grade || "Lớp 10",
+                    description: lesson.content || "",
+                    videoUrl: lesson.videoUrl || "",
+                    chapterId: lesson.chapterId ? lesson.chapterId.toString() : "",
                 });
             } catch (error) {
-                console.error("Lỗi khi tải dữ liệu:", error);
+                console.error("Lỗi khi tải dữ liệu bài học:", error);
+                alert("Không thể tải dữ liệu bài học.");
             } finally {
                 setIsLoading(false);
             }
@@ -62,6 +68,44 @@ const LessonEdit = () => {
 
         if (id) fetchLessonData();
     }, [id]);
+
+    // Fetch chapters khi môn học hoặc lớp thay đổi
+    useEffect(() => {
+        if (!formData.subject || !formData.classLevel) return;
+        
+        const fetchChapters = async () => {
+            try {
+                const response = await api.get(`/api/admin/chapters?subject=${formData.subject}&grade=${formData.classLevel}`);
+                setChapters(response.data);
+                // Đừng tự động reset chapterId nếu nó đã có (để giữ chapterId cũ của bài học)
+            } catch (error) {
+                console.error("Lỗi khi tải chương:", error);
+                setChapters([]);
+            }
+        };
+        fetchChapters();
+    }, [formData.subject, formData.classLevel]);
+
+    const handleAddChapter = async () => {
+        if (!newChapterName.trim()) return;
+        try {
+            const response = await api.post("/api/admin/chapters", {
+                subjectName: formData.subject,
+                grade: formData.classLevel,
+                chapterName: newChapterName.trim(),
+                orderNumber: chapters.length + 1
+            });
+            const newChapter = response.data;
+            setChapters([...chapters, newChapter]);
+            setFormData(prev => ({ ...prev, chapterId: newChapter.id.toString() }));
+            setIsAddingChapter(false);
+            setNewChapterName("");
+            alert("Thêm chương mới thành công!");
+        } catch (error) {
+            console.error("Lỗi khi thêm chương:", error);
+            alert("Không thể thêm chương mới.");
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -72,11 +116,28 @@ const LessonEdit = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Dữ liệu cập nhật:", formData);
-        alert("Cập nhật bài học thành công!");
-        navigate(`/${basePath}/lessons`);
+        if (!formData.chapterId) {
+            alert("Vui lòng chọn chương cho bài học!");
+            return;
+        }
+
+        try {
+            const requestData = {
+                chapterId: parseInt(formData.chapterId),
+                lessonName: formData.title,
+                content: formData.description,
+                videoUrl: formData.videoUrl || null
+            };
+            
+            await api.put(`/api/admin/lessons/${id}`, requestData);
+            alert("Cập nhật bài học thành công!");
+            navigate(`/${basePath}/lessons`);
+        } catch (error) {
+            console.error("Lỗi khi cập nhật bài học:", error);
+            alert("Cập nhật bài học thất bại.");
+        }
     };
 
     const inputClasses = "flex w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all";
@@ -94,17 +155,12 @@ const LessonEdit = () => {
         <div className="max-w-6xl mx-auto space-y-6 pb-10">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => navigate(-1)}
-                        className="hover:bg-gray-100"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="hover:bg-gray-100">
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Chỉnh sửa bài học</h2>
-                        <p className="text-gray-500 text-sm mt-1">ID: #{id} • Đang cập nhật nội dung</p>
+                        <p className="text-gray-500 text-sm mt-1">ID: #{id} • Cập nhật nội dung bài giảng</p>
                     </div>
                 </div>
                 
@@ -117,7 +173,6 @@ const LessonEdit = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Cột Trái: Nội dung chính */}
                 <div className="md:col-span-2 space-y-6">
                     <Card className="border-none shadow-sm">
                         <CardHeader className="pb-4 border-b">
@@ -126,25 +181,11 @@ const LessonEdit = () => {
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-900">Tên bài học <span className="text-red-500">*</span></label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleChange}
-                                    className={inputClasses}
-                                    required
-                                />
+                                <input type="text" name="title" value={formData.title} onChange={handleChange} className={inputClasses} required />
                             </div>
-
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-900">Mô tả ngắn</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    rows="3"
-                                    className={inputClasses}
-                                />
+                                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className={inputClasses} />
                             </div>
                         </CardContent>
                     </Card>
@@ -154,110 +195,75 @@ const LessonEdit = () => {
                             <CardTitle className="text-lg font-bold">Nội dung bài giảng</CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
-                            {formData.type === "Video" && (
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-900">Link Video (YouTube/Vimeo)</label>
-                                        <div className="relative">
-                                            <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                            <input
-                                                type="url"
-                                                name="videoUrl"
-                                                value={formData.videoUrl}
-                                                onChange={handleChange}
-                                                className={`${inputClasses} pl-10`}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="w-full h-48 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center text-gray-500 bg-gray-50">
-                                        <UploadCloud className="w-8 h-8 mb-2 text-gray-400" />
-                                        <p className="text-sm">Thay đổi video tải lên</p>
-                                        <Button type="button" variant="link" className="text-blue-600">Chọn file mới</Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {formData.type === "Lý thuyết" && (
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-900">Soạn thảo văn bản</label>
-                                    <div className="w-full h-64 border border-gray-200 rounded-md bg-gray-50 flex items-center justify-center text-gray-400">
-                                        <p>[Khu vực Rich Text Editor có chứa nội dung cũ]</p>
+                                    <label className="text-sm font-medium text-gray-900">Link Video (YouTube/Vimeo)</label>
+                                    <div className="relative">
+                                        <Video className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                        <input type="url" name="videoUrl" value={formData.videoUrl} onChange={handleChange} className={`${inputClasses} pl-10`} />
                                     </div>
                                 </div>
-                            )}
-
-                            {formData.type === "Bài tập" && (
-                                <div className="space-y-2 flex flex-col items-center justify-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <BookOpen className="w-10 h-10 text-gray-300 mb-3" />
-                                    <p className="text-sm text-gray-600 font-medium">Quản lý câu hỏi trắc nghiệm</p>
-                                    <Button type="button" variant="outline" className="mt-2">Mở ngân hàng câu hỏi</Button>
-                                </div>
-                            )}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Cột Phải: Phân loại & Cài đặt */}
                 <div className="space-y-6">
                     <Card className="border-none shadow-sm">
                         <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg font-bold">Cài đặt bài học</CardTitle>
+                            <CardTitle className="text-lg font-bold">Phân loại & Cài đặt</CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-900">Môn học</label>
                                 <Select value={formData.subject} onValueChange={(value) => handleSelectChange("subject", value)}>
-                                    <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                        <SelectValue placeholder="Chọn môn học" />
-                                    </SelectTrigger>
+                                    <SelectTrigger className="w-full bg-white"><SelectValue placeholder="Chọn môn học" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Toán học">Toán học</SelectItem>
                                         <SelectItem value="Vật lý">Vật lý</SelectItem>
                                         <SelectItem value="Hóa học">Hóa học</SelectItem>
-                                        <SelectItem value="Sinh học">Sinh học</SelectItem>
                                         <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-900">Định dạng bài</label>
-                                <Select value={formData.type} onValueChange={(value) => handleSelectChange("type", value)}>
-                                    <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                        <SelectValue placeholder="Chọn định dạng" />
-                                    </SelectTrigger>
+                                <label className="text-sm font-medium text-gray-900">Lớp</label>
+                                <Select value={formData.classLevel} onValueChange={(value) => handleSelectChange("classLevel", value)}>
+                                    <SelectTrigger className="w-full bg-white"><SelectValue placeholder="Chọn lớp" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Video">Video bài giảng</SelectItem>
-                                        <SelectItem value="Lý thuyết">Bài đọc / Lý thuyết</SelectItem>
-                                        <SelectItem value="Bài tập">Bài tập trắc nghiệm</SelectItem>
+                                        <SelectItem value="Lớp 10">Lớp 10</SelectItem>
+                                        <SelectItem value="Lớp 11">Lớp 11</SelectItem>
+                                        <SelectItem value="Lớp 12">Lớp 12</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-900">Thời lượng (Dự kiến)</label>
-                                <input
-                                    type="text"
-                                    name="duration"
-                                    value={formData.duration}
-                                    onChange={handleChange}
-                                    className={inputClasses}
-                                />
+                                <label className="text-sm font-medium text-gray-900">Chương</label>
+                                {!isAddingChapter ? (
+                                    <div className="flex gap-2">
+                                        <Select value={formData.chapterId} onValueChange={(value) => handleSelectChange("chapterId", value)}>
+                                            <SelectTrigger className="w-full bg-white"><SelectValue placeholder="Chọn chương" /></SelectTrigger>
+                                            <SelectContent>
+                                                {chapters.map(chapter => (
+                                                    <SelectItem key={chapter.id} value={chapter.id.toString()}>{chapter.chapterName}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button type="button" variant="outline" onClick={() => setIsAddingChapter(true)} className="px-3"><Plus className="w-4 h-4" /></Button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-2 p-3 border border-blue-100 bg-blue-50/50 rounded-md">
+                                        <input type="text" value={newChapterName} onChange={(e) => setNewChapterName(e.target.value)} placeholder="Tên chương mới" className={inputClasses} autoFocus />
+                                        <div className="flex gap-2">
+                                            <Button type="button" onClick={handleAddChapter} className="flex-1 bg-blue-600 text-white h-9">Thêm</Button>
+                                            <Button type="button" variant="outline" onClick={() => setIsAddingChapter(false)} className="flex-1 h-9">Hủy</Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-900">Trạng thái xuất bản</label>
-                                <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                                    <SelectTrigger className="w-full bg-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                                        <SelectValue placeholder="Chọn trạng thái" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Đã xuất bản">Đã xuất bản</SelectItem>
-                                        <SelectItem value="Bản nháp">Lưu nháp</SelectItem>
-                                        <SelectItem value="Đang ẩn">Đang ẩn</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
                         </CardContent>
                     </Card>
                 </div>
