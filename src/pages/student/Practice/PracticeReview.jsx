@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
     ArrowLeft,
     CheckCircle2,
@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import api from "@/services/api";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+import { normalizeExamResultDetail } from "@/pages/student/History/examHistoryView";
 
 const PracticeReviewQuestionPalette = ({ questions, userAnswers, onQuestionClick }) => (
     <div className="h-full flex flex-col">
@@ -67,9 +69,45 @@ const PracticeReviewQuestionPalette = ({ questions, userAnswers, onQuestionClick
 const PracticeReview = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { examId: resultId } = useParams();
+    const [loadedData, setLoadedData] = useState(location.state || null);
+    const [isLoading, setIsLoading] = useState(!location.state);
+
+    useEffect(() => {
+        if (location.state) {
+            setLoadedData(location.state);
+            setIsLoading(false);
+            return undefined;
+        }
+
+        let shouldIgnore = false;
+        setIsLoading(true);
+
+        api
+            .get(`/api/exam/history/${resultId}`)
+            .then((res) => {
+                if (!shouldIgnore) {
+                    setLoadedData(normalizeExamResultDetail(res.data));
+                }
+            })
+            .catch(() => {
+                if (!shouldIgnore) {
+                    navigate("/practice");
+                }
+            })
+            .finally(() => {
+                if (!shouldIgnore) {
+                    setIsLoading(false);
+                }
+            });
+
+        return () => {
+            shouldIgnore = true;
+        };
+    }, [location.state, navigate, resultId]);
 
     // Nhận dữ liệu thực từ state do PracticeResult truyền sang
-    const data = location.state || {};
+    const data = loadedData || {};
     const { 
         examId, 
         examTitle = "Giải đáp đề thi", 
@@ -84,9 +122,13 @@ const PracticeReview = () => {
     });
 
     // Nếu không có dữ liệu, quay lại trang trước
-    useEffect(() => {
-        if (!examId) navigate("/practice");
-    }, [examId, navigate]);
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50/30 flex items-center justify-center px-4 text-slate-500">
+                Đang tải kết quả bài thi...
+            </div>
+        );
+    }
 
     if (!examId) {
         return null;

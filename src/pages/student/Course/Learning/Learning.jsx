@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "@/services/api";
+import { toast } from "sonner";
 import {
     PlayCircle,
     CheckCircle2,
     ArrowLeft,
     FileText,
     HelpCircle,
-    Heart,
+    Bookmark,
     Download,
     Edit3,
     FlaskConical,
@@ -15,13 +16,13 @@ import {
     Minimize2,
     ChevronDown,
     Lock,
+    Loader2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
     Tooltip,
     TooltipContent,
@@ -100,7 +101,8 @@ const Learning = () => {
     const [chapters, setChapters] = useState([]);
     const [activeLesson, setActiveLesson] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isFavorite, setIsFavorite] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [bookmarkLoading, setBookmarkLoading] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
     const [videoDurations, setVideoDurations] = useState({});
     const [expandedChapters, setExpandedChapters] = useState([]);
@@ -127,6 +129,72 @@ const Learning = () => {
     }, []);
     const activeLessonId = activeLesson?.id;
     const activeLessonVideoUrl = activeLesson?.videoUrl;
+
+    useEffect(() => {
+        if (!activeLessonId) {
+            setIsBookmarked(false);
+            return undefined;
+        }
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            setIsBookmarked(false);
+            return undefined;
+        }
+
+        let shouldIgnore = false;
+        setBookmarkLoading(true);
+
+        api.get(`/api/learning/bookmarks/${activeLessonId}`)
+            .then((res) => {
+                if (!shouldIgnore) {
+                    setIsBookmarked(Boolean(res.data?.bookmarked));
+                }
+            })
+            .catch(() => {
+                if (!shouldIgnore) {
+                    setIsBookmarked(false);
+                }
+            })
+            .finally(() => {
+                if (!shouldIgnore) {
+                    setBookmarkLoading(false);
+                }
+            });
+
+        return () => {
+            shouldIgnore = true;
+        };
+    }, [activeLessonId]);
+
+    const toggleLessonBookmark = useCallback(async () => {
+        if (!activeLessonId) return;
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+            toast.error("Bạn cần đăng nhập để lưu bài học.");
+            navigate("/login");
+            return;
+        }
+
+        const nextBookmarked = !isBookmarked;
+        setBookmarkLoading(true);
+        setIsBookmarked(nextBookmarked);
+
+        try {
+            const res = nextBookmarked
+                ? await api.post(`/api/learning/bookmarks/${activeLessonId}`)
+                : await api.delete(`/api/learning/bookmarks/${activeLessonId}`);
+
+            setIsBookmarked(Boolean(res.data?.bookmarked));
+            toast.success(nextBookmarked ? "Đã lưu bài học." : "Đã bỏ lưu bài học.");
+        } catch {
+            setIsBookmarked(!nextBookmarked);
+            toast.error("Không thể cập nhật bookmark. Vui lòng thử lại.");
+        } finally {
+            setBookmarkLoading(false);
+        }
+    }, [activeLessonId, isBookmarked, navigate]);
 
     // Hàm đánh dấu bài học hoàn thành — ghi lên server
     const markLessonCompleted = useCallback((id) => {
@@ -648,27 +716,6 @@ const Learning = () => {
                             <div className="flex items-center gap-2 flex-wrap">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => setIsFavorite((prev) => !prev)}
-                                            className={cn(
-                                                isFavorite &&
-                                                "text-red-500 hover:text-red-600 border-red-200 bg-red-50"
-                                            )}
-                                        >
-                                            <Heart
-                                                className={cn("h-5 w-5", isFavorite && "fill-current")}
-                                            />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>{isFavorite ? "Bỏ yêu thích" : "Yêu thích"}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
                                         <Button variant="outline">
                                             <Download className="mr-2 h-4 w-4" />
                                             Tải tài liệu
@@ -745,6 +792,34 @@ const Learning = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {!focusMode && learningTab !== "quiz" && (
+                                <div className="flex justify-end">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant={isBookmarked ? "default" : "outline"}
+                                                onClick={toggleLessonBookmark}
+                                                disabled={bookmarkLoading}
+                                                className={cn(
+                                                    "gap-2",
+                                                    isBookmarked && "bg-amber-500 text-white hover:bg-amber-600"
+                                                )}
+                                            >
+                                                {bookmarkLoading ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-current")} />
+                                                )}
+                                                {isBookmarked ? "Đã lưu bài học" : "Lưu bài học"}
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>{isBookmarked ? "Bỏ lưu bài học" : "Lưu bài học vào trang lịch sử"}</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
+                            )}
 
                             {!focusMode && (
                                 <Card className={cn(

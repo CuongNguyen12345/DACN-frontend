@@ -22,6 +22,7 @@ const PracticeResult = () => {
     const data = location.state || {};
     const { 
         examId, 
+        resultId,
         score = 0, 
         correct = 0, 
         total = 0, 
@@ -162,7 +163,7 @@ const PracticeResult = () => {
                             <Button
                                 size="lg"
                                 className="bg-blue-600 hover:bg-blue-700"
-                                onClick={() => navigate(`/practice/review/${examId}`, { state: data })}
+                                onClick={() => navigate(`/practice/review/${resultId || examId}`, { state: data })}
                             >
                                 Xem chi tiết lời giải <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>

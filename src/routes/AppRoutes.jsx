@@ -17,6 +17,7 @@ import Profile from "../pages/student/Profile/Profile";
 import CourseList from "../pages/student/Course/CourseList";
 import CourseSearch from "../pages/student/Course/CourseSearch";
 import Blog from "@/pages/student/Blog/Blog";
+import BlogDetail from "@/pages/student/Blog/BlogDetail";
 import About from "@/pages/student/About/About";
 import StudyHistory from "@/pages/student/History/StudyHistory";
 import Leaderboard from "@/pages/student/Ranking/Leaderboard";
@@ -87,6 +88,7 @@ function AppRoutes() {
         <Route path="course/search" element={<CourseSearch />} />
         <Route path="practice" element={<PracticeList />} />
         <Route path="blog" element={<Blog />} />
+        <Route path="blog/:slug" element={<BlogDetail />} />
         <Route path="about" element={<About />} />
 
         {/* Khu user: user + teacher + admin */}

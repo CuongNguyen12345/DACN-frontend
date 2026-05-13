@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -40,6 +40,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  QUESTION_SUBJECT_OPTIONS,
+  getGeneratedQuestionTopicKey,
+  getGeneratedTopicName,
+  normalizeGeneratedQuestionMeta,
+  resolveGeneratedTopicValue,
+  shouldSubmitAiPromptOnKeyDown,
+  toGradeLabel,
+  updateGeneratedQuestionTopic,
+} from "./questionCreateAiReview";
 
 const QuestionCreate = () => {
   const navigate = useNavigate();
@@ -306,16 +316,97 @@ const QuestionCreate = () => {
   const [aiError, setAiError] = useState("");
   const [editingIndex, setEditingIndex] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [generatedTopicsByKey, setGeneratedTopicsByKey] = useState({});
+
+  const getGeneratedTopicOptionsForQuestion = useCallback((question) => {
+    const key = getGeneratedQuestionTopicKey(question, {
+      subject: questionData.subject,
+      grade: questionData.status,
+    });
+    const dbTopics = (generatedTopicsByKey[key] || []).map((topic) => topic.name).filter(Boolean);
+    const currentTopic = getGeneratedTopicName(question);
+    return Array.from(new Set([...dbTopics, currentTopic].filter(Boolean)));
+  }, [generatedTopicsByKey, questionData.status, questionData.subject]);
+
+  const fetchGeneratedTopics = useCallback(async (question) => {
+    const normalized = normalizeGeneratedQuestionMeta(question, {
+      subject: questionData.subject,
+      grade: questionData.status,
+      level: questionData.difficulty,
+    });
+    const key = getGeneratedQuestionTopicKey(normalized, {
+      subject: questionData.subject,
+      grade: questionData.status,
+    });
+
+    if (generatedTopicsByKey[key]) return;
+
+    try {
+      const res = await api.get("/api/admin/topics", {
+        params: {
+          subject: normalized.subject,
+          grade: toGradeLabel(normalized.class),
+        },
+      });
+      setGeneratedTopicsByKey((prev) => ({
+        ...prev,
+        [key]: res.data || [],
+      }));
+    } catch {
+      setGeneratedTopicsByKey((prev) => ({
+        ...prev,
+        [key]: [],
+      }));
+    }
+  }, [generatedTopicsByKey, questionData.difficulty, questionData.status, questionData.subject]);
+
+  const handleGeneratedTopicChange = (index, topicName) => {
+    setGeneratedQuestions((prev) => updateGeneratedQuestionTopic(prev || [], index, topicName));
+  };
+
+  useEffect(() => {
+    if (!generatedQuestions || generatedQuestions.length === 0) return;
+
+    generatedQuestions.forEach((question) => {
+      fetchGeneratedTopics(question);
+    });
+  }, [fetchGeneratedTopics, generatedQuestions]);
+
+  useEffect(() => {
+    if (!editForm) return;
+    fetchGeneratedTopics(editForm);
+  }, [editForm, fetchGeneratedTopics]);
 
   const startEditAIQuestion = (index) => {
     setEditingIndex(index);
     // Deep copy to prevent mutating the original until saved
-    setEditForm(JSON.parse(JSON.stringify(generatedQuestions[index])));
+    setEditForm(
+      normalizeGeneratedQuestionMeta(
+        JSON.parse(JSON.stringify(generatedQuestions[index])),
+        {
+          subject: questionData.subject,
+          grade: questionData.status,
+          level: questionData.difficulty,
+        },
+      ),
+    );
   };
 
   const saveEditAIQuestion = () => {
     const updated = [...generatedQuestions];
-    updated[editingIndex] = editForm;
+    const selectedTopic = resolveGeneratedTopicValue(
+      editForm,
+      getGeneratedTopicOptionsForQuestion(editForm),
+    );
+    updated[editingIndex] = normalizeGeneratedQuestionMeta({
+      ...editForm,
+      topic: selectedTopic || getGeneratedTopicName(editForm),
+      topicName: selectedTopic || getGeneratedTopicName(editForm),
+    }, {
+      subject: questionData.subject,
+      grade: questionData.status,
+      level: questionData.difficulty,
+    });
     setGeneratedQuestions(updated);
     setEditingIndex(null);
     setEditForm(null);
@@ -621,8 +712,13 @@ const QuestionCreate = () => {
             normalized.class = String(normalized.grade).replace("Lớp ", "").trim();
           }
 
-          console.log("Câu hỏi sau normalize:", normalized);
-          return normalized;
+          const normalizedMeta = normalizeGeneratedQuestionMeta(normalized, {
+            subject: questionData.subject,
+            grade: questionData.status,
+            level: questionData.difficulty,
+          });
+          console.log("Câu hỏi sau normalize:", normalizedMeta);
+          return normalizedMeta;
         });
       }
 
@@ -639,6 +735,14 @@ const QuestionCreate = () => {
     } finally {
       setIsAiLoading(false);
     }
+  };
+
+  const handleAiPromptKeyDown = (event) => {
+    if (!shouldSubmitAiPromptOnKeyDown(event)) return;
+
+    event.preventDefault();
+    if (isReadingFile) return;
+    handleGenerate();
   };
 
   const handleApplyQuestion = (parsed) => {
@@ -683,7 +787,10 @@ const QuestionCreate = () => {
             content: q.question,
             explanation: q.explanation || "",
             level: q.level || "Dễ",
-            topicName: q.topic || "",
+            topicName: resolveGeneratedTopicValue(
+              q,
+              getGeneratedTopicOptionsForQuestion(q),
+            ) || "",
             options: options,
           };
         }),
@@ -1116,6 +1223,7 @@ const QuestionCreate = () => {
                     <textarea
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
+                      onKeyDown={handleAiPromptKeyDown}
                       placeholder={
                         attachedFile
                           ? "Thêm yêu cầu cụ thể (VD: tạo 5 câu hỏi trắc nghiệm từ file)..."
@@ -1313,29 +1421,27 @@ const QuestionCreate = () => {
                                   />
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                   <div>
                                     <label className="text-xs font-bold text-gray-700 block mb-1">
                                       Môn học
                                     </label>
                                     <Select
-                                      value={
-                                        editForm.subject || questionData.subject
-                                      }
+                                      value={editForm.subject}
                                       onValueChange={(v) =>
-                                        setEditForm({ ...editForm, subject: v })
+                                        setEditForm({
+                                          ...editForm,
+                                          subject: v,
+                                          topic: "",
+                                          topicName: "",
+                                        })
                                       }
                                     >
                                       <SelectTrigger className="h-9 text-sm">
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {[
-                                          "Toán",
-                                          "Vật Lý",
-                                          "Hóa Học",
-                                          "Tiếng Anh",
-                                        ].map((s) => (
+                                        {QUESTION_SUBJECT_OPTIONS.map((s) => (
                                           <SelectItem key={s} value={s}>
                                             {s}
                                           </SelectItem>
@@ -1353,7 +1459,12 @@ const QuestionCreate = () => {
                                         questionData.status.replace("Lớp ", "")
                                       }
                                       onValueChange={(v) =>
-                                        setEditForm({ ...editForm, class: v })
+                                        setEditForm({
+                                          ...editForm,
+                                          class: v,
+                                          topic: "",
+                                          topicName: "",
+                                        })
                                       }
                                     >
                                       <SelectTrigger className="h-9 text-sm">
@@ -1388,6 +1499,41 @@ const QuestionCreate = () => {
                                               {l}
                                             </SelectItem>
                                           ),
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs font-bold text-gray-700 block mb-1">
+                                      Chủ đề
+                                    </label>
+                                    <Select
+                                      value={resolveGeneratedTopicValue(
+                                        editForm,
+                                        getGeneratedTopicOptionsForQuestion(editForm),
+                                      )}
+                                      onValueChange={(v) =>
+                                        setEditForm({
+                                          ...editForm,
+                                          topic: v,
+                                          topicName: v,
+                                        })
+                                      }
+                                    >
+                                      <SelectTrigger className="h-9 text-sm">
+                                        <SelectValue placeholder="Chọn chủ đề" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {getGeneratedTopicOptionsForQuestion(editForm).length === 0 ? (
+                                          <SelectItem value="no-topic" disabled>
+                                            Không có chủ đề
+                                          </SelectItem>
+                                        ) : (
+                                          getGeneratedTopicOptionsForQuestion(editForm).map((topic) => (
+                                            <SelectItem key={topic} value={topic}>
+                                              {topic}
+                                            </SelectItem>
+                                          ))
                                         )}
                                       </SelectContent>
                                     </Select>
@@ -1478,15 +1624,41 @@ const QuestionCreate = () => {
                                   <p className="font-bold text-gray-900">
                                     {q.question}
                                   </p>
-                                  <div className="flex gap-2 mt-2">
+                                  <div className="flex flex-wrap items-center gap-2 mt-2">
                                     <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">
                                       {q.subject || questionData.subject} - Lớp{" "}
                                       {q.class ||
                                         questionData.status.replace("Lớp ", "")}
                                     </span>
-                                    <span className="text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-full">
-                                      {q.level || "Dễ"}
-                                    </span>
+                                   <span className="text-xs font-medium bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-full">
+                                     {q.level || "Dễ"}
+                                   </span>
+                                    <div className="w-full sm:w-64">
+                                      <Select
+                                        value={resolveGeneratedTopicValue(
+                                          q,
+                                          getGeneratedTopicOptionsForQuestion(q),
+                                        )}
+                                        onValueChange={(v) => handleGeneratedTopicChange(index, v)}
+                                      >
+                                        <SelectTrigger className="h-8 rounded-full border-blue-100 bg-blue-50 text-xs text-blue-700">
+                                          <SelectValue placeholder="Chọn chủ đề" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {getGeneratedTopicOptionsForQuestion(q).length === 0 ? (
+                                            <SelectItem value="no-topic" disabled>
+                                              Không có chủ đề
+                                            </SelectItem>
+                                          ) : (
+                                            getGeneratedTopicOptionsForQuestion(q).map((topic) => (
+                                              <SelectItem key={topic} value={topic}>
+                                                {topic}
+                                              </SelectItem>
+                                            ))
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
