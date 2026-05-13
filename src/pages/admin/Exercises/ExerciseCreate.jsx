@@ -54,6 +54,27 @@ const bankGradeOptions = ["all", "Lớp 10", "Lớp 11", "Lớp 12"];
 const bankLevelOptions = ["all", "Dễ", "Trung bình", "Khó"];
 const subjectOptions = bankSubjectOptions;
 const gradeOptions = bankGradeOptions;
+const subjectToCourseParam = {
+  Toán: "Toán",
+  "Vật Lý": "Lý",
+  "Hóa Học": "Hóa",
+  "Tiếng Anh": "Anh",
+  "Sinh học": "Sinh học",
+};
+
+const getCourseGradeParam = (grade) => String(grade || "").replace(/\D/g, "");
+
+const normalizeCourseLessons = (payload) => {
+  const chapters = Array.isArray(payload?.data) ? payload.data : [];
+
+  return chapters.flatMap((chapter) =>
+    (chapter.lessons || []).map((lesson) => ({
+      id: String(lesson.id),
+      title: lesson.lessonName,
+      chapterName: chapter.chapterName,
+    })),
+  );
+};
 
 const ExerciseCreate = () => {
   const navigate = useNavigate();
@@ -82,6 +103,8 @@ const ExerciseCreate = () => {
   const [selectedBankQuestionIds, setSelectedBankQuestionIds] = useState([]);
   const [assignmentTopics, setAssignmentTopics] = useState([]);
   const [isAssignmentTopicLoading, setIsAssignmentTopicLoading] = useState(false);
+  const [assignableLessons, setAssignableLessons] = useState([]);
+  const [isAssignableLessonsLoading, setIsAssignableLessonsLoading] = useState(false);
 
   const assignmentTopicParams = useMemo(
     () =>
@@ -101,6 +124,18 @@ const ExerciseCreate = () => {
     currentItems: paginatedBankQuestions,
     totalPages: bankTotalPages,
   } = paginateBankQuestions(bankQuestions, bankCurrentPage, bankQuestionsPerPage);
+  const currentPageQuestionIds = useMemo(
+    () => paginatedBankQuestions.map((question) => question.id),
+    [paginatedBankQuestions],
+  );
+  const selectedCurrentPageCount = currentPageQuestionIds.filter((id) =>
+    selectedBankQuestionIds.includes(id),
+  ).length;
+  const isCurrentPageFullySelected =
+    currentPageQuestionIds.length > 0 &&
+    selectedCurrentPageCount === currentPageQuestionIds.length;
+  const isCurrentPagePartiallySelected =
+    selectedCurrentPageCount > 0 && !isCurrentPageFullySelected;
   const goBackToList = useCallback(
     () => navigate(`${basePath}/exercises`),
     [basePath, navigate],
@@ -207,6 +242,58 @@ const ExerciseCreate = () => {
   }, [assignmentTopicParams]);
 
   useEffect(() => {
+    const subject = subjectToCourseParam[formData.subject];
+    const grade = getCourseGradeParam(formData.grade);
+
+    if (!subject || !grade) {
+      setAssignableLessons([]);
+      setIsAssignableLessonsLoading(false);
+      return undefined;
+    }
+
+    let shouldIgnore = false;
+    setIsAssignableLessonsLoading(true);
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await api.get("/api/learning/course", {
+          params: {
+            subject,
+            grade,
+            page: 1,
+            size: 100,
+          },
+        });
+        const lessons = normalizeCourseLessons(response.data);
+
+        if (!shouldIgnore) {
+          setAssignableLessons(lessons);
+          setFormData((prev) => {
+            if (!prev.lessonId || lessons.some((lesson) => lesson.id === String(prev.lessonId))) {
+              return prev;
+            }
+            return { ...prev, lessonId: "" };
+          });
+        }
+      } catch (error) {
+        console.error("Cannot load assignable lessons:", error);
+        if (!shouldIgnore) {
+          setAssignableLessons([]);
+        }
+      } finally {
+        if (!shouldIgnore) {
+          setIsAssignableLessonsLoading(false);
+        }
+      }
+    }, 200);
+
+    return () => {
+      shouldIgnore = true;
+      window.clearTimeout(timer);
+    };
+  }, [formData.grade, formData.subject]);
+
+  useEffect(() => {
     if (!isEditMode) return undefined;
 
     let shouldIgnore = false;
@@ -250,6 +337,16 @@ const ExerciseCreate = () => {
     setSelectedBankQuestionIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
     );
+  };
+
+  const toggleCurrentPageQuestions = () => {
+    setSelectedBankQuestionIds((prev) => {
+      if (isCurrentPageFullySelected) {
+        return prev.filter((id) => !currentPageQuestionIds.includes(id));
+      }
+
+      return Array.from(new Set([...prev, ...currentPageQuestionIds]));
+    });
   };
 
   const resetBankPage = () => setBankCurrentPage(1);
@@ -517,7 +614,17 @@ const ExerciseCreate = () => {
                       <table className="w-full text-sm text-left">
                         <thead className="bg-slate-50 border-b border-slate-100 text-slate-600">
                           <tr>
-                            <th className="px-4 py-3 w-10"></th>
+                            <th className="px-4 py-3 w-10">
+                              <Checkbox
+                                checked={
+                                  isCurrentPagePartiallySelected
+                                    ? "indeterminate"
+                                    : isCurrentPageFullySelected
+                                }
+                                onCheckedChange={toggleCurrentPageQuestions}
+                                aria-label="Chọn tất cả câu hỏi trong trang này"
+                              />
+                            </th>
                             <th className="px-4 py-3">Nội dung câu hỏi</th>
                             <th className="px-4 py-3 text-center">Phân loại</th>
                             <th className="px-4 py-3 text-center">Mức độ</th>
@@ -803,6 +910,48 @@ const ExerciseCreate = () => {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-800">
+                  Bài học
+                </label>
+                <Select
+                  value={formData.lessonId || "unassigned"}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      lessonId: value === "unassigned" ? "" : value,
+                    }))
+                  }
+                  disabled={isAssignableLessonsLoading || assignableLessons.length === 0}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Chọn bài học" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned" disabled>
+                      {isAssignableLessonsLoading
+                        ? "Đang tải bài học..."
+                        : "Chọn bài học"}
+                    </SelectItem>
+                    {assignableLessons.map((lesson) => (
+                      <SelectItem key={lesson.id} value={lesson.id}>
+                        {lesson.title}
+                      </SelectItem>
+                    ))}
+                    {!isAssignableLessonsLoading && assignableLessons.length === 0 ? (
+                      <SelectItem value="empty" disabled>
+                        Không có bài học phù hợp
+                      </SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
+                {formData.lessonId ? (
+                  <p className="text-xs text-slate-500">
+                    Nếu không chọn bài học, bài tập vẫn hiện theo topic/chương.
+                  </p>
+                ) : null}
+              </div>
+
             </CardContent>
           </Card>
 
@@ -846,6 +995,29 @@ const ExerciseCreate = () => {
                       }))
                     }
                   />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <label className="text-sm font-medium text-slate-800">
+                    Độ khó
+                  </label>
+                  <Select
+                    value={formData.difficulty}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        difficulty: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Chọn độ khó" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dễ">Dễ</SelectItem>
+                      <SelectItem value="Trung bình">Trung bình</SelectItem>
+                      <SelectItem value="Khó">Khó</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

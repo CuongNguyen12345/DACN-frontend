@@ -12,6 +12,7 @@ export function filterExercises(
     subject = "all",
     grade = "all",
     lesson = "all",
+    difficulty = "all",
     status = "all",
   } = {},
 ) {
@@ -25,6 +26,7 @@ export function filterExercises(
     const matchesSubject = subject === "all" || exercise.subject === subject;
     const matchesGrade = grade === "all" || exercise.grade === grade;
     const matchesLesson = lesson === "all" || exercise.lessonTitle === lesson;
+    const matchesDifficulty = difficulty === "all" || exercise.difficulty === difficulty;
     const matchesStatus = status === "all" || exercise.status === status;
 
     return (
@@ -32,6 +34,7 @@ export function filterExercises(
       matchesSubject &&
       matchesGrade &&
       matchesLesson &&
+      matchesDifficulty &&
       matchesStatus
     );
   });

@@ -71,6 +71,28 @@ const extractYoutubeId = (url) => {
     return null;
 };
 
+const normalizeChapterTitle = (value) =>
+    String(value || "")
+        .toLowerCase()
+        .replace(/^chương\s*\d+\s*[:.-]?\s*/, "")
+        .replace("toán học", "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .trim();
+
+const getChapterTitleTokens = (value) =>
+    normalizeChapterTitle(value)
+        .split(/\s+/)
+        .filter((token) => token.length >= 2);
+
+const getChapterMatchScore = (chapterTitle, topicTitle) => {
+    const chapterTokens = new Set(getChapterTitleTokens(chapterTitle));
+    const topicTokens = getChapterTitleTokens(topicTitle);
+    if (chapterTokens.size === 0 || topicTokens.length === 0) return 0;
+
+    const matchedCount = topicTokens.filter((token) => chapterTokens.has(token)).length;
+    return matchedCount / topicTokens.length;
+};
+
 const Learning = () => {
     const { lessonId } = useParams();
     const navigate = useNavigate();
@@ -90,6 +112,11 @@ const Learning = () => {
     const completedRequestKeysRef = useRef(new Set());
     const mainPlayerContainerId = 'yt-main-player';
     const [completedLessons, setCompletedLessons] = useState([]);
+    const [learningTab, setLearningTab] = useState("theory");
+    const [courseQuizzes, setCourseQuizzes] = useState([]);
+    const [quizzesLoading, setQuizzesLoading] = useState(false);
+    const [selectedQuizId, setSelectedQuizId] = useState(null);
+    const [sidebarTab, setSidebarTab] = useState("lessons");
 
     const getCurrentVideoTime = useCallback(() => {
         const player = mainPlayerRef.current;
@@ -147,6 +174,7 @@ const Learning = () => {
                 const chaptersRes = await api.get(`/api/learning/course/content?lessonId=${lessonId}`);
                 const transformedChapters = chaptersRes.data.map(chap => ({
                     id: `c${chap.id}`,
+                    rawId: chap.id,
                     title: chap.chapterName,
                     lessons: chap.lessons.map(l => ({
                         id: l.id,
@@ -190,6 +218,43 @@ const Learning = () => {
             .then(res => setCompletedLessons(res.data))
             .catch(err => console.error("Không thể tải tiến độ:", err));
     }, [chapters]);
+
+    const allLessonIds = useMemo(
+        () => chapters.flatMap((chapter) => chapter.lessons.map((lesson) => lesson.id)),
+        [chapters],
+    );
+
+    useEffect(() => {
+        if (!lessonId || allLessonIds.length === 0) {
+            setCourseQuizzes([]);
+            return undefined;
+        }
+
+        let shouldIgnore = false;
+        setQuizzesLoading(true);
+
+        api.get(`/api/learning/quizzes/course?lessonId=${lessonId}`)
+            .then((res) => {
+                if (!shouldIgnore) {
+                    setCourseQuizzes(Array.isArray(res.data) ? res.data : []);
+                }
+            })
+            .catch((err) => {
+                console.error("Không thể tải danh sách bài tập:", err);
+                if (!shouldIgnore) {
+                    setCourseQuizzes([]);
+                }
+            })
+            .finally(() => {
+                if (!shouldIgnore) {
+                    setQuizzesLoading(false);
+                }
+            });
+
+        return () => {
+            shouldIgnore = true;
+        };
+    }, [allLessonIds, lessonId]);
 
     // Tạo/cập nhật YouTube Player chính cho bài học hiện tại
     useEffect(() => {
@@ -433,8 +498,65 @@ const Learning = () => {
         }));
     }, [chapters, completedLessons]);
 
+    const quizzesByChapterId = useMemo(() => {
+        return courseQuizzes.reduce((grouped, quiz) => {
+            const chapterId = quiz.chapterId ? `c${quiz.chapterId}` : null;
+            const matchedChapter = chapterId
+                ? null
+                : chaptersWithLock.find((chapter) => {
+                    const chapterTitle = normalizeChapterTitle(chapter.title);
+                    const topicTitle = normalizeChapterTitle(quiz.topicName || quiz.chapterTitle);
+                    return chapterTitle === topicTitle ||
+                        chapterTitle.includes(topicTitle) ||
+                        topicTitle.includes(chapterTitle) ||
+                        getChapterMatchScore(chapter.title, quiz.topicName || quiz.chapterTitle) >= 0.5;
+                });
+            const id = chapterId || matchedChapter?.id;
+            if (!id) return grouped;
+
+            if (!grouped[id]) grouped[id] = [];
+            grouped[id].push(quiz);
+            return grouped;
+        }, {});
+    }, [chaptersWithLock, courseQuizzes]);
+
+    const chaptersWithExercises = useMemo(() => {
+        return chaptersWithLock.map((chapter) => ({
+            ...chapter,
+            exercises: (quizzesByChapterId[chapter.id] || []).map((quiz) => ({
+                ...quiz,
+                chapter,
+                lesson: quiz.lessonId
+                    ? chapter.lessons.find((lesson) => Number(lesson.id) === Number(quiz.lessonId))
+                    : null,
+                isLocked: chapter.lessons.every((lesson) => lesson.isLocked),
+            })),
+        }));
+    }, [chaptersWithLock, quizzesByChapterId]);
+
+    const activeChapter = useMemo(
+        () =>
+            chaptersWithExercises.find((chapter) =>
+                chapter.lessons.some((lesson) => Number(lesson.id) === Number(activeLesson?.id)),
+            ),
+        [activeLesson?.id, chaptersWithExercises],
+    );
+
     const handleLessonChange = (lesson) => {
+        setLearningTab("theory");
+        setSelectedQuizId(null);
         navigate(`/course/learning/${lesson.id}`);
+    };
+
+    const handleExerciseChange = (exercise) => {
+        if (exercise.isLocked) return;
+
+        setSelectedQuizId(exercise.id);
+        setLearningTab("quiz");
+        const targetLessonId = exercise.lessonId || exercise.chapter?.lessons?.[0]?.id;
+        if (targetLessonId && Number(activeLesson?.id) !== Number(targetLessonId)) {
+            navigate(`/course/learning/${targetLessonId}`);
+        }
     };
 
     if (loading) {
@@ -600,7 +722,8 @@ const Learning = () => {
                                     "bg-black relative rounded-xl overflow-hidden shadow-lg ring-1 ring-gray-900/5",
                                     focusMode
                                         ? "h-full flex items-center justify-center rounded-none"
-                                        : "aspect-video"
+                                        : "aspect-video",
+                                    learningTab === "quiz" && !focusMode && "hidden"
                                 )}
                             >
                                 <div
@@ -624,31 +747,31 @@ const Learning = () => {
                             </div>
 
                             {!focusMode && (
-                                <Card className="flex-1 border-none shadow-md">
-                                    <Tabs defaultValue="theory" className="w-full h-full flex flex-col">
-                                        <div className="px-6 pt-6">
-                                            <TabsList className="w-full justify-start h-12 p-1 bg-gray-100/50">
-                                                <TabsTrigger value="theory" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
-                                                    <FileText className="mr-2 h-4 w-4" />
-                                                    Lý thuyết
-                                                </TabsTrigger>
+                                <Card className={cn(
+                                    "flex-1 border-none shadow-md",
+                                    learningTab === "quiz" && "min-h-[calc(100vh-220px)]"
+                                )}>
+                                    <Tabs value={learningTab} onValueChange={setLearningTab} className="w-full h-full flex flex-col">
+                                        {learningTab !== "quiz" && (
+                                            <div className="px-6 pt-6">
+                                                <TabsList className="w-full justify-start h-12 p-1 bg-gray-100/50">
+                                                    <TabsTrigger value="theory" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                                                        <FileText className="mr-2 h-4 w-4" />
+                                                        Lý thuyết
+                                                    </TabsTrigger>
 
-                                                <TabsTrigger value="note" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
-                                                    <Edit3 className="mr-2 h-4 w-4" />
-                                                    Ghi chú
-                                                </TabsTrigger>
+                                                    <TabsTrigger value="note" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                                                        <Edit3 className="mr-2 h-4 w-4" />
+                                                        Ghi chú
+                                                    </TabsTrigger>
 
-                                                <TabsTrigger value="qna" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
-                                                    <HelpCircle className="mr-2 h-4 w-4" />
-                                                    Hỏi đáp
-                                                </TabsTrigger>
-
-                                                <TabsTrigger value="quiz" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
-                                                    <FlaskConical className="mr-2 h-4 w-4" />
-                                                    Bài tập
-                                                </TabsTrigger>
-                                            </TabsList>
-                                        </div>
+                                                    <TabsTrigger value="qna" className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex-1 md:flex-none">
+                                                        <HelpCircle className="mr-2 h-4 w-4" />
+                                                        Hỏi đáp
+                                                    </TabsTrigger>
+                                                </TabsList>
+                                            </div>
+                                        )}
 
                                         <CardContent className="p-0 flex-1">
                                             <TabsContent value="theory" className="p-6 m-0 animate-in fade-in-50">
@@ -678,7 +801,12 @@ const Learning = () => {
                                             </TabsContent>
 
                                             <TabsContent value="quiz" className="m-0 min-h-[400px]">
-                                                <QuizTab lessonId={activeLesson.id} />
+                                                <QuizTab
+                                                    lessonId={activeLesson.id}
+                                                    quizzes={activeChapter?.exercises || []}
+                                                    selectedQuizId={selectedQuizId}
+                                                    onSelectQuiz={setSelectedQuizId}
+                                                />
                                             </TabsContent>
                                         </CardContent>
                                     </Tabs>
@@ -689,7 +817,18 @@ const Learning = () => {
                         {!focusMode && (
                             <div className="lg:col-span-1 h-full">
                                 <Card className="h-full flex flex-col border-none shadow-md overflow-hidden bg-white/50 backdrop-blur-sm">
-                                    <Tabs defaultValue="lessons" className="w-full h-full flex flex-col">
+                                    <Tabs
+                                        value={sidebarTab}
+                                        onValueChange={(value) => {
+                                            setSidebarTab(value);
+                                            if (value === "exercises") {
+                                                setLearningTab("quiz");
+                                            } else {
+                                                setLearningTab("theory");
+                                            }
+                                        }}
+                                        className="w-full h-full flex flex-col"
+                                    >
                                         <div className="px-4 pt-4 border-b pb-4">
                                             <TabsList className="w-full grid grid-cols-2 p-1 bg-gray-100/50 rounded-lg">
                                                 <TabsTrigger value="lessons" className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md py-2">
@@ -705,7 +844,7 @@ const Learning = () => {
                                             <TabsContent value="lessons" className="h-full m-0">
                                                 <ScrollArea className="h-[calc(100vh-220px)]">
                                                     <div className="flex flex-col border-b border-gray-100">
-                                                        {chaptersWithLock.map((chapter) => {
+                                                        {chaptersWithExercises.map((chapter) => {
                                                             const isExpanded = expandedChapters.includes(chapter.id);
                                                             const completedLessonsCount = chapter.lessons.filter(l => l.isCompleted).length;
                                                             return (
@@ -792,7 +931,7 @@ const Learning = () => {
                                             <TabsContent value="exercises" className="h-full m-0">
                                                 <ScrollArea className="h-[calc(100vh-220px)]">
                                                     <div className="flex flex-col border-b border-gray-100">
-                                                        {chaptersWithLock.map((chapter) => {
+                                                        {chaptersWithExercises.map((chapter) => {
                                                             const isExpanded = expandedChapters.includes(`ex_${chapter.id}`);
                                                             return (
                                                                 <div key={`ex_${chapter.id}`} className="border-t border-gray-100">
@@ -811,7 +950,7 @@ const Learning = () => {
                                                                                 {chapter.title}
                                                                             </h3>
                                                                             <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                                                                                {chapter.lessons.length} bài tập
+                                                                                {quizzesLoading ? "Đang tải..." : `${chapter.exercises.length} bài tập`}
                                                                             </span>
                                                                         </div>
                                                                         <ChevronDown className={cn("h-5 w-5 text-gray-400 transition-transform duration-200", isExpanded && "rotate-180")} />
@@ -819,21 +958,29 @@ const Learning = () => {
 
                                                                     {isExpanded && (
                                                                         <div className="flex flex-col divide-y divide-gray-50 bg-white">
-                                                                            {chapter.lessons.map((item) => (
+                                                                            {quizzesLoading ? (
+                                                                                <div className="px-5 py-6 text-sm text-slate-500">
+                                                                                    Đang tải bài tập...
+                                                                                </div>
+                                                                            ) : null}
+                                                                            {chapter.exercises.length === 0 && !quizzesLoading ? (
+                                                                                <div className="px-5 py-6 text-sm text-slate-500">
+                                                                                    Chưa có bài tập cho chương này.
+                                                                                </div>
+                                                                            ) : null}
+                                                                            {chapter.exercises.map((item) => (
                                                                                 <div
                                                                                     key={`ex_item_${item.id}`}
                                                                                     className={cn(
-                                                                                        "p-4 flex gap-3 items-start relative pl-5 transition-colors cursor-pointer hover:bg-gray-50 group",
-                                                                                        activeLesson.id === item.id && "bg-blue-50/50 hover:bg-blue-50/80"
+                                                                                        "p-4 flex gap-3 items-start relative pl-5 transition-colors",
+                                                                                        Number(selectedQuizId) === Number(item.id) && "bg-blue-50/50 hover:bg-blue-50/80",
+                                                                                        item.isLocked
+                                                                                            ? "opacity-60 cursor-not-allowed bg-gray-50/80"
+                                                                                            : "cursor-pointer hover:bg-gray-50 group"
                                                                                     )}
-                                                                                    onClick={() => {
-                                                                                        // Chuyển sang bài tập (có thể navigate hoặc đổi tab)
-                                                                                        if (!item.isLocked) {
-                                                                                            handleLessonChange(item);
-                                                                                        }
-                                                                                    }}
+                                                                                    onClick={() => handleExerciseChange(item)}
                                                                                 >
-                                                                                    {activeLesson.id === item.id && (
+                                                                                    {Number(selectedQuizId) === Number(item.id) && (
                                                                                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-r-full" />
                                                                                     )}
 
@@ -843,7 +990,7 @@ const Learning = () => {
                                                                                         ) : (
                                                                                             <FlaskConical className={cn(
                                                                                                 "h-5 w-5",
-                                                                                                activeLesson.id === item.id ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
+                                                                                                Number(selectedQuizId) === Number(item.id) ? "text-blue-600" : "text-gray-400 group-hover:text-gray-500"
                                                                                             )} />
                                                                                         )}
                                                                                     </div>
@@ -851,12 +998,12 @@ const Learning = () => {
                                                                                     <div className="flex-1 space-y-1">
                                                                                         <h4 className={cn(
                                                                                             "text-sm font-medium leading-snug",
-                                                                                            activeLesson.id === item.id ? "text-blue-700" : "text-gray-700"
+                                                                                            Number(selectedQuizId) === Number(item.id) ? "text-blue-700" : "text-gray-700"
                                                                                         )}>
-                                                                                            Bài tập: {item.title}
+                                                                                            {item.title}
                                                                                         </h4>
                                                                                         <span className="text-xs text-muted-foreground inline-flex items-center">
-                                                                                            Bấm để làm bài
+                                                                                            {item.lesson?.title ? `Bài học: ${item.lesson.title}` : item.topicName || "Bấm để làm bài"}
                                                                                         </span>
                                                                                     </div>
                                                                                 </div>

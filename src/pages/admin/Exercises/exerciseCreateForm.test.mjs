@@ -73,6 +73,7 @@ test("builds API payload for quiz table storage", () => {
       lessonId: "",
       duration: "20",
       passScore: "75",
+      difficulty: "Trung bình",
       questions: [
         { bankQuestionId: "Q-12", content: "Câu 1" },
         { bankQuestionId: 15, content: "Câu 2" },
@@ -87,6 +88,7 @@ test("builds API payload for quiz table storage", () => {
       lessonId: null,
       duration: 20,
       passingScore: 75,
+      difficulty: "Trung bình",
       questionIds: ["Q-12", "15"],
     },
   );
@@ -99,6 +101,7 @@ test("requires selected bank questions before saving a quiz", () => {
         ...defaultExerciseForm,
         title: "Luyện tập",
         topic: "Mệnh đề",
+        lessonId: "12",
         questions: [{ content: "Câu nhập tay" }],
       }),
     /ngân hàng câu hỏi/i,
@@ -116,6 +119,7 @@ test("normalizes API quiz summary for management table", () => {
       questionCount: 3,
       duration: 20,
       passingScore: 75,
+      difficulty: "Khó",
       updatedAt: "2026-05-13",
     }),
     {
@@ -128,6 +132,7 @@ test("normalizes API quiz summary for management table", () => {
       questionCount: 3,
       duration: 20,
       passScore: 75,
+      difficulty: "Khó",
       updatedAt: "2026-05-13",
     },
   );

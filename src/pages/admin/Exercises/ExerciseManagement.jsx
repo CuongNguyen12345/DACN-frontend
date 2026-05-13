@@ -35,6 +35,17 @@ import {
 
 const subjectOptions = ["all", "Toán", "Vật Lý", "Hóa Học", "Tiếng Anh", "Sinh học"];
 const gradeOptions = ["all", "Lớp 10", "Lớp 11", "Lớp 12"];
+const difficultyOptions = ["all", "Dễ", "Trung bình", "Khó"];
+const getDifficultyBadgeClassName = (difficulty) => {
+  switch (difficulty) {
+    case "Khó":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "Trung bình":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    default:
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+};
 
 const ExerciseManagement = () => {
   const navigate = useNavigate();
@@ -46,6 +57,7 @@ const ExerciseManagement = () => {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [lessonFilter, setLessonFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -86,8 +98,9 @@ const ExerciseManagement = () => {
         subject: subjectFilter,
         grade: gradeFilter,
         lesson: lessonFilter,
+        difficulty: difficultyFilter,
       }),
-    [exercises, gradeFilter, lessonFilter, searchTerm, subjectFilter],
+    [difficultyFilter, exercises, gradeFilter, lessonFilter, searchTerm, subjectFilter],
   );
 
   const { currentItems, totalPages } = paginateExercises(
@@ -235,6 +248,24 @@ const ExerciseManagement = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select
+              value={difficultyFilter}
+              onValueChange={(value) => {
+                setDifficultyFilter(value);
+                resetToFirstPage();
+              }}
+            >
+              <SelectTrigger className="w-full md:w-[140px] bg-white">
+                <SelectValue placeholder="Độ khó" />
+              </SelectTrigger>
+              <SelectContent>
+                {difficultyOptions.map((difficulty) => (
+                  <SelectItem key={difficulty} value={difficulty}>
+                    {difficulty === "all" ? "Tất cả mức" : difficulty}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -297,6 +328,9 @@ const ExerciseManagement = () => {
                         </span>
                         <span>
                           {exercise.duration} phút · Đạt {exercise.passScore}%
+                        </span>
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 font-medium ${getDifficultyBadgeClassName(exercise.difficulty)}`}>
+                          {exercise.difficulty}
                         </span>
                       </div>
                     </td>

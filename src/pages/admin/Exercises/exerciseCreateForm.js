@@ -190,6 +190,7 @@ export function buildQuizPayload(formData) {
     lessonId: formData.lessonId ? Number(formData.lessonId) : null,
     duration: Number(formData.duration) || 0,
     passingScore: Number(formData.passScore) || 0,
+    difficulty: formData.difficulty || "Dễ",
     questionIds,
   };
 }
@@ -206,6 +207,7 @@ export function normalizeQuizSummary(quiz) {
     questionCount: Number(quiz.questionCount) || 0,
     duration: Number(quiz.duration) || 0,
     passScore: Number(quiz.passingScore ?? quiz.passScore) || 0,
+    difficulty: quiz.difficulty || "Dễ",
     updatedAt: quiz.updatedAt || quiz.createdAt || "",
   };
 }
@@ -220,6 +222,7 @@ export function normalizeQuizDetailToForm(quiz) {
     topic: quiz.topicName || "all",
     duration: Number(quiz.duration) || defaultExerciseForm.duration,
     passScore: Number(quiz.passingScore ?? quiz.passScore) || defaultExerciseForm.passScore,
+    difficulty: quiz.difficulty || defaultExerciseForm.difficulty,
     questions: Array.isArray(quiz.questions)
       ? quiz.questions.map(convertBankQuestionToExerciseQuestion)
       : [],
@@ -254,12 +257,13 @@ export function filterAssignableLessons(
 
 export const defaultExerciseForm = {
   title: "",
-  lessonId: "L01",
+  lessonId: "",
   subject: "Toán",
   grade: "Lớp 12",
   topic: "Đạo hàm",
   duration: 15,
   passScore: 70,
+  difficulty: "Dễ",
   questions: [{ ...defaultQuestion }],
 };
 
