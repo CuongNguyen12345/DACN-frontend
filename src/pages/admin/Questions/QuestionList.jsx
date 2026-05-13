@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { useTeacherScope } from "@/hooks/useTeacherScope";
+import { getScopedGradeFilter, getScopedSubjectFilter, SUBJECT_FILTER_OPTIONS } from "./questionListFilters";
 import {
     Dialog,
     DialogContent,
@@ -32,24 +33,32 @@ const QuestionList = () => {
     // 1. States cho lọc và tìm kiếm — teacher bị khóa theo scope
     const [searchTerm, setSearchTerm] = useState("");
     const [levelFilter, setLevelFilter] = useState("all");
-    const [subjectFilter, setSubjectFilter] = useState(
-        scope.allowedSubject ?? "all"
-    );
+    const [subjectFilter, setSubjectFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [topicFilter, setTopicFilter] = useState("all");
     const [topics, setTopics] = useState([]);
+    const scopedSubjectFilter = useMemo(
+        () => getScopedSubjectFilter(scope, subjectFilter),
+        [scope, subjectFilter]
+    );
+    const effectiveSubjectFilter = scopedSubjectFilter.value;
+    const scopedGradeFilter = useMemo(
+        () => getScopedGradeFilter(scope, statusFilter),
+        [scope, statusFilter]
+    );
+    const effectiveGradeFilter = scopedGradeFilter.value;
 
     // Lấy danh sách chủ đề khi chọn cả môn và lớp
     useEffect(() => {
-        if (subjectFilter !== "all" && statusFilter !== "all") {
-            api.get("/api/admin/topics", { params: { subject: subjectFilter, grade: statusFilter } })
+        if (effectiveSubjectFilter !== "all" && effectiveGradeFilter !== "all") {
+            api.get("/api/admin/topics", { params: { subject: effectiveSubjectFilter, grade: effectiveGradeFilter } })
                 .then(res => setTopics(res.data || []))
                 .catch(() => setTopics([]));
         } else {
             setTopics([]);
             setTopicFilter("all");
         }
-    }, [subjectFilter, statusFilter]);
+    }, [effectiveSubjectFilter, effectiveGradeFilter]);
 
     // 2. States cho chọn nhiều (Bulk Action)
     const [selectedIds, setSelectedIds] = useState([]);
@@ -186,9 +195,9 @@ const QuestionList = () => {
         try {
             const params = {};
             if (debouncedSearchTerm) params.keyword = debouncedSearchTerm;
-            if (subjectFilter !== "all") params.subject = subjectFilter;
+            if (effectiveSubjectFilter !== "all") params.subject = effectiveSubjectFilter;
             if (levelFilter !== "all") params.level = levelFilter;
-            if (statusFilter !== "all") params.grade = statusFilter;
+            if (effectiveGradeFilter !== "all") params.grade = effectiveGradeFilter;
             if (topicFilter !== "all") params.topicName = topicFilter;
 
             const res = await api.get("/api/admin/questions", { params });
@@ -206,7 +215,7 @@ const QuestionList = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [debouncedSearchTerm, subjectFilter, levelFilter, statusFilter, topicFilter]);
+    }, [debouncedSearchTerm, effectiveSubjectFilter, levelFilter, effectiveGradeFilter, topicFilter]);
 
     useEffect(() => {
         fetchQuestions();
@@ -333,24 +342,38 @@ const QuestionList = () => {
                         />
                     </div>
                     <div className="flex flex-wrap md:flex-nowrap gap-3">
-                        {/* Môn học — ẩn nếu teacher chỉ có 1 môn */}
-                        {!scope.isTeacher && (
-                            <Select value={subjectFilter} onValueChange={(val) => { setSubjectFilter(val); setCurrentPage(1); }}>
-                                <SelectTrigger className="w-full md:w-[140px] bg-white">
-                                    <SelectValue placeholder="Môn học" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tất cả môn</SelectItem>
-                                    <SelectItem value="Toán">Toán học</SelectItem>
-                                    <SelectItem value="Vật Lý">Vật Lý</SelectItem>
-                                    <SelectItem value="Hóa Học">Hóa Học</SelectItem>
-                                    <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
+                        {/* Môn học — teacher được tự gán và khóa theo phân công */}
+                        <Select
+                            value={effectiveSubjectFilter}
+                            onValueChange={(val) => {
+                                if (scopedSubjectFilter.disabled) return;
+                                setSubjectFilter(val);
+                                setCurrentPage(1);
+                            }}
+                            disabled={scopedSubjectFilter.disabled}
+                        >
+                            <SelectTrigger className="w-full md:w-[140px] bg-white">
+                                <SelectValue placeholder="Môn học" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {SUBJECT_FILTER_OPTIONS.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
 
                         {/* Lớp — teacher chỉ thấy lớp được phân công */}
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <Select
+                            value={effectiveGradeFilter}
+                            onValueChange={(val) => {
+                                if (scopedGradeFilter.disabled) return;
+                                setStatusFilter(val);
+                                setCurrentPage(1);
+                            }}
+                            disabled={scopedGradeFilter.disabled}
+                        >
                             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
                             <SelectContent>
                                 {!scope.isTeacher && <SelectItem value="all">Tất cả lớp</SelectItem>}
@@ -364,7 +387,7 @@ const QuestionList = () => {
                         <Select
                             value={topicFilter}
                             onValueChange={(val) => { setTopicFilter(val); setCurrentPage(1); }}
-                            disabled={subjectFilter === "all" || statusFilter === "all"}
+                            disabled={effectiveSubjectFilter === "all" || effectiveGradeFilter === "all"}
                         >
                             <SelectTrigger className="w-[160px] bg-white"><SelectValue placeholder="Chủ đề" /></SelectTrigger>
                             <SelectContent>

@@ -43,16 +43,6 @@ import QnATab from "./components/QnATab";
 import QuizTab from "./components/QuizTab";
 
 
-const formatStudyTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
-    if (mins > 0) return `${mins}m ${secs}s`;
-    return `${secs}s`;
-};
-
 const formatVideoDuration = (seconds) => {
     if (!seconds || seconds <= 0) return null;
     const hrs = Math.floor(seconds / 3600);
@@ -100,6 +90,16 @@ const Learning = () => {
     const completedRequestKeysRef = useRef(new Set());
     const mainPlayerContainerId = 'yt-main-player';
     const [completedLessons, setCompletedLessons] = useState([]);
+
+    const getCurrentVideoTime = useCallback(() => {
+        const player = mainPlayerRef.current;
+        if (!player || typeof player.getCurrentTime !== "function") return 0;
+
+        const currentTime = Number(player.getCurrentTime());
+        return Number.isFinite(currentTime) ? Math.floor(currentTime) : 0;
+    }, []);
+    const activeLessonId = activeLesson?.id;
+    const activeLessonVideoUrl = activeLesson?.videoUrl;
 
     // Hàm đánh dấu bài học hoàn thành — ghi lên server
     const markLessonCompleted = useCallback((id) => {
@@ -193,9 +193,9 @@ const Learning = () => {
 
     // Tạo/cập nhật YouTube Player chính cho bài học hiện tại
     useEffect(() => {
-        if (!activeLesson) return;
+        if (!activeLessonId || !activeLessonVideoUrl) return;
 
-        const videoId = extractYoutubeId(activeLesson.videoUrl);
+        const videoId = extractYoutubeId(activeLessonVideoUrl);
         if (!videoId) return;
 
         const loadYTApi = () => {
@@ -228,7 +228,7 @@ const Learning = () => {
             try {
                 const token = localStorage.getItem("token");
                 if (token) {
-                    const res = await api.get(`/api/learning/progress/time?lessonId=${activeLesson.id}`);
+                    const res = await api.get(`/api/learning/progress/time?lessonId=${activeLessonId}`);
                     startSeconds = res.data || 0;
                 }
             } catch (err) {
@@ -261,7 +261,7 @@ const Learning = () => {
                     onStateChange: (event) => {
                         // YT.PlayerState.ENDED = 0
                         if (event.data === 0) {
-                            markLessonCompleted(activeLesson.id);
+                            markLessonCompleted(activeLessonId);
                         }
                     },
                 },
@@ -275,13 +275,13 @@ const Learning = () => {
                     const duration = mainPlayerRef.current.getDuration?.() || 0;
 
                     if (duration > 0 && currentTime / duration >= 0.9) {
-                        markLessonCompleted(activeLesson.id);
+                        markLessonCompleted(activeLessonId);
                     }
 
                     if (currentTime > 0 && Math.abs(currentTime - lastSavedTimeRef.current) > 5) {
                          const token = localStorage.getItem("token");
                          if (token) {
-                             api.post(`/api/learning/progress/time?lessonId=${activeLesson.id}&time=${currentTime}`)
+                             api.post(`/api/learning/progress/time?lessonId=${activeLessonId}&time=${currentTime}`)
                                 .then(() => { lastSavedTimeRef.current = currentTime; })
                                 .catch(() => {});
                          }
@@ -299,11 +299,11 @@ const Learning = () => {
                 const currentTime = Math.floor(mainPlayerRef.current.getCurrentTime());
                 const token = localStorage.getItem("token");
                 if (token && currentTime > 0) {
-                    api.post(`/api/learning/progress/time?lessonId=${activeLesson.id}&time=${currentTime}`).catch(() => {});
+                    api.post(`/api/learning/progress/time?lessonId=${activeLessonId}&time=${currentTime}`).catch(() => {});
                 }
             }
         };
-    }, [activeLesson?.id, markLessonCompleted]);
+    }, [activeLessonId, activeLessonVideoUrl, markLessonCompleted]);
 
     // Fetch video durations via YouTube IFrame API
     useEffect(() => {
@@ -381,7 +381,7 @@ const Learning = () => {
         return () => {
             cancelled = true;
         };
-    }, [chapters]);
+    }, [chapters, videoDurations]);
 
     // Cleanup YT container on unmount
     useEffect(() => {
@@ -662,7 +662,11 @@ const Learning = () => {
                                             </TabsContent>
 
                                             <TabsContent value="note" className="m-0 h-[400px]">
-                                                <NoteTab lessonId={activeLesson.id} />
+                                                <NoteTab
+                                                    key={activeLesson.id}
+                                                    lessonId={activeLesson.id}
+                                                    getCurrentTime={getCurrentVideoTime}
+                                                />
                                             </TabsContent>
 
                                             <TabsContent value="qna" className="m-0 h-[500px]">

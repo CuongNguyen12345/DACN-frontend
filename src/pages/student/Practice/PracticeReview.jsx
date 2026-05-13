@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     ArrowLeft,
@@ -14,6 +14,55 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+
+const PracticeReviewQuestionPalette = ({ questions, userAnswers, onQuestionClick }) => (
+    <div className="h-full flex flex-col">
+        <h4 className="font-semibold mb-4 px-1">Kết quả bài làm</h4>
+        <ScrollArea className="flex-1 pr-4">
+            <div className="grid grid-cols-5 gap-2">
+                {questions.map(q => {
+                    const isAnswered = !!userAnswers[q.id];
+                    const correctOption = q.options.find(o => o.correct);
+                    const isCorrect = userAnswers[q.id] === correctOption?.label;
+
+                    let btnClass = "bg-gray-50 text-gray-400 border-gray-200";
+                    if (isAnswered) {
+                        btnClass = isCorrect
+                            ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200"
+                            : "bg-red-100 text-red-700 border-red-200 hover:bg-red-200";
+                    }
+
+                    return (
+                        <Button
+                            key={q.id}
+                            variant="outline"
+                            size="sm"
+                            className={cn("w-full h-8 text-xs font-semibold", btnClass)}
+                            onClick={() => onQuestionClick(q.id)}
+                        >
+                            {q.orderNumber}
+                        </Button>
+                    );
+                })}
+            </div>
+        </ScrollArea>
+        <div className="mt-6 pt-4 border-t space-y-2">
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-green-100 border border-green-200"></div>
+                <span className="text-sm text-gray-600">Câu trả lời đúng</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-red-100 border border-red-200"></div>
+                <span className="text-sm text-gray-600">Câu trả lời sai</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-gray-50 border border-gray-200"></div>
+                <span className="text-sm text-gray-600">Chưa làm</span>
+            </div>
+        </div>
+    </div>
+);
 
 const PracticeReview = () => {
     const navigate = useNavigate();
@@ -30,13 +79,33 @@ const PracticeReview = () => {
         userAnswers = {},
         questions = [] 
     } = data;
+    const revealResult = shouldRevealExamResult({
+        showResultImmediately: data.showResultImmediately,
+    });
 
     // Nếu không có dữ liệu, quay lại trang trước
+    useEffect(() => {
+        if (!examId) navigate("/practice");
+    }, [examId, navigate]);
+
     if (!examId) {
-        useEffect(() => {
-            navigate("/practice");
-        }, [navigate]);
         return null;
+    }
+
+    if (!revealResult) {
+        return (
+            <div className="min-h-screen bg-gray-50/30 flex items-center justify-center px-4">
+                <div className="max-w-lg rounded-2xl border bg-white p-8 text-center shadow-sm">
+                    <h1 className="text-2xl font-bold text-slate-900">Chưa mở đáp án</h1>
+                    <p className="mt-2 text-sm text-slate-500">
+                        Quản trị viên chưa bật hiển thị điểm và đáp án ngay sau khi nộp bài.
+                    </p>
+                    <Button onClick={() => navigate("/practice")} className="mt-5">
+                        Quay lại luyện đề
+                    </Button>
+                </div>
+            </div>
+        );
     }
 
     const scrollToQuestion = (id) => {
@@ -45,55 +114,6 @@ const PracticeReview = () => {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
         }
     };
-
-    // Component Sidebar: Hiển thị trạng thái các câu hỏi (Đúng/Sai/Bỏ trống)
-    const QuestionPalette = () => (
-        <div className="h-full flex flex-col">
-            <h4 className="font-semibold mb-4 px-1">Kết quả bài làm</h4>
-            <ScrollArea className="flex-1 pr-4">
-                <div className="grid grid-cols-5 gap-2">
-                    {questions.map(q => {
-                        const isAnswered = !!userAnswers[q.id];
-                        const correctOption = q.options.find(o => o.correct);
-                        const isCorrect = userAnswers[q.id] === correctOption?.label;
-                        
-                        let btnClass = "bg-gray-50 text-gray-400 border-gray-200"; // Chưa làm
-                        if (isAnswered) {
-                            btnClass = isCorrect 
-                                ? "bg-green-100 text-green-700 border-green-200 hover:bg-green-200" // Đúng
-                                : "bg-red-100 text-red-700 border-red-200 hover:bg-red-200"; // Sai
-                        }
-
-                        return (
-                            <Button
-                                key={q.id}
-                                variant="outline"
-                                size="sm"
-                                className={cn("w-full h-8 text-xs font-semibold", btnClass)}
-                                onClick={() => scrollToQuestion(q.id)}
-                            >
-                                {q.orderNumber}
-                            </Button>
-                        )
-                    })}
-                </div>
-            </ScrollArea>
-            <div className="mt-6 pt-4 border-t space-y-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-green-100 border border-green-200"></div>
-                    <span className="text-sm text-gray-600">Câu trả lời đúng</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-red-100 border border-red-200"></div>
-                    <span className="text-sm text-gray-600">Câu trả lời sai</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded bg-gray-50 border border-gray-200"></div>
-                    <span className="text-sm text-gray-600">Chưa làm</span>
-                </div>
-            </div>
-        </div>
-    );
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50/30">
@@ -123,7 +143,11 @@ const PracticeReview = () => {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="right">
-                            <QuestionPalette />
+                            <PracticeReviewQuestionPalette
+                                questions={questions}
+                                userAnswers={userAnswers}
+                                onQuestionClick={scrollToQuestion}
+                            />
                         </SheetContent>
                     </Sheet>
                 </div>
@@ -236,7 +260,11 @@ const PracticeReview = () => {
                 {/* Desktop Question Palette */}
                 <div className="hidden lg:block w-80 shrink-0">
                     <div className="sticky top-24 bg-white rounded-xl border shadow-sm p-4 max-h-[calc(100vh-120px)] flex flex-col">
-                        <QuestionPalette />
+                        <PracticeReviewQuestionPalette
+                            questions={questions}
+                            userAnswers={userAnswers}
+                            onQuestionClick={scrollToQuestion}
+                        />
                     </div>
                 </div>
             </div>

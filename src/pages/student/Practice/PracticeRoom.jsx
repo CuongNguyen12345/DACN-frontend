@@ -27,6 +27,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // For mobile question list
+import { useExamSecurityGuard } from "@/hooks/useExamSecurityGuard";
+import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+
+const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
 const PracticeRoom = () => {
     const { examId } = useParams();
@@ -37,6 +46,17 @@ const PracticeRoom = () => {
     const [answers, setAnswers] = useState({}); // { questionId: 'A' }
     const [timeLeft, setTimeLeft] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [tabSwitchWarnings, setTabSwitchWarnings] = useState(0);
+    const examSecuritySettings = useExamSecuritySettings();
+    const handleTabSwitchWarning = useCallback(() => {
+        setTabSwitchWarnings((count) => count + 1);
+    }, []);
+
+    useExamSecurityGuard({
+        settings: examSecuritySettings,
+        enabled: !isLoading && questions.length > 0,
+        onTabSwitch: handleTabSwitchWarning,
+    });
 
     const fetchExam = useCallback(async () => {
         setIsLoading(true);
@@ -80,28 +100,6 @@ const PracticeRoom = () => {
         fetchExam();
     }, [fetchExam]);
 
-    useEffect(() => {
-        if (!isLoading && timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        handleFinish();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [isLoading, timeLeft]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
     const handleAnswerSelect = (questionId, optionKey) => {
         const newAnswers = { ...answers, [questionId]: optionKey };
         setAnswers(newAnswers);
@@ -112,7 +110,7 @@ const PracticeRoom = () => {
         return questions.length - Object.keys(answers).length;
     };
 
-    const handleFinish = async () => {
+    const handleFinish = useCallback(async () => {
         // Xóa dữ liệu lưu tạm khi nộp bài
         localStorage.removeItem(`exam_endTime_${examId}`);
         localStorage.removeItem(`exam_answers_${examId}`);
@@ -146,11 +144,29 @@ const PracticeRoom = () => {
             total: questions.length,
             timeTaken,
             userAnswers: answers,
-            questions: questions // Gửi kèm data question để xem lại bài
+            questions: questions, // Gửi kèm data question để xem lại bài
+            showResultImmediately: shouldRevealExamResult(examSecuritySettings),
         };
 
         navigate(`/practice/result/${examId}`, { state: resultData });
-    };
+    }, [answers, exam, examId, examSecuritySettings, navigate, questions, timeLeft]);
+
+    useEffect(() => {
+        if (!isLoading && timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        handleFinish();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+        return undefined;
+    }, [handleFinish, isLoading, timeLeft]);
 
     const scrollToQuestion = (id) => {
         const element = document.getElementById(`question-${id}`);
@@ -206,6 +222,12 @@ const PracticeRoom = () => {
                         <Clock className="h-4 w-4" />
                         <span>{formatTime(timeLeft)}</span>
                     </div>
+
+                    {examSecuritySettings.preventTabSwitch && tabSwitchWarnings > 0 && (
+                        <Badge variant="destructive" className="hidden sm:inline-flex">
+                            Rời màn: {tabSwitchWarnings}
+                        </Badge>
+                    )}
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

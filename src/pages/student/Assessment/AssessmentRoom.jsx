@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useExamSecurityGuard } from "@/hooks/useExamSecurityGuard";
+import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
 
 const AssessmentRoom = () => {
   const { state } = useLocation();
@@ -26,7 +29,19 @@ const AssessmentRoom = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [tabSwitchWarnings, setTabSwitchWarnings] = useState(0);
   const timerRef = useRef(null);
+  const examSecuritySettings = useExamSecuritySettings();
+  const revealResult = shouldRevealExamResult(examSecuritySettings);
+  const handleTabSwitchWarning = useCallback(() => {
+    setTabSwitchWarnings((count) => count + 1);
+  }, []);
+
+  useExamSecurityGuard({
+    settings: examSecuritySettings,
+    enabled: !isLoading && questions.length > 0,
+    onTabSwitch: handleTabSwitchWarning,
+  });
 
   // Redirect nếu không có state
   useEffect(() => {
@@ -123,6 +138,7 @@ const AssessmentRoom = () => {
       wrongQuestions,
       questions,
       userAnswers: answers,
+      showResultImmediately: revealResult,
     };
     localStorage.setItem("assessment_result", JSON.stringify(resultData));
 
@@ -234,6 +250,12 @@ const AssessmentRoom = () => {
             {formatTime(elapsedSeconds)}
           </div>
 
+          {examSecuritySettings.preventTabSwitch && tabSwitchWarnings > 0 && (
+            <Badge variant="destructive" className="hidden sm:inline-flex">
+              Rời màn: {tabSwitchWarnings}
+            </Badge>
+          )}
+
           {/* Nút nộp bài */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -254,7 +276,7 @@ const AssessmentRoom = () => {
                   onClick={handleFinish}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  Nộp bài & Xem phân tích
+                  {revealResult ? "Nộp bài & Xem phân tích" : "Nộp bài"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -334,7 +356,7 @@ const AssessmentRoom = () => {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="lg" className="bg-blue-600 hover:bg-blue-700 px-10 text-base shadow-lg shadow-blue-200">
-                  Nộp bài & Xem phân tích AI
+                  {revealResult ? "Nộp bài & Xem phân tích AI" : "Nộp bài"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -349,7 +371,7 @@ const AssessmentRoom = () => {
                 <AlertDialogFooter>
                   <AlertDialogCancel>Làm tiếp</AlertDialogCancel>
                   <AlertDialogAction onClick={handleFinish} className="bg-blue-600 hover:bg-blue-700">
-                    Nộp bài
+                    {revealResult ? "Nộp bài & Xem phân tích" : "Nộp bài"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

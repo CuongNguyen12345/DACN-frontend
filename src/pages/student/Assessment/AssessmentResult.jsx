@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import {
@@ -9,6 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
 
 // Vòng tròn điểm số
 const ScoreCircle = ({ score }) => {
@@ -47,20 +48,7 @@ const AssessmentResult = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showReview, setShowReview] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("assessment_result");
-    if (!saved) {
-      navigate("/assessment");
-      return;
-    }
-    const parsed = JSON.parse(saved);
-    setResult(parsed);
-
-    // Gọi AI phân tích ngay
-    analyzeWithAI(parsed);
-  }, []);
-
-  const analyzeWithAI = async (data) => {
+  const analyzeWithAI = useCallback(async (data) => {
     setIsAnalyzing(true);
     try {
       const res = await api.post("/api/assessment/analyze", {
@@ -78,9 +66,45 @@ const AssessmentResult = () => {
     } finally {
       setIsAnalyzing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("assessment_result");
+    if (!saved) {
+      navigate("/assessment");
+      return;
+    }
+    const parsed = JSON.parse(saved);
+    setResult(parsed);
+
+    if (shouldRevealExamResult({ showResultImmediately: parsed.showResultImmediately })) {
+      analyzeWithAI(parsed);
+    }
+  }, [analyzeWithAI, navigate]);
 
   if (!result) return null;
+  const revealResult = shouldRevealExamResult({
+    showResultImmediately: result.showResultImmediately,
+  });
+
+  if (!revealResult) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 flex items-center justify-center px-4">
+        <div className="max-w-lg rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Đã nộp bài kiểm tra</h1>
+          <p className="mt-2 text-sm text-slate-500">
+            Điểm, phân tích AI và đáp án sẽ được hiển thị khi quản trị viên cho phép.
+          </p>
+          <Button onClick={() => navigate("/assessment")} className="mt-5 bg-blue-600 hover:bg-blue-700">
+            Quay lại kiểm tra năng lực
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const { subject, grade, targetScore, score, correctCount, totalQuestions, timeTaken, wrongQuestions, questions, userAnswers } = result;
   const accuracy = Math.round((correctCount / totalQuestions) * 100);
@@ -156,13 +180,16 @@ const AssessmentResult = () => {
                 { icon: XCircle, label: "Câu sai", value: `${wrongQuestions.length}/${totalQuestions}`, color: "text-rose-500", bg: "bg-rose-50" },
                 { icon: Trophy, label: "Độ chính xác", value: `${accuracy}%`, color: "text-amber-600", bg: "bg-amber-50" },
                 { icon: Clock, label: "Thời gian", value: timeTaken, color: "text-blue-600", bg: "bg-blue-50" },
-              ].map(({ icon: Icon, label, value, color, bg }) => (
-                <div key={label} className={cn("rounded-2xl p-4", bg)}>
-                  <Icon className={cn("h-5 w-5 mb-2", color)} />
-                  <p className="text-xs text-slate-500">{label}</p>
-                  <p className={cn("text-xl font-bold", color)}>{value}</p>
-                </div>
-              ))}
+              ].map((item) => {
+                const StatIcon = item.icon;
+                return (
+                  <div key={item.label} className={cn("rounded-2xl p-4", item.bg)}>
+                    <StatIcon className={cn("h-5 w-5 mb-2", item.color)} />
+                    <p className="text-xs text-slate-500">{item.label}</p>
+                    <p className={cn("text-xl font-bold", item.color)}>{item.value}</p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

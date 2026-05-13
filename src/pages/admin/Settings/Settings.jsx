@@ -1,16 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
     Globe, 
     Shield, 
     Bell, 
     Save, 
-    CheckCircle2,
     Lock,
     EyeOff
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import api from "@/services/api";
+import {
+    loadExamSecuritySettings,
+    saveExamSecuritySettings,
+} from "@/lib/examSecuritySettings";
+
+const ToggleSwitch = ({ checked, onChange, name }) => (
+    <button
+        type="button"
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${checked ? 'bg-blue-600' : 'bg-gray-200'}`}
+        onClick={() => onChange(name)}
+    >
+        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
+    </button>
+);
 
 const Settings = () => {
     // Quản lý tab đang active
@@ -23,8 +38,6 @@ const Settings = () => {
         contactEmail: "admin@thptqg.edu.vn",
         description: "Nền tảng tổ chức thi và ôn tập trực tuyến dành cho học sinh trung học phổ thông.",
         
-        // Bảo mật & Thi cử
-        requireLogin: true,
         preventTabSwitch: true,
         preventCopy: true,
         showResultImmediately: false,
@@ -34,6 +47,19 @@ const Settings = () => {
         emailWeeklyReport: false,
         emailSystemErrors: true
     });
+
+    useEffect(() => {
+        let cancelled = false;
+
+        loadExamSecuritySettings(api).then((settings) => {
+            if (cancelled) return;
+            setConfig((prev) => ({ ...prev, ...settings }));
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Hàm xử lý thay đổi text input
     const handleChange = (e) => {
@@ -46,20 +72,16 @@ const Settings = () => {
         setConfig(prev => ({ ...prev, [name]: !prev[name] }));
     };
 
-    const handleSaveSettings = () => {
-        alert("Đã lưu cấu hình hệ thống thành công!");
+    const handleSaveSettings = async () => {
+        try {
+            const savedSettings = await saveExamSecuritySettings(api, config);
+            setConfig((prev) => ({ ...prev, ...savedSettings }));
+            toast.success("Đã lưu cấu hình hệ thống thành công!");
+        } catch (error) {
+            console.error("Không thể lưu cấu hình hệ thống:", error);
+            toast.error("Không thể lưu cấu hình. Vui lòng thử lại.");
+        }
     };
-
-    // Component Toggle (Công tắc) custom bằng Tailwind
-    const ToggleSwitch = ({ checked, onChange, name }) => (
-        <button
-            type="button"
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${checked ? 'bg-blue-600' : 'bg-gray-200'}`}
-            onClick={() => onChange(name)}
-        >
-            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'}`} />
-        </button>
-    );
 
     // Dữ liệu menu sidebar
     const tabs = [
@@ -157,13 +179,6 @@ const Settings = () => {
                             </CardHeader>
                             <CardContent className="p-6 space-y-6">
                                 <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <div className="text-sm font-medium text-gray-900">Bắt buộc đăng nhập</div>
-                                        <div className="text-sm text-gray-500">Người dùng phải có tài khoản mới được tham gia thi.</div>
-                                    </div>
-                                    <ToggleSwitch checked={config.requireLogin} onChange={handleToggle} name="requireLogin" />
-                                </div>
-                                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                                     <div className="space-y-0.5">
                                         <div className="flex items-center text-sm font-medium text-gray-900">
                                             <EyeOff className="h-4 w-4 mr-1.5 text-amber-500" /> Cảnh báo chuyển Tab/Cửa sổ

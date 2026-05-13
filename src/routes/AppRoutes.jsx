@@ -43,6 +43,8 @@ import QnAManager from "@/pages/admin/QnA/QnAManager";
 import LessonManagement from "@/pages/admin/Lesson/LessonManagement";
 import LessonCreate from "@/pages/admin/Lesson/LessonCreate";
 import LessonEdit from "@/pages/admin/Lesson/LessonEdit";
+import ExerciseManagement from "@/pages/admin/Exercises/ExerciseManagement";
+import ExerciseCreate from "@/pages/admin/Exercises/ExerciseCreate";
 import AccountDetail from "@/pages/admin/Account/AccountDetail";
 import AccountManagement from "@/pages/admin/Account/AccountManagement";
 
@@ -64,6 +66,10 @@ const sharedManagerRoutes = [
   { path: "lessons", element: <LessonManagement /> },
   { path: "lessons/create", element: <LessonCreate /> },
   { path: "lessons/edit/:id", element: <LessonEdit /> },
+
+  { path: "exercises", element: <ExerciseManagement /> },
+  { path: "exercises/create", element: <ExerciseCreate /> },
+  { path: "exercises/edit/:id", element: <ExerciseCreate /> },
 ];
 
 function AppRoutes() {

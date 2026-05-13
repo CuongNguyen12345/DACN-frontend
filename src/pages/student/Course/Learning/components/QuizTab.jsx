@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
 
 const mockQuestion = {
     content: "Đồ thị hàm số y = ax^3 + bx^2 + cx + d (a ≠ 0) có 2 điểm cực trị khi và chỉ khi:",
@@ -23,6 +25,8 @@ const QuizTab = ({ lessonId }) => {
     const [submitted, setSubmitted] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState("");
     const [result, setResult] = useState(null);
+    const examSecuritySettings = useExamSecuritySettings();
+    const revealResult = shouldRevealExamResult(examSecuritySettings);
 
     const handleSubmit = () => {
         if (!selectedAnswer) return;
@@ -75,7 +79,23 @@ const QuizTab = ({ lessonId }) => {
                 </Button>
             ) : (
                 <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-5">
-                    {result === "correct" ? (
+                    {!revealResult ? (
+                        <Alert className="bg-blue-50 border-blue-200 text-blue-900">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                            <AlertTitle>Đã ghi nhận bài làm!</AlertTitle>
+                            <AlertDescription className="mt-2">
+                                <p>Kết quả và đáp án sẽ được hiển thị khi quản trị viên cho phép.</p>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleRetry}
+                                    className="mt-3 border-blue-600 text-blue-700 hover:bg-blue-100"
+                                >
+                                    Làm lại
+                                </Button>
+                            </AlertDescription>
+                        </Alert>
+                    ) : result === "correct" ? (
                         <Alert variant="success" className="bg-green-50 border-green-200 text-green-900">
                             <CheckCircle2 className="h-4 w-4 text-green-600" />
                             <AlertTitle>Chính xác!</AlertTitle>

@@ -1,7 +1,7 @@
+import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
     CheckCircle2,
-    XCircle,
     ArrowRight,
     RotateCcw,
     Trophy
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
 
 const PracticeResult = () => {
     const navigate = useNavigate();
@@ -21,7 +22,6 @@ const PracticeResult = () => {
     const data = location.state || {};
     const { 
         examId, 
-        examTitle, 
         score = 0, 
         correct = 0, 
         total = 0, 
@@ -29,13 +29,40 @@ const PracticeResult = () => {
         userAnswers = {},
         questions = [] 
     } = data;
+    const revealResult = shouldRevealExamResult({
+        showResultImmediately: data.showResultImmediately,
+    });
 
     // Nếu không có dữ liệu (truy cập trực tiếp), quay lại trang luyện đề
+    useEffect(() => {
+        if (!examId) navigate("/practice");
+    }, [examId, navigate]);
+
     if (!examId) {
-        useEffect(() => {
-            navigate("/practice");
-        }, [navigate]);
         return null;
+    }
+
+    if (!revealResult) {
+        return (
+            <div className="min-h-screen bg-gray-50/50 py-10 px-4 flex justify-center">
+                <Card className="w-full max-w-xl border-none shadow-lg">
+                    <CardContent className="p-8 text-center space-y-5">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+                            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900">Đã nộp bài</h2>
+                            <p className="mt-2 text-sm text-gray-500">
+                                Kết quả và đáp án sẽ được hiển thị khi quản trị viên cho phép.
+                            </p>
+                        </div>
+                        <Button onClick={() => navigate("/practice")} className="bg-blue-600 hover:bg-blue-700">
+                            Quay lại luyện đề
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
     }
 
     // Mock analysis based on level instead of topic (since topic might not be in the DTO yet)
