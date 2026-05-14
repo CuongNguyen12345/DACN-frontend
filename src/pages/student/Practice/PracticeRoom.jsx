@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/services/api";
 import {
@@ -30,6 +30,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Fo
 import { useExamSecurityGuard } from "@/hooks/useExamSecurityGuard";
 import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+import { normalizeExamResultDetail } from "@/pages/student/History/examHistoryView";
 
 const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -46,7 +47,9 @@ const PracticeRoom = () => {
     const [answers, setAnswers] = useState({}); // { questionId: 'A' }
     const [timeLeft, setTimeLeft] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [tabSwitchWarnings, setTabSwitchWarnings] = useState(0);
+    const isSubmittingRef = useRef(false);
     const examSecuritySettings = useExamSecuritySettings();
     const handleTabSwitchWarning = useCallback(() => {
         setTabSwitchWarnings((count) => count + 1);
@@ -111,45 +114,32 @@ const PracticeRoom = () => {
     };
 
     const handleFinish = useCallback(async () => {
-        // Xóa dữ liệu lưu tạm khi nộp bài
-        localStorage.removeItem(`exam_endTime_${examId}`);
-        localStorage.removeItem(`exam_answers_${examId}`);
+        if (!exam || isSubmittingRef.current) return;
 
-        // Gọi API cập nhật số lượt làm bài
+        isSubmittingRef.current = true;
+        setIsSubmitting(true);
         try {
-            await api.post(`/api/exam/${examId}/submit`);
+            const response = await api.post(`/api/exam/${examId}/submit`, {
+                answers,
+                durationSeconds: Math.max(0, (exam.duration * 60) - timeLeft),
+            });
+
+            localStorage.removeItem(`exam_endTime_${examId}`);
+            localStorage.removeItem(`exam_answers_${examId}`);
+
+            const resultData = {
+                ...normalizeExamResultDetail(response.data),
+                showResultImmediately: shouldRevealExamResult(examSecuritySettings),
+            };
+
+            navigate(`/practice/result/${examId}`, { state: resultData });
         } catch (error) {
-            console.error("Lỗi cập nhật lượt làm bài:", error);
+            console.error("Lỗi lưu kết quả bài thi:", error);
+            alert("Không thể lưu kết quả bài thi. Vui lòng thử lại.");
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
         }
-
-        // Tính toán kết quả nhãn tiền
-        let correctCount = 0;
-        questions.forEach((q) => {
-            const userAnswer = answers[q.id];
-            const correctOption = q.options.find(opt => opt.correct);
-            if (userAnswer && correctOption && userAnswer === correctOption.label) {
-                correctCount++;
-            }
-        });
-
-        const score = Number(((correctCount / questions.length) * 10).toFixed(1));
-        const timeSpentSeconds = (exam.duration * 60) - timeLeft;
-        const timeTaken = formatTime(timeSpentSeconds);
-
-        const resultData = {
-            examId: examId,
-            examTitle: exam.title,
-            score,
-            correct: correctCount,
-            total: questions.length,
-            timeTaken,
-            userAnswers: answers,
-            questions: questions, // Gửi kèm data question để xem lại bài
-            showResultImmediately: shouldRevealExamResult(examSecuritySettings),
-        };
-
-        navigate(`/practice/result/${examId}`, { state: resultData });
-    }, [answers, exam, examId, examSecuritySettings, navigate, questions, timeLeft]);
+    }, [answers, exam, examId, examSecuritySettings, navigate, timeLeft]);
 
     useEffect(() => {
         if (!isLoading && timeLeft > 0) {
@@ -231,7 +221,9 @@ const PracticeRoom = () => {
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button size="default" className="bg-primary hover:bg-primary/90" disabled={isLoading}>Nộp bài</Button>
+                            <Button size="default" className="bg-primary hover:bg-primary/90" disabled={isLoading || isSubmitting}>
+                                {isSubmitting ? "Đang nộp..." : "Nộp bài"}
+                            </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -244,8 +236,8 @@ const PracticeRoom = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Làm tiếp</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleFinish}>
-                                    Nộp bài
+                                <AlertDialogAction onClick={handleFinish} disabled={isSubmitting}>
+                                    {isSubmitting ? "Đang nộp..." : "Nộp bài"}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
