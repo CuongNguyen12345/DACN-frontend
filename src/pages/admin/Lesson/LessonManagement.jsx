@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Search,
@@ -6,21 +6,23 @@ import {
     Filter,
     Edit,
     Trash2,
-    Video,
-    FileText,
-    CheckCircle2,
-    Clock,
     BookOpen,
     ChevronLeft,
     ChevronRight
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
 import api from "@/services/api";
+import {
+    GRADE_FILTER_OPTIONS,
+    SUBJECT_FILTER_OPTIONS,
+    getScopedGradeFilter,
+    getScopedSubjectFilter,
+} from "@/pages/admin/Questions/questionListFilters";
 
 // Import Select từ shadcn
 import {
@@ -34,12 +36,23 @@ import {
 const LessonManagement = () => {
     const navigate = useNavigate();
     const { basePath } = useAuth();
+    const scope = useTeacherScope();
 
     // States cho Tìm kiếm và Lọc
     const [searchTerm, setSearchTerm] = useState("");
     const [filterSubject, setFilterSubject] = useState("all");
     const [filterGrade, setFilterGrade] = useState("all");
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+    const scopedSubjectFilter = useMemo(
+        () => getScopedSubjectFilter(scope, filterSubject),
+        [scope, filterSubject]
+    );
+    const scopedGradeFilter = useMemo(
+        () => getScopedGradeFilter(scope, filterGrade),
+        [scope, filterGrade]
+    );
+    const effectiveSubjectFilter = scopedSubjectFilter.value;
+    const effectiveGradeFilter = scopedGradeFilter.value;
 
     // State cho phân trang
     const [currentPage, setCurrentPage] = useState(1);
@@ -64,8 +77,8 @@ const LessonManagement = () => {
             try {
                 const params = new URLSearchParams();
                 if (debouncedSearchTerm) params.append("keyword", debouncedSearchTerm);
-                if (filterSubject !== "all") params.append("subject", filterSubject);
-                if (filterGrade !== "all") params.append("grade", filterGrade);
+                if (effectiveSubjectFilter !== "all") params.append("subject", effectiveSubjectFilter);
+                if (effectiveGradeFilter !== "all") params.append("grade", effectiveGradeFilter);
 
                 const response = await api.get(`/api/admin/lessons?${params.toString()}`);
 
@@ -88,12 +101,12 @@ const LessonManagement = () => {
         };
 
         fetchLessons();
-    }, [debouncedSearchTerm, filterSubject, filterGrade]);
+    }, [debouncedSearchTerm, effectiveSubjectFilter, effectiveGradeFilter]);
 
     // Reset về trang 1 mỗi khi đổi điều kiện tìm kiếm hoặc lọc
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterSubject, filterGrade]);
+    }, [searchTerm, effectiveSubjectFilter, effectiveGradeFilter]);
 
     // Phân trang
     const totalPages = Math.ceil(lessons.length / itemsPerPage);
@@ -121,15 +134,6 @@ const LessonManagement = () => {
                 console.error("Lỗi khi xóa bài học:", error);
                 alert("Xóa bài học thất bại!");
             }
-        }
-    };
-
-    const renderTypeIcon = (type) => {
-        switch (type) {
-            case "Video": return <Video className="w-4 h-4 mr-2 text-blue-500" />;
-            case "Lý thuyết": return <FileText className="w-4 h-4 mr-2 text-amber-500" />;
-            case "Bài tập": return <BookOpen className="w-4 h-4 mr-2 text-purple-500" />;
-            default: return <FileText className="w-4 h-4 mr-2 text-gray-500" />;
         }
     };
 
@@ -164,7 +168,14 @@ const LessonManagement = () => {
                     </div>
 
                     <div className="w-full sm:w-40">
-                        <Select value={filterGrade} onValueChange={setFilterGrade}>
+                        <Select
+                            value={effectiveGradeFilter}
+                            onValueChange={(value) => {
+                                if (scopedGradeFilter.disabled) return;
+                                setFilterGrade(value);
+                            }}
+                            disabled={scopedGradeFilter.disabled}
+                        >
                             <SelectTrigger className="w-full bg-white">
                                 <div className="flex items-center">
                                     <BookOpen className="w-4 h-4 mr-2 text-gray-500" />
@@ -172,16 +183,27 @@ const LessonManagement = () => {
                                 </div>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tất cả lớp</SelectItem>
-                                <SelectItem value="10">Lớp 10</SelectItem>
-                                <SelectItem value="11">Lớp 11</SelectItem>
-                                <SelectItem value="12">Lớp 12</SelectItem>
+                                {GRADE_FILTER_OPTIONS
+                                    .filter((option) => option.value !== "all" || !scope.isTeacher || scope.allowedGrades.length === 0)
+                                    .filter((option) => option.value === "all" || scope.canUseGrade(option.value))
+                                    .map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="w-full sm:w-48">
-                        <Select value={filterSubject} onValueChange={setFilterSubject}>
+                        <Select
+                            value={effectiveSubjectFilter}
+                            onValueChange={(value) => {
+                                if (scopedSubjectFilter.disabled) return;
+                                setFilterSubject(value);
+                            }}
+                            disabled={scopedSubjectFilter.disabled}
+                        >
                             <SelectTrigger className="w-full bg-white">
                                 <div className="flex items-center">
                                     <Filter className="w-4 h-4 mr-2 text-gray-500" />
@@ -189,12 +211,14 @@ const LessonManagement = () => {
                                 </div>
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tất cả môn học</SelectItem>
-                                <SelectItem value="Toán học">Toán học</SelectItem>
-                                <SelectItem value="Vật lý">Vật lý</SelectItem>
-                                <SelectItem value="Hóa học">Hóa học</SelectItem>
-                                <SelectItem value="Sinh học">Sinh học</SelectItem>
-                                <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
+                                {SUBJECT_FILTER_OPTIONS
+                                    .filter((option) => option.value !== "all" || !scope.isTeacher || !scope.allowedSubject)
+                                    .filter((option) => option.value === "all" || scope.canUseSubject(option.value))
+                                    .map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -209,28 +233,29 @@ const LessonManagement = () => {
                             <tr>
                                 <th className="px-6 py-4 font-medium">Mã bài</th>
                                 <th className="px-6 py-4 font-medium">Tên bài học</th>
-                                <th className="px-6 py-4 font-medium">Môn học</th>
+                                <th className="px-6 py-4 font-medium whitespace-nowrap">Môn học</th>
                                 <th className="px-6 py-4 font-medium">Chương</th>
                                 <th className="px-6 py-4 font-medium text-right">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {currentLessons.length > 0 ? (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
+                                        Đang tải danh sách bài học...
+                                    </td>
+                                </tr>
+                            ) : currentLessons.length > 0 ? (
                                 currentLessons.map((lesson) => (
                                     <tr key={lesson.id} className="hover:bg-slate-50/80 transition-colors group">
                                         <td className="px-6 py-4 text-gray-900 font-medium">{lesson.id}</td>
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900 line-clamp-1">{lesson.title}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            <div className="flex flex-col gap-1">
-                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 w-fit">
-                                                    {lesson.subject}
-                                                </Badge>
-                                                <span className="text-[10px] font-medium text-gray-400 ml-1">
-                                                    {lesson.grade}
-                                                </span>
-                                            </div>
+                                        <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 shrink-0">
+                                                {lesson.subject} - {lesson.grade}
+                                            </Badge>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-gray-700 font-medium line-clamp-1 max-w-[200px]">

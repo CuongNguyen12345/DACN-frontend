@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -26,10 +26,20 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
+import {
+  GRADE_FILTER_OPTIONS,
+  SUBJECT_FILTER_OPTIONS,
+  getScopedGradeFilter,
+  getScopedSubjectFilter,
+} from "@/pages/admin/Questions/questionListFilters";
 import api from "@/services/api";
 
 const ExamList = () => {
   const navigate = useNavigate();
+  const { basePath } = useAuth();
+  const scope = useTeacherScope();
   const [searchTerm, setSearchTerm] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [classFilter, setClassFilter] = useState("all");
@@ -42,6 +52,16 @@ const ExamList = () => {
   const [error, setError] = useState(null);
 
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const scopedSubjectFilter = useMemo(
+    () => getScopedSubjectFilter(scope, subjectFilter),
+    [scope, subjectFilter],
+  );
+  const scopedGradeFilter = useMemo(
+    () => getScopedGradeFilter(scope, classFilter),
+    [scope, classFilter],
+  );
+  const effectiveSubjectFilter = scopedSubjectFilter.value;
+  const effectiveGradeFilter = scopedGradeFilter.value;
 
   // Debounce cho thanh tìm kiếm
   useEffect(() => {
@@ -59,8 +79,8 @@ const ExamList = () => {
     try {
       const params = new URLSearchParams();
       if (debouncedSearch) params.append("keyword", debouncedSearch);
-      if (subjectFilter !== "all") params.append("subject", subjectFilter);
-      if (classFilter !== "all") params.append("grade", classFilter);
+      if (effectiveSubjectFilter !== "all") params.append("subject", effectiveSubjectFilter);
+      if (effectiveGradeFilter !== "all") params.append("grade", effectiveGradeFilter);
 
       const res = await api.get(`/api/admin/exams?${params.toString()}`);
       setExams(res.data);
@@ -70,7 +90,7 @@ const ExamList = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, subjectFilter, classFilter]);
+  }, [debouncedSearch, effectiveSubjectFilter, effectiveGradeFilter]);
 
   // Gọi API mỗi khi filter (hoặc debouncedSearch) thay đổi
   useEffect(() => {
@@ -111,7 +131,7 @@ const ExamList = () => {
             Làm mới
           </Button>
           <Button
-            onClick={() => navigate("/admin/exams/create")}
+            onClick={() => navigate(`${basePath}/exams/create`)}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Plus className="h-4 w-4 mr-2" /> Tạo đề thi mới
@@ -137,11 +157,13 @@ const ExamList = () => {
             </div>
             <div className="flex gap-3 w-full md:w-auto">
               <Select
-                value={subjectFilter}
+                value={effectiveSubjectFilter}
                 onValueChange={(value) => {
+                  if (scopedSubjectFilter.disabled) return;
                   setSubjectFilter(value);
                   setCurrentPage(1);
                 }}
+                disabled={scopedSubjectFilter.disabled}
               >
                 <SelectTrigger className="w-[150px] bg-white border-gray-200">
                   <div className="flex items-center gap-2">
@@ -150,21 +172,25 @@ const ExamList = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tất cả môn</SelectItem>
-                  <SelectItem value="Toán">Toán</SelectItem>
-                  <SelectItem value="Vật Lý">Vật Lý</SelectItem>
-                  <SelectItem value="Hóa Học">Hóa Học</SelectItem>
-                  <SelectItem value="Tiếng Anh">Tiếng Anh</SelectItem>
-                  <SelectItem value="Ngữ Văn">Ngữ Văn</SelectItem>
+                  {SUBJECT_FILTER_OPTIONS
+                    .filter((option) => option.value !== "all" || !scope.isTeacher || !scope.allowedSubject)
+                    .filter((option) => option.value === "all" || scope.canUseSubject(option.value))
+                    .map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
 
               <Select
-                value={classFilter}
+                value={effectiveGradeFilter}
                 onValueChange={(value) => {
+                  if (scopedGradeFilter.disabled) return;
                   setClassFilter(value);
                   setCurrentPage(1);
                 }}
+                disabled={scopedGradeFilter.disabled}
               >
                 <SelectTrigger className="w-[140px] bg-white border-gray-200">
                   <div className="flex items-center gap-2">
@@ -173,10 +199,14 @@ const ExamList = () => {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tất cả lớp</SelectItem>
-                  <SelectItem value="Lớp 10">Lớp 10</SelectItem>
-                  <SelectItem value="Lớp 11">Lớp 11</SelectItem>
-                  <SelectItem value="Lớp 12">Lớp 12</SelectItem>
+                  {GRADE_FILTER_OPTIONS
+                    .filter((option) => option.value !== "all" || !scope.isTeacher || scope.allowedGrades.length === 0)
+                    .filter((option) => option.value === "all" || scope.canUseGrade(option.value))
+                    .map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -228,7 +258,7 @@ const ExamList = () => {
                   </td>
                 </tr>
               ) : paginatedExams.length > 0 ? (
-                paginatedExams.map((exam, idx) => (
+                paginatedExams.map((exam) => (
                   <tr
                     key={exam.id}
                     className="hover:bg-slate-50/80 transition-colors group"
@@ -263,7 +293,7 @@ const ExamList = () => {
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           onClick={() =>
-                            navigate(`/admin/exams/view/${exam.id}`)
+                            navigate(`${basePath}/exams/view/${exam.id}`)
                           }
                           variant="ghost"
                           size="icon"
@@ -273,7 +303,7 @@ const ExamList = () => {
                         </Button>
                         <Button
                           onClick={() =>
-                            navigate(`/admin/exams/edit/${exam.id}`)
+                            navigate(`${basePath}/exams/edit/${exam.id}`)
                           }
                           variant="ghost"
                           size="icon"

@@ -1,25 +1,15 @@
-import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "./components/Header";
 import Footer from "./components/Footer";
 import { ChatWidget } from "./components/ChatWidget";
 
 const StudentLayout = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Mock login state
-
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-  };
-
   return (
-    <div className={`min-h-screen flex flex-col bg-white ${isDarkMode ? 'dark' : ''}`}>
+    <div className="min-h-screen flex flex-col bg-white">
       <Header
-        isLoggedIn={isLoggedIn}
         navigate={navigate}
-        handleLogout={handleLogout}
         userAvatar={`https://api.dicebear.com/7.x/avataaars/svg?seed=Felix`}
       />
 

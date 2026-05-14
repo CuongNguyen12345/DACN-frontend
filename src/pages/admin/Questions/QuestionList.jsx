@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { useTeacherScope } from "@/hooks/useTeacherScope";
-import { getScopedGradeFilter, getScopedSubjectFilter, SUBJECT_FILTER_OPTIONS } from "./questionListFilters";
+import { GRADE_FILTER_OPTIONS, SUBJECT_FILTER_OPTIONS, getScopedGradeFilter, getScopedSubjectFilter } from "./questionListFilters";
 import {
     Dialog,
     DialogContent,
@@ -376,9 +376,12 @@ const QuestionList = () => {
                         >
                             <SelectTrigger className="w-[140px]"><SelectValue placeholder="Lớp" /></SelectTrigger>
                             <SelectContent>
-                                {!scope.isTeacher && <SelectItem value="all">Tất cả lớp</SelectItem>}
-                                {(["Lớp 10", "Lớp 11", "Lớp 12"]).filter(g => scope.canUseGrade(g)).map(g => (
-                                    <SelectItem key={g} value={g}>{g}</SelectItem>
+                                {(!scope.isTeacher || scope.allowedGrades.length === 0) && <SelectItem value="all">Tất cả lớp</SelectItem>}
+                                {GRADE_FILTER_OPTIONS
+                                    .filter((option) => option.value !== "all")
+                                    .filter((option) => scope.canUseGrade(option.value))
+                                    .map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>

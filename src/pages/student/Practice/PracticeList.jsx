@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
-  Filter,
   Clock,
   HelpCircle,
   User,
   PlayCircle,
-  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,14 +29,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Separator } from "@/components/ui/separator"; // Ensure imports are correct if I created separator
-// If separator wasn't created, check logic? I saw it in the list.
 
 import api from "@/services/api";
 
@@ -65,7 +60,7 @@ const PracticeList = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchExams = async () => {
+  const fetchExams = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -80,11 +75,11 @@ const PracticeList = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [debouncedSearch, subjectFilter, classFilter]);
 
   useEffect(() => {
     fetchExams();
-  }, [debouncedSearch, subjectFilter, classFilter]);
+  }, [fetchExams]);
 
   const handleStartExam = (id) => {
     navigate(`/practice/room/${id}`);
@@ -97,24 +92,24 @@ const PracticeList = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-8 px-4 md:px-8">
+    <div className="min-h-screen bg-gray-50/50 py-6 px-4 sm:px-6 lg:px-8 md:py-8">
       <div className="max-w-[1200px] mx-auto">
         {/* Header Section */}
         <div className="mb-8 text-center space-y-2">
-          <h2 className="text-3xl font-bold text-primary">
+          <h2 className="text-2xl sm:text-3xl font-bold text-primary">
             Thư viện Đề thi & Kiểm tra
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-3xl mx-auto">
             Hàng ngàn đề thi chất lượng được cập nhật liên tục giúp bạn chinh
             phục kỳ thi.
           </p>
         </div>
 
         {/* Filter Section */}
-        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        <div className="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 shadow-sm mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center">
             {/* Ô tìm kiếm */}
-            <div className="md:col-span-7 relative">
+            <div className="sm:col-span-2 lg:col-span-7 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={searchTerm}
@@ -125,7 +120,7 @@ const PracticeList = () => {
             </div>
 
             {/* Chọn Môn học */}
-            <div className="md:col-span-2">
+            <div className="lg:col-span-2">
               <Select
                 value={subjectFilter}
                 onValueChange={(val) => {
@@ -147,7 +142,7 @@ const PracticeList = () => {
             </div>
 
             {/* Chọn Khối lớp */}
-            <div className="md:col-span-2">
+            <div className="lg:col-span-2">
               <Select
                 value={classFilter}
                 onValueChange={(val) => {
@@ -168,7 +163,7 @@ const PracticeList = () => {
             </div>
 
             {/* Nút Xóa lọc */}
-            <div className="md:col-span-1">
+            <div className="sm:col-span-2 lg:col-span-1">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -188,7 +183,7 @@ const PracticeList = () => {
         {/* Exam List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {isLoading ? (
-            <div className="col-span-4 text-center py-10 text-slate-500">
+            <div className="col-span-full text-center py-10 text-slate-500">
               Đang tải danh sách đề thi...
             </div>
           ) : paginatedExams.length > 0 ? (
@@ -244,15 +239,15 @@ const PracticeList = () => {
               </Card>
             ))
           ) : (
-            <div className="col-span-4 text-center py-10 text-slate-500">
+            <div className="col-span-full text-center py-10 text-slate-500">
               Không tìm thấy đề thi phù hợp với bộ lọc hiện tại.
             </div>
           )}
         </div>
 
         {totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
+          <Pagination className="overflow-x-auto pb-2">
+            <PaginationContent className="min-w-max">
               <PaginationItem>
                 <PaginationPrevious
                   href="#"

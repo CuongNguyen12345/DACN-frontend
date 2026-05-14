@@ -76,25 +76,25 @@ const CourseSearch = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50/50 py-10 px-4 md:px-12">
+        <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-12 md:py-10">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-8 border-slate-200">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b pb-6 md:pb-8 border-slate-200">
                     <header className="space-y-3">
                         <div className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold mb-2">
                             HỌC TẬP TRỰC TUYẾN
                         </div>
-                        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">
+                        <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                             Thư viện Bài giảng Edu4All
                         </h1>
-                        <p className="text-lg text-slate-500 max-w-2xl">
+                        <p className="text-base sm:text-lg text-slate-500 max-w-2xl">
                             Khám phá kho tri thức với hàng nghìn bài giảng video chất lượng cao,
                             bám sát chương trình phổ thông của Bộ Giáo dục.
                         </p>
                     </header>
                     <button
                         onClick={() => navigate("/course")}
-                        className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+                        className="flex w-full sm:w-fit items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
                     >
                         <ArrowLeft className="w-5 h-5" />
                         Chọn Môn học & Khối lớp
@@ -129,7 +129,7 @@ const CourseSearch = () => {
                                 
                                 {/* Pagination Controls */}
                                 {totalPages > 1 && (
-                                    <div className="flex justify-center items-center gap-2 pt-8 pb-12">
+                                    <div className="flex items-center gap-2 overflow-x-auto pt-8 pb-12">
                                         <button
                                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                             disabled={currentPage === 1}

@@ -74,25 +74,25 @@ const CourseList = () => {
   }, {});
 
   return (
-    <div className="min-h-screen bg-slate-50/50 py-12 px-4 md:px-12">
-      <div className="max-w-7xl mx-auto space-y-12">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-          <header className="space-y-4 text-left md:text-left flex-1">
+    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 lg:px-12 md:py-12">
+      <div className="max-w-7xl mx-auto space-y-10 md:space-y-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-8">
+          <header className="space-y-4 text-left flex-1">
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-bold tracking-wide">
               <GraduationCap className="w-4 h-4 mr-2" />
               HÀNH TRÌNH TRI THỨC
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 leading-tight">
               Chọn Khối Lớp & Môn Học
             </h1>
-            <p className="text-xl text-slate-500 max-w-3xl font-medium">
+            <p className="text-base sm:text-lg md:text-xl text-slate-500 max-w-3xl font-medium">
               Hệ thống bài giảng được phân loại khoa học theo chương trình mới
               nhất của Bộ Giáo dục.
             </p>
           </header>
           <button
             onClick={() => navigate("/course/search")}
-            className="flex items-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 group h-fit"
+            className="flex w-full sm:w-fit items-center justify-center gap-2 px-6 sm:px-8 py-4 bg-primary text-white rounded-2xl font-black hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 group h-fit"
           >
             <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
             Tìm bài giảng nhanh
@@ -111,7 +111,7 @@ const CourseList = () => {
             .map((grade) => (
               <div key={grade} className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-2xl font-bold text-slate-800">
+                  <h2 className="shrink-0 text-xl sm:text-2xl font-bold text-slate-800">
                     Khối Lớp {grade}
                   </h2>
                   <div className="h-px flex-1 bg-slate-200" />
@@ -121,7 +121,7 @@ const CourseList = () => {
                   {groupedByGrade[grade].map((sub) => (
                     <Card
                       key={sub.id}
-                      className="group relative overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white rounded-2xl p-6"
+                      className="group relative overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white rounded-2xl p-5 sm:p-6"
                       onClick={() => handleSubjectClick(sub.name, sub.grade)}
                     >
                       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -140,7 +140,7 @@ const CourseList = () => {
                           >
                             Lớp {sub.grade}
                           </Badge>
-                          <CardTitle className="text-2xl font-black text-slate-800 group-hover:text-primary transition-colors">
+                          <CardTitle className="text-xl sm:text-2xl font-black text-slate-800 group-hover:text-primary transition-colors">
                             {sub.name}
                           </CardTitle>
                         </div>

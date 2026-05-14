@@ -7,13 +7,10 @@ import {
   LogOut,
   User,
   Key,
-  Palette,
-  Sun,
-  Moon,
   Bell,
   History,
+  Menu,
   Trophy,
-  Map,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -36,6 +33,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useNotifications } from "@/context/NotificationContext";
@@ -117,23 +122,23 @@ export const Header = ({ navigate, userAvatar }) => {
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-100 shadow-sm">
-      <div className="container mx-auto h-20 flex items-center justify-between px-4">
+      <div className="container mx-auto h-16 md:h-20 flex items-center justify-between px-4">
         {/* Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer group"
           onClick={() => navigate("/")}
         >
           <div className="bg-[#3B82F6] rounded-xl p-2 shadow-md transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
-            <BookOpen className="h-6 w-6 text-white" strokeWidth={2} />
+            <BookOpen className="h-5 w-5 md:h-6 md:w-6 text-white" strokeWidth={2} />
           </div>
-          <span className="font-bold text-xl tracking-tight">
+          <span className="font-bold text-lg md:text-xl tracking-tight">
             <span className="text-[#0F4C81]">Edu</span>
             <span className="text-[#FF6B50]">4All</span>
           </span>
         </div>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-10">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-10">
           {navItems.map((item) => {
             const isActive = currentPath.startsWith(item.path);
             return (
@@ -152,10 +157,51 @@ export const Header = ({ navigate, userAvatar }) => {
         </nav>
 
         {/* Right Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Mở menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[86vw] max-w-sm p-0">
+              <SheetHeader className="border-b px-5 py-5 text-left">
+                <SheetTitle className="flex items-center gap-3">
+                  <div className="rounded-xl bg-[#3B82F6] p-2 text-white">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <span>
+                    <span className="text-[#0F4C81]">Edu</span>
+                    <span className="text-[#FF6B50]">4All</span>
+                  </span>
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-1 px-3 py-4">
+                {navItems.map((item) => {
+                  const isActive = currentPath.startsWith(item.path);
+                  return (
+                    <SheetClose asChild key={item.key}>
+                      <button
+                        onClick={() => navigate(item.path)}
+                        className={`flex min-h-11 items-center rounded-xl px-4 text-left text-sm font-bold transition-colors ${
+                          isActive
+                            ? "bg-blue-50 text-[#3B82F6]"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-[#3B82F6]"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    </SheetClose>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           {!isLoggedIn ? (
             <Button
-              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-base font-bold rounded-full px-7 h-11 shadow-sm hover:shadow-md transition-all"
+              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm sm:text-base font-bold rounded-full px-4 sm:px-7 h-10 sm:h-11 shadow-sm hover:shadow-md transition-all"
               onClick={() => navigate("/login")}
             >
               Đăng nhập
@@ -254,7 +300,7 @@ export const Header = ({ navigate, userAvatar }) => {
                   </DropdownMenuItem>
 
                   <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/leaderboard")}>
-                    <History className="mr-2 h-4 w-4" />
+                    <Trophy className="mr-2 h-4 w-4" />
                     <span>Bảng xếp hạng</span>
                   </DropdownMenuItem>
 

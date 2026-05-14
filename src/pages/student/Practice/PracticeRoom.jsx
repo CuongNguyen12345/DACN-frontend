@@ -135,7 +135,14 @@ const PracticeRoom = () => {
             navigate(`/practice/result/${examId}`, { state: resultData });
         } catch (error) {
             console.error("Lỗi lưu kết quả bài thi:", error);
-            alert("Không thể lưu kết quả bài thi. Vui lòng thử lại.");
+            const message =
+                error.response?.data?.message ||
+                "Không thể lưu kết quả bài thi. Vui lòng thử lại.";
+            alert(message);
+            if (error.response?.data?.code === 1011) {
+                localStorage.removeItem("token");
+                navigate("/login");
+            }
             isSubmittingRef.current = false;
             setIsSubmitting(false);
         }

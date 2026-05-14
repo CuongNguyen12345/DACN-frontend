@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
+import { useTeacherScope } from "@/hooks/useTeacherScope";
 import api from "@/services/api";
 import { normalizeQuizSummary } from "./exerciseCreateForm";
 import {
@@ -32,9 +33,13 @@ import {
   getExerciseStats,
   paginateExercises,
 } from "./exerciseManagementFilters";
+import {
+  GRADE_FILTER_OPTIONS,
+  SUBJECT_FILTER_OPTIONS,
+  getScopedGradeFilter,
+  getScopedSubjectFilter,
+} from "@/pages/admin/Questions/questionListFilters";
 
-const subjectOptions = ["all", "Toán", "Vật Lý", "Hóa Học", "Tiếng Anh", "Sinh học"];
-const gradeOptions = ["all", "Lớp 10", "Lớp 11", "Lớp 12"];
 const difficultyOptions = ["all", "Dễ", "Trung bình", "Khó"];
 const getDifficultyBadgeClassName = (difficulty) => {
   switch (difficulty) {
@@ -50,6 +55,7 @@ const getDifficultyBadgeClassName = (difficulty) => {
 const ExerciseManagement = () => {
   const navigate = useNavigate();
   const { basePath } = useAuth();
+  const scope = useTeacherScope();
   const [exercises, setExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -60,6 +66,16 @@ const ExerciseManagement = () => {
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const scopedSubjectFilter = useMemo(
+    () => getScopedSubjectFilter(scope, subjectFilter),
+    [scope, subjectFilter],
+  );
+  const scopedGradeFilter = useMemo(
+    () => getScopedGradeFilter(scope, gradeFilter),
+    [scope, gradeFilter],
+  );
+  const effectiveSubjectFilter = scopedSubjectFilter.value;
+  const effectiveGradeFilter = scopedGradeFilter.value;
 
   const uniqueLessons = useMemo(
     () => [
@@ -95,12 +111,12 @@ const ExerciseManagement = () => {
     () =>
       filterExercises(exercises, {
         keyword: searchTerm,
-        subject: subjectFilter,
-        grade: gradeFilter,
+        subject: effectiveSubjectFilter,
+        grade: effectiveGradeFilter,
         lesson: lessonFilter,
         difficulty: difficultyFilter,
       }),
-    [difficultyFilter, exercises, gradeFilter, lessonFilter, searchTerm, subjectFilter],
+    [difficultyFilter, effectiveGradeFilter, effectiveSubjectFilter, exercises, lessonFilter, searchTerm],
   );
 
   const { currentItems, totalPages } = paginateExercises(
@@ -191,38 +207,48 @@ const ExerciseManagement = () => {
           </div>
           <div className="grid grid-cols-2 md:flex gap-3">
             <Select
-              value={subjectFilter}
+              value={effectiveSubjectFilter}
               onValueChange={(value) => {
+                if (scopedSubjectFilter.disabled) return;
                 setSubjectFilter(value);
                 resetToFirstPage();
               }}
+              disabled={scopedSubjectFilter.disabled}
             >
               <SelectTrigger className="w-full md:w-[140px] bg-white">
                 <Filter className="h-4 w-4 mr-2 text-slate-500" />
                 <SelectValue placeholder="Môn học" />
               </SelectTrigger>
               <SelectContent>
-                {subjectOptions.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject === "all" ? "Tất cả môn" : subject}
+                {SUBJECT_FILTER_OPTIONS
+                  .filter((option) => option.value !== "all" || !scope.isTeacher || !scope.allowedSubject)
+                  .filter((option) => option.value === "all" || scope.canUseSubject(option.value))
+                  .map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select
-              value={gradeFilter}
+              value={effectiveGradeFilter}
               onValueChange={(value) => {
+                if (scopedGradeFilter.disabled) return;
                 setGradeFilter(value);
                 resetToFirstPage();
               }}
+              disabled={scopedGradeFilter.disabled}
             >
               <SelectTrigger className="w-full md:w-[130px] bg-white">
                 <SelectValue placeholder="Lớp" />
               </SelectTrigger>
               <SelectContent>
-                {gradeOptions.map((grade) => (
-                  <SelectItem key={grade} value={grade}>
-                    {grade === "all" ? "Tất cả lớp" : grade}
+                {GRADE_FILTER_OPTIONS
+                  .filter((option) => option.value !== "all" || !scope.isTeacher || scope.allowedGrades.length === 0)
+                  .filter((option) => option.value === "all" || scope.canUseGrade(option.value))
+                  .map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>

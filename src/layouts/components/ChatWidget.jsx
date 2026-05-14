@@ -106,10 +106,10 @@ export const ChatWidget = () => {
     return (
         <>
             {/* Nút Chat nổi */}
-            <div className="fixed bottom-6 right-6 z-50">
+            <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
                 <Button 
                     onClick={toggleChat}
-                    className="w-14 h-14 rounded-full shadow-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
                 >
                     {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
                 </Button>
@@ -117,7 +117,7 @@ export const ChatWidget = () => {
 
             {/* Cửa sổ Chat */}
             {isOpen && (
-                <div className="fixed bottom-24 right-6 w-80 sm:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col border border-gray-100 animate-in slide-in-from-bottom-5 h-[500px] max-h-[calc(100vh-120px)]">
+                <div className="fixed inset-x-3 bottom-20 sm:inset-x-auto sm:bottom-24 sm:right-6 sm:w-96 bg-white rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col border border-gray-100 animate-in slide-in-from-bottom-5 h-[min(500px,calc(100vh-104px))]">
                     {/* Header */}
                     <div className="bg-blue-600 p-4 text-white flex items-center gap-3">
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">

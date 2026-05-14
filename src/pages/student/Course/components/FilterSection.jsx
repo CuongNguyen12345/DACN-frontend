@@ -20,10 +20,10 @@ const FilterSection = ({
     onReset 
 }) => {
     return (
-        <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        <div className="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 shadow-sm mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center">
                 {/* Ô tìm kiếm */}
-                <div className="md:col-span-5 relative">
+                <div className="sm:col-span-2 lg:col-span-5 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                         value={searchTerm}
@@ -34,7 +34,7 @@ const FilterSection = ({
                 </div>
 
                 {/* Chọn Môn học */}
-                <div className="md:col-span-3">
+                <div className="lg:col-span-3">
                     <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                         <SelectTrigger className="bg-white border-gray-200 rounded-lg h-11">
                             <SelectValue placeholder="Tất cả môn" />
@@ -50,7 +50,7 @@ const FilterSection = ({
                 </div>
 
                 {/* Chọn Khối lớp */}
-                <div className="md:col-span-2">
+                <div className="lg:col-span-2">
                     <Select value={selectedGrade} onValueChange={setSelectedGrade}>
                         <SelectTrigger className="bg-white border-gray-200 rounded-lg h-11">
                             <SelectValue placeholder="Tất cả lớp" />
@@ -65,7 +65,7 @@ const FilterSection = ({
                 </div>
 
                 {/* Nút Xóa lọc */}
-                <div className="md:col-span-2">
+                <div className="sm:col-span-2 lg:col-span-2">
                     <Button 
                         variant="outline" 
                         onClick={onReset} 
