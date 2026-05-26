@@ -1,7 +1,6 @@
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
-
-const SOCKET_URL = 'http://localhost:8081/ws';
+import { SOCKET_URL } from './apiConfig';
 
 class WebSocketService {
     constructor() {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "@/services/api";
+import { hasAuthToken } from "@/services/authToken";
 import { toast } from "sonner";
 import {
     PlayCircle,
@@ -136,8 +137,7 @@ const Learning = () => {
             return undefined;
         }
 
-        const token = localStorage.getItem("token");
-        if (!token) {
+        if (!hasAuthToken()) {
             setIsBookmarked(false);
             return undefined;
         }
@@ -170,8 +170,7 @@ const Learning = () => {
     const toggleLessonBookmark = useCallback(async () => {
         if (!activeLessonId) return;
 
-        const token = localStorage.getItem("token");
-        if (!token) {
+        if (!hasAuthToken()) {
             toast.error("Bạn cần đăng nhập để lưu bài học.");
             navigate("/login");
             return;
@@ -207,8 +206,7 @@ const Learning = () => {
             if (prev.includes(id)) return prev;
             return [...prev, id];
         });
-        const token = localStorage.getItem("token");
-        if (token) {
+        if (hasAuthToken()) {
             api.post(`/api/learning/progress/complete?lessonId=${id}`).catch(err =>
                 console.error("Không thể lưu tiến độ:", err)
             );
@@ -276,8 +274,7 @@ const Learning = () => {
     // Tải tiến độ học tập từ server khi chapters load
     useEffect(() => {
         if (chapters.length === 0) return;
-        const token = localStorage.getItem("token");
-        if (!token) return;
+        if (!hasAuthToken()) return;
 
         const allLessonIds = chapters.flatMap(c => c.lessons.map(l => l.id));
         if (allLessonIds.length === 0) return;
@@ -359,8 +356,7 @@ const Learning = () => {
             // Lấy thời gian xem trước đó từ server
             let startSeconds = 0;
             try {
-                const token = localStorage.getItem("token");
-                if (token) {
+                if (hasAuthToken()) {
                     const res = await api.get(`/api/learning/progress/time?lessonId=${activeLessonId}`);
                     startSeconds = res.data || 0;
                 }
@@ -412,8 +408,7 @@ const Learning = () => {
                     }
 
                     if (currentTime > 0 && Math.abs(currentTime - lastSavedTimeRef.current) > 5) {
-                         const token = localStorage.getItem("token");
-                         if (token) {
+                         if (hasAuthToken()) {
                              api.post(`/api/learning/progress/time?lessonId=${activeLessonId}&time=${currentTime}`)
                                 .then(() => { lastSavedTimeRef.current = currentTime; })
                                 .catch(() => {});
@@ -430,8 +425,7 @@ const Learning = () => {
             // Cố gắng lưu lần cuối khi unmount/đổi bài
             if (mainPlayerRef.current && mainPlayerRef.current.getCurrentTime) {
                 const currentTime = Math.floor(mainPlayerRef.current.getCurrentTime());
-                const token = localStorage.getItem("token");
-                if (token && currentTime > 0) {
+                if (hasAuthToken() && currentTime > 0) {
                     api.post(`/api/learning/progress/time?lessonId=${activeLessonId}&time=${currentTime}`).catch(() => {});
                 }
             }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/services/api";
+import { removeAuthToken } from "@/services/authToken";
 import {
     Clock,
     AlertCircle,
@@ -140,7 +141,7 @@ const PracticeRoom = () => {
                 "Không thể lưu kết quả bài thi. Vui lòng thử lại.";
             alert(message);
             if (error.response?.data?.code === 1011) {
-                localStorage.removeItem("token");
+                removeAuthToken();
                 navigate("/login");
             }
             isSubmittingRef.current = false;

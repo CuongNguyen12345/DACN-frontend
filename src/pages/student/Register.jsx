@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import loginImage from "../../assets/Kids_Studying_from_Home-pana.png";
 import { useState } from "react";
-import axios from "axios";
+import api from "@/services/api";
 
 const Register = () => {
     const navigate = useNavigate();
@@ -28,7 +28,7 @@ const Register = () => {
 
         try {
             setLoading(true);
-            const response = await axios.post("http://localhost:8081/api/auth/register", {
+            const response = await api.post("/api/auth/register", {
                 username,
                 email,
                 password

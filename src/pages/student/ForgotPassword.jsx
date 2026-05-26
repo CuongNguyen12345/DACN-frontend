@@ -1,10 +1,10 @@
 import { useState } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { ArrowLeft } from "lucide-react";
+import api from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -44,7 +44,7 @@ function ForgotPassword() {
       if (step === 1) {
         // Step 1: Send OTP
         console.log("Sending OTP to:", values.email);
-        await axios.post("http://localhost:8081/api/auth/request-otp", {
+        await api.post("/api/auth/request-otp", {
           email: values.email,
         });
         // Transition to Step 2
@@ -57,7 +57,7 @@ function ForgotPassword() {
           return;
         }
         console.log("Verifying OTP:", otpValue);
-        const res = await axios.post("http://localhost:8081/api/auth/verify-otp", {
+        const res = await api.post("/api/auth/verify-otp", {
           email: values.email,
           otp: otpValue
         });

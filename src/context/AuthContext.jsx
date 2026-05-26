@@ -1,12 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from "react";
 import api from "../services/api";
+import { getAuthToken, hasAuthToken, removeAuthToken, setAuthToken } from "../services/authToken";
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [isLoggedIn, setIsLoggedIn] = useState(hasAuthToken());
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getAuthToken();
     if (token) {
       fetchProfile();
     } else {
@@ -35,13 +36,13 @@ export const AuthProvider = ({ children }) => {
   }, [fetchProfile]);
 
   const login = (token, userData) => {
-    localStorage.setItem("token", token);
+    setAuthToken(token);
     setUser(userData);
     setIsLoggedIn(true);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    removeAuthToken();
     setUser(null);
     setIsLoggedIn(false);
   };

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "@/services/api";
+import { hasAuthToken } from "@/services/authToken";
 import {
   Clock, AlertCircle, CheckCircle2, Flag, Menu, Sparkles, Loader2
 } from "lucide-react";
@@ -144,8 +145,7 @@ const AssessmentRoom = () => {
 
     // Sync mastery lên backend (fire-and-forget, không chặn navigate)
     try {
-      const token = localStorage.getItem("token");
-      if (token) {
+      if (hasAuthToken()) {
         const questionResults = questions.map((q) => {
           const userAnswer = answers[q.id];
           const correctOpt = q.options.find((o) => o.correct);
