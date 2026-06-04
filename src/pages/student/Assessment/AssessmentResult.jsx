@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+import { ANSWER_STATUS, getQuestionAnswerStatus } from "@/lib/answerStatus";
 
 // Vòng tròn điểm số
 const ScoreCircle = ({ score }) => {
@@ -106,7 +107,9 @@ const AssessmentResult = () => {
     );
   }
 
-  const { subject, grade, targetScore, score, correctCount, totalQuestions, timeTaken, wrongQuestions, questions, userAnswers } = result;
+  const { subject, grade, targetScore, score, correctCount, totalQuestions, timeTaken, wrongQuestions = [], questions = [], userAnswers = {} } = result;
+  const incorrectCount = Number(result.incorrectCount ?? wrongQuestions.length) || 0;
+  const unselectedCount = Number(result.unselectedCount ?? Math.max(totalQuestions - correctCount - incorrectCount, 0)) || 0;
   const accuracy = Math.round((correctCount / totalQuestions) * 100);
 
   const targetLabel = { "5-6": "5–6", "7-8": "7–8", "9-10": "9–10" }[targetScore] || targetScore;
@@ -177,7 +180,8 @@ const AssessmentResult = () => {
             <div className="md:col-span-2 grid grid-cols-2 gap-4">
               {[
                 { icon: CheckCircle2, label: "Câu đúng", value: `${correctCount}/${totalQuestions}`, color: "text-emerald-600", bg: "bg-emerald-50" },
-                { icon: XCircle, label: "Câu sai", value: `${wrongQuestions.length}/${totalQuestions}`, color: "text-rose-500", bg: "bg-rose-50" },
+                { icon: XCircle, label: "Câu sai", value: `${incorrectCount}/${totalQuestions}`, color: "text-rose-500", bg: "bg-rose-50" },
+                { icon: AlertTriangle, label: "Chưa chọn", value: `${unselectedCount}/${totalQuestions}`, color: "text-amber-600", bg: "bg-amber-50" },
                 { icon: Trophy, label: "Độ chính xác", value: `${accuracy}%`, color: "text-amber-600", bg: "bg-amber-50" },
                 { icon: Clock, label: "Thời gian", value: timeTaken, color: "text-blue-600", bg: "bg-blue-50" },
               ].map((item) => {
@@ -261,19 +265,32 @@ const AssessmentResult = () => {
             <div className="border-t border-slate-100 divide-y divide-slate-100">
               {questions?.map((q, idx) => {
                 const userAns = userAnswers[q.id];
-                const correctOpt = q.options.find((o) => o.correct);
-                const isRight = userAns && correctOpt && userAns === correctOpt.label;
+                const answerStatus = getQuestionAnswerStatus(q, userAnswers);
+                const isRight = answerStatus === ANSWER_STATUS.CORRECT;
+                const isUnselected = answerStatus === ANSWER_STATUS.UNSELECTED;
 
                 return (
-                  <div key={q.id} className={cn("p-5", isRight ? "bg-white" : "bg-rose-50/40")}>
+                  <div key={q.id} className={cn(
+                    "p-5",
+                    isRight ? "bg-white" : isUnselected ? "bg-amber-50/40" : "bg-rose-50/40"
+                  )}>
                     <div className="flex items-start gap-3">
-                      {isRight
-                        ? <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                        : <XCircle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
-                      }
+                      {isRight ? (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                      ) : isUnselected ? (
+                        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <span className="text-xs font-bold text-slate-400">Câu {idx + 1}</span>
+                          <span className={cn(
+                            "text-[11px] px-2 py-0.5 rounded-full font-semibold",
+                            isRight ? "bg-emerald-50 text-emerald-700" : isUnselected ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
+                          )}>
+                            {isRight ? "Đúng" : isUnselected ? "Không chọn" : "Sai"}
+                          </span>
                           {q.topicName && (
                             <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{q.topicName}</span>
                           )}

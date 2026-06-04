@@ -6,7 +6,8 @@ import {
     Clock,
     BookOpen,
     Trophy,
-    Edit
+    Edit,
+    Coins
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,10 @@ const Profile = () => {
                     <CardContent className="p-6 md:p-8">
                         <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                             <div className="relative">
-                                <Avatar className="h-24 w-24 md:h-28 md:w-28 border-4 border-white shadow-lg">
+                                <Avatar
+                                    className="h-24 w-24 md:h-28 md:w-28 border-4 shadow-lg"
+                                    style={{ borderColor: user.equippedDecoration || "#ffffff" }}
+                                >
                                     <AvatarImage src={user.avatar || "https://github.com/shadcn.png"} alt={user.userName} />
                                     <AvatarFallback>{user.userName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
@@ -103,6 +107,9 @@ const Profile = () => {
                                      </Badge>
                                      <Badge variant="secondary" className="px-3 py-1 bg-blue-100 text-blue-700 hover:bg-blue-100 gap-1.5">
                                          <Clock className="h-3.5 w-3.5" /> Đã học: {user.totalTime || "0h"}
+                                     </Badge>
+                                     <Badge variant="secondary" className="px-3 py-1 bg-amber-100 text-amber-700 hover:bg-amber-100 gap-1.5">
+                                         <Coins className="h-3.5 w-3.5" /> Xu: {user.coinBalance ?? 0}
                                      </Badge>
                                  </div>
                             </div>

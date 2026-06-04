@@ -43,6 +43,7 @@ import {
 import NoteTab from "./components/NoteTab";
 import QnATab from "./components/QnATab";
 import QuizTab from "./components/QuizTab";
+import { useAuth } from "@/context/AuthContext";
 
 
 const formatVideoDuration = (seconds) => {
@@ -98,6 +99,7 @@ const getChapterMatchScore = (chapterTitle, topicTitle) => {
 const Learning = () => {
     const { lessonId } = useParams();
     const navigate = useNavigate();
+    const { fetchProfile } = useAuth();
 
     const [chapters, setChapters] = useState([]);
     const [activeLesson, setActiveLesson] = useState(null);
@@ -127,7 +129,7 @@ const Learning = () => {
 
         const currentTime = Number(player.getCurrentTime());
         return Number.isFinite(currentTime) ? Math.floor(currentTime) : 0;
-    }, []);
+    }, [fetchProfile]);
     const activeLessonId = activeLesson?.id;
     const activeLessonVideoUrl = activeLesson?.videoUrl;
 
@@ -207,11 +209,19 @@ const Learning = () => {
             return [...prev, id];
         });
         if (hasAuthToken()) {
-            api.post(`/api/learning/progress/complete?lessonId=${id}`).catch(err =>
+            api.post(`/api/learning/progress/complete?lessonId=${id}`)
+                .then(async (res) => {
+                    const coinsEarned = Number(res.data?.coinsEarned) || 0;
+                    if (coinsEarned > 0) {
+                        toast.success(`Hoàn thành bài học: +${coinsEarned} xu`);
+                        await fetchProfile();
+                    }
+                })
+                .catch(err =>
                 console.error("Không thể lưu tiến độ:", err)
             );
         }
-    }, []);
+    }, [fetchProfile]);
 
     // Fetch chapters and active lesson data
     useEffect(() => {

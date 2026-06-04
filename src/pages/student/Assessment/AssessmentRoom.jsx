@@ -20,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useExamSecurityGuard } from "@/hooks/useExamSecurityGuard";
 import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+import { ANSWER_STATUS, buildIncorrectQuestions, getAnswerCounts, getQuestionAnswerStatus } from "@/lib/answerStatus";
 
 const AssessmentRoom = () => {
   const { state } = useLocation();
@@ -103,29 +104,10 @@ const AssessmentRoom = () => {
     clearInterval(timerRef.current);
 
     // Tính kết quả
-    let correctCount = 0;
-    const wrongQuestions = [];
+    const answerCounts = getAnswerCounts(questions, answers);
+    const wrongQuestions = buildIncorrectQuestions(questions, answers);
 
-    questions.forEach((q) => {
-      const userAnswer = answers[q.id];
-      const correctOpt = q.options.find((o) => o.correct);
-      const isCorrect = userAnswer && correctOpt && userAnswer === correctOpt.label;
-
-      if (isCorrect) {
-        correctCount++;
-      } else {
-        wrongQuestions.push({
-          questionId: q.id,
-          content: q.content,
-          topicName: q.topicName,
-          level: q.level,
-          userAnswer: userAnswer || null,
-          correctAnswer: correctOpt?.label || null,
-        });
-      }
-    });
-
-    const score = Number(((correctCount / questions.length) * 10).toFixed(1));
+    const score = Number(((answerCounts.correct / questions.length) * 10).toFixed(1));
 
     // Lưu tạm vào localStorage
     const resultData = {
@@ -133,7 +115,9 @@ const AssessmentRoom = () => {
       grade: state.grade,
       targetScore: state.targetScore,
       totalQuestions: questions.length,
-      correctCount,
+      correctCount: answerCounts.correct,
+      incorrectCount: answerCounts.incorrect,
+      unselectedCount: answerCounts.unselected,
       score,
       timeTaken: formatTime(elapsedSeconds),
       wrongQuestions,
@@ -146,14 +130,10 @@ const AssessmentRoom = () => {
     // Sync mastery lên backend (fire-and-forget, không chặn navigate)
     try {
       if (hasAuthToken()) {
-        const questionResults = questions.map((q) => {
-          const userAnswer = answers[q.id];
-          const correctOpt = q.options.find((o) => o.correct);
-          return {
-            topicId: q.topicId ?? null,
-            correct: userAnswer && correctOpt && userAnswer === correctOpt.label,
-          };
-        }).filter((r) => r.topicId != null);
+        const questionResults = questions.map((q) => ({
+          topicId: q.topicId ?? null,
+          correct: getQuestionAnswerStatus(q, answers) === ANSWER_STATUS.CORRECT,
+        })).filter((r) => r.topicId != null);
 
         await api.post("/api/roadmap/sync-assessment", { questionResults });
       }
@@ -266,7 +246,7 @@ const AssessmentRoom = () => {
                 <AlertDialogTitle>Xác nhận nộp bài</AlertDialogTitle>
                 <AlertDialogDescription>
                   {unanswered > 0
-                    ? `Bạn còn ${unanswered} câu chưa trả lời. Các câu này sẽ bị tính sai.`
+                    ? `Bạn còn ${unanswered} câu chưa trả lời. Các câu này sẽ được ghi nhận là không chọn.`
                     : "Bạn đã hoàn thành tất cả câu hỏi. Sẵn sàng nộp bài?"}
                 </AlertDialogDescription>
               </AlertDialogHeader>

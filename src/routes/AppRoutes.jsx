@@ -26,6 +26,7 @@ import AssessmentSetup from "@/pages/student/Assessment/AssessmentSetup";
 import AssessmentRoom from "@/pages/student/Assessment/AssessmentRoom";
 import AssessmentResult from "@/pages/student/Assessment/AssessmentResult";
 import Roadmap from "@/pages/student/Assessment/Roadmap";
+import Shop from "@/pages/student/Shop/Shop";
 
 // Admin Pages
 import Overview from "@/pages/admin/Overview/Overview";
@@ -46,6 +47,7 @@ import LessonCreate from "@/pages/admin/Lesson/LessonCreate";
 import LessonEdit from "@/pages/admin/Lesson/LessonEdit";
 import ExerciseManagement from "@/pages/admin/Exercises/ExerciseManagement";
 import ExerciseCreate from "@/pages/admin/Exercises/ExerciseCreate";
+import ShopItemManagement from "@/pages/admin/Shop/ShopItemManagement";
 import AccountDetail from "@/pages/admin/Account/AccountDetail";
 import AccountManagement from "@/pages/admin/Account/AccountManagement";
 
@@ -101,6 +103,7 @@ function AppRoutes() {
           <Route path="studyhistory" element={<StudyHistory />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="notification" element={<NotificationsList />} />
+          <Route path="shop" element={<Shop />} />
         </Route>
 
         {/* Assessment - Không cần auth nhưng cần layout */}
@@ -138,6 +141,7 @@ function AppRoutes() {
           <Route path="accounts" element={<AccountManagement />} />
           <Route path="accounts/create-teacher" element={<AccountCreate />} />
           <Route path="accounts/:id" element={<AccountDetail />} />
+          <Route path="shop-items" element={<ShopItemManagement />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
         </Route>

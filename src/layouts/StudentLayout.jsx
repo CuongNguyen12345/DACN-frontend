@@ -2,15 +2,17 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "./components/Header";
 import Footer from "./components/Footer";
 import { ChatWidget } from "./components/ChatWidget";
+import { useAuth } from "@/context/AuthContext";
 
 const StudentLayout = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Header
         navigate={navigate}
-        userAvatar={`https://api.dicebear.com/7.x/avataaars/svg?seed=Felix`}
+        userAvatar={user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id || "Felix"}`}
       />
 
       {/* Main Content */}

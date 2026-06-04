@@ -4,7 +4,8 @@ import {
     CheckCircle2,
     ArrowRight,
     RotateCcw,
-    Trophy
+    Trophy,
+    Coins
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,9 @@ const PracticeResult = () => {
         total = 0, 
         timeTaken = "00:00", 
         userAnswers = {},
-        questions = [] 
+        questions = [],
+        coinsEarned = 0,
+        coinBalance = 0,
     } = data;
     const revealResult = shouldRevealExamResult({
         showResultImmediately: data.showResultImmediately,
@@ -148,6 +151,12 @@ const PracticeResult = () => {
                                 <p className="text-xs">Thời gian</p>
                             </div>
                         </div>
+
+                        {coinsEarned > 0 && (
+                            <div className="mx-auto mt-6 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800">
+                                <Coins className="h-4 w-4" /> +{coinsEarned} xu · Số dư {coinBalance}
+                            </div>
+                        )}
                     </div>
 
                     <CardContent className="p-8">

@@ -32,6 +32,7 @@ import { useExamSecurityGuard } from "@/hooks/useExamSecurityGuard";
 import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
 import { normalizeExamResultDetail } from "@/pages/student/History/examHistoryView";
+import { useAuth } from "@/context/AuthContext";
 
 const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -42,6 +43,7 @@ const formatTime = (seconds) => {
 const PracticeRoom = () => {
     const { examId } = useParams();
     const navigate = useNavigate();
+    const { fetchProfile } = useAuth();
 
     const [exam, setExam] = useState(null);
     const [questions, setQuestions] = useState([]);
@@ -133,6 +135,10 @@ const PracticeRoom = () => {
                 showResultImmediately: shouldRevealExamResult(examSecuritySettings),
             };
 
+            if ((Number(response.data?.coinsEarned) || 0) > 0) {
+                await fetchProfile();
+            }
+
             navigate(`/practice/result/${examId}`, { state: resultData });
         } catch (error) {
             console.error("Lỗi lưu kết quả bài thi:", error);
@@ -147,7 +153,7 @@ const PracticeRoom = () => {
             isSubmittingRef.current = false;
             setIsSubmitting(false);
         }
-    }, [answers, exam, examId, examSecuritySettings, navigate, timeLeft]);
+    }, [answers, exam, examId, examSecuritySettings, fetchProfile, navigate, timeLeft]);
 
     useEffect(() => {
         if (!isLoading && timeLeft > 0) {

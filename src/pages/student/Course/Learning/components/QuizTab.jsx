@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
     AlertCircle,
+    AlertTriangle,
     ChevronLeft,
     ChevronRight,
     CheckCircle2,
@@ -21,6 +23,8 @@ import api from "@/services/api";
 import { cn } from "@/lib/utils";
 import { useExamSecuritySettings } from "@/hooks/useExamSecuritySettings";
 import { shouldRevealExamResult } from "@/lib/examSecuritySettings";
+import { useAuth } from "@/context/AuthContext";
+import { ANSWER_STATUS, getAnswerCounts, getQuestionAnswerStatus } from "@/lib/answerStatus";
 
 const getQuizAnswerStorageKey = (quizId) => `lesson_quiz_answers_${quizId}`;
 const getQuizEndTimeStorageKey = (quizId) => `lesson_quiz_end_time_${quizId}`;
@@ -48,6 +52,7 @@ const QuizTab = ({
     selectedQuizId,
     onSelectQuiz,
 }) => {
+    const { fetchProfile } = useAuth();
     const [quizDetail, setQuizDetail] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -155,10 +160,8 @@ const QuizTab = ({
     };
 
     const handleSubmit = useCallback(() => {
-        const correctCount = questions.reduce((count, question) => {
-            const correctOption = question.options?.find((option) => option.correct);
-            return answers[question.id] === correctOption?.label ? count + 1 : count;
-        }, 0);
+        const answerCounts = getAnswerCounts(questions, answers);
+        const correctCount = answerCounts.correct;
 
         setScore({
             correct: correctCount,
@@ -174,12 +177,17 @@ const QuizTab = ({
                         correct: Number(response.data?.correct) || correctCount,
                         total: Number(response.data?.total) || questions.length,
                     });
+                    const coinsEarned = Number(response.data?.coinsEarned) || 0;
+                    if (coinsEarned > 0) {
+                        toast.success(`Hoàn thành bài tập: +${coinsEarned} xu`);
+                        fetchProfile();
+                    }
                 })
                 .catch((err) => {
                     console.error("Không thể cập nhật điểm thông thạo:", err);
                 });
         }
-    }, [answers, questions, selectedQuizIdValue]);
+    }, [answers, fetchProfile, questions, selectedQuizIdValue]);
 
     useEffect(() => {
         if (!started || submitted || !selectedQuiz?.id) return undefined;
@@ -369,6 +377,31 @@ const QuizTab = ({
                                     Câu {currentQuestionIndex + 1}. {currentQuestion.content}
                                 </p>
 
+                                {revealResult && submitted && (
+                                    <div className={cn(
+                                        "mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
+                                        getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.CORRECT &&
+                                            "bg-green-50 text-green-700",
+                                        getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.INCORRECT &&
+                                            "bg-red-50 text-red-700",
+                                        getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.UNSELECTED &&
+                                            "bg-amber-50 text-amber-700",
+                                    )}>
+                                        {getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.CORRECT ? (
+                                            <CheckCircle2 className="h-4 w-4" />
+                                        ) : getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.INCORRECT ? (
+                                            <XCircle className="h-4 w-4" />
+                                        ) : (
+                                            <AlertTriangle className="h-4 w-4" />
+                                        )}
+                                        {getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.CORRECT
+                                            ? "Đúng"
+                                            : getQuestionAnswerStatus(currentQuestion, answers) === ANSWER_STATUS.INCORRECT
+                                                ? "Sai"
+                                                : "Không chọn"}
+                                    </div>
+                                )}
+
                                 <RadioGroup
                                     value={answers[currentQuestion.id] || ""}
                                     onValueChange={(value) =>
@@ -457,7 +490,7 @@ const QuizTab = ({
                     {!submitted ? (
                         <Button
                             onClick={handleSubmit}
-                            disabled={questions.length === 0 || answeredCount === 0}
+                            disabled={questions.length === 0}
                             className="w-full sm:w-auto"
                         >
                             Nộp bài

@@ -11,6 +11,8 @@ import {
   History,
   Menu,
   Trophy,
+  Coins,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import {
@@ -46,7 +48,7 @@ import { Label } from "@/components/ui/label";
 import { useNotifications } from "@/context/NotificationContext";
 
 export const Header = ({ navigate, userAvatar }) => {
-  const { isLoggedIn, logout, role } = useAuth();
+  const { isLoggedIn, logout, role, user } = useAuth();
   const {
     notifications: appNotifications,
     unreadCount: appUnreadCount,
@@ -82,6 +84,7 @@ export const Header = ({ navigate, userAvatar }) => {
     { key: "home", label: "Học bài", path: "/course" },
     { key: "practice", label: "Luyện đề", path: "/practice" },
     { key: "roadmap", label: "Lộ trình", path: "/roadmap" },
+    { key: "shop", label: "Shop", path: "/shop" },
     { key: "blog", label: "Blog", path: "/blog" },
     { key: "about", label: "Về chúng tôi", path: "/about" },
   ];
@@ -208,6 +211,15 @@ export const Header = ({ navigate, userAvatar }) => {
             </Button>
           ) : (
             <>
+              <button
+                type="button"
+                onClick={() => navigate("/shop")}
+                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-700 transition-colors hover:bg-amber-100"
+              >
+                <Coins className="h-4 w-4" />
+                {user?.coinBalance ?? 0}
+              </button>
+
               {/* MENU THÔNG BÁO (CHUÔNG) */}
               <DropdownMenu>
                 <DropdownMenuTrigger className="outline-none focus:ring-0">
@@ -302,6 +314,11 @@ export const Header = ({ navigate, userAvatar }) => {
                   <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/leaderboard")}>
                     <Trophy className="mr-2 h-4 w-4" />
                     <span>Bảng xếp hạng</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/shop")}>
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    <span>Shop vật phẩm</span>
                   </DropdownMenuItem>
 
                   {role === "admin" ? (

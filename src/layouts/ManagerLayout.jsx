@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
     LayoutDashboard, FileText, Database, Users, BarChart3, Settings,
-    LogOut, Menu, Search, Bell, MessageCircleQuestion, Home, BookOpen, ClipboardList
+    LogOut, Menu, Search, Bell, MessageCircleQuestion, Home, BookOpen, ClipboardList, ShoppingBag
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -26,6 +26,7 @@ const AdminLayout = () => {
 
         // Admin
         { icon: Users, label: "Tài khoản", path: "/admin/accounts", roles: ["admin"] },
+        { icon: ShoppingBag, label: "Quản lý vật phẩm", path: "/admin/shop-items", roles: ["admin"] },
         { icon: BarChart3, label: "Báo cáo", path: "/admin/reports", roles: ["admin"] },
         { icon: Settings, label: "Cài đặt", path: "/admin/settings", roles: ["admin"] },
     ];
